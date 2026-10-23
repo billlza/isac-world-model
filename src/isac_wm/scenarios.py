@@ -1,0 +1,16 @@
+"""Explicit fault-injection configurations; nothing is silently relabelled nominal."""
+from __future__ import annotations
+from dataclasses import replace
+from .simulator import SceneConfig
+
+SCENARIOS = ("nominal", "delay", "camera_loss", "blackout", "radio_outliers", "maneuver")
+
+
+def scenario_config(name: str, base: SceneConfig) -> SceneConfig:
+    if name == "nominal": return base
+    if name == "delay": return replace(base, camera_delay_s=.65, delay_jitter_s=.35, radio_delay_extra_s=.25)
+    if name == "camera_loss": return replace(base, camera_dropout=1.)
+    if name == "blackout": return replace(base, camera_dropout=1., radio_dropout=1.)
+    if name == "radio_outliers": return replace(base, radio_outlier_probability=.25, radio_outlier_scale_m=4.)
+    if name == "maneuver": return replace(base, acceleration_std=2., occlusion_fraction=.4)
+    raise ValueError(f"Unknown scenario {name!r}; choose from {SCENARIOS}")

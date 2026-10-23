@@ -1,0 +1,17 @@
+{
+  "browser": "Chromium/headless",
+  "checks": [
+    "page load",
+    "32 run choices",
+    "summary",
+    "play advances recorded time",
+    "pause/reset",
+    "select run",
+    "scrub",
+    "390px mobile rendering",
+    "no JS errors",
+    "no network requests"
+  ],
+  "errors": [],
+  "requests": []
+}

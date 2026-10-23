@@ -23,7 +23,7 @@ if [[ -d .git ]]; then
 else
   git init -b main
   # Limit staging to the delivered source/doc paths; never stage local data or secrets.
-  git add README.md RIGHTS.md AGENTS.md pyproject.toml Cargo.toml .gitignore src tests crates scripts docs examples .github
+  git add README.md CHANGELOG.md RIGHTS.md AGENTS.md pyproject.toml Cargo.toml .gitignore src tests crates scripts docs examples validation .github
   [[ ! -f Cargo.lock ]] || git add Cargo.lock
   if ! git var GIT_AUTHOR_IDENT >/dev/null 2>&1; then
     echo 'Set git user.name and user.email, then rerun. No remote was created.' >&2; exit 2

@@ -9,6 +9,7 @@ from dataclasses import asdict, dataclass
 import math
 import numpy as np
 from .events import Observation, EventQueue, SnapshotBuffer
+from .validation import integer, finite
 
 
 @dataclass(frozen=True)
@@ -41,8 +42,23 @@ class SceneConfig:
     acceleration_std: float = 0.5
     snr_linear: float = 10.0
     bandwidth_hz: float = 1_000_000.0
+    camera_dropout: float | None = None
+    radio_dropout: float | None = None
+    radio_outlier_probability: float = 0.
+    radio_outlier_scale_m: float = 4.
+    occlusion_fraction: float = 1/6
+    radio_delay_extra_s: float = 0.
 
     def __post_init__(self) -> None:
+        integer(self.steps, "steps", 8, 100_000)
+        integer(self.image_size, "image_size", 16, 1024)
+        integer(self.camera_period, "camera_period", 1, 100_000)
+        for name in ("camera_dropout", "radio_dropout", "radio_outlier_probability", "occlusion_fraction"):
+            value = getattr(self, name)
+            if value is not None and (not math.isfinite(value) or not 0 <= value <= 1):
+                raise ValueError(f"{name} must be in [0,1]")
+        finite(self.radio_outlier_scale_m, "radio_outlier_scale_m")
+        finite(self.radio_delay_extra_s, "radio_delay_extra_s")
         if self.steps < 8 or self.image_size < 16 or self.camera_period < 1:
             raise ValueError("Invalid sequence, image size or sensor period")
         for name in ("dt", "room_m", "bandwidth_hz"):
@@ -79,8 +95,7 @@ def ideal_radio(state: np.ndarray, room_m: float) -> np.ndarray:
 
 class ToyScene:
     def __init__(self, seed: int, config: SceneConfig):
-        if seed < 0:
-            raise ValueError("seed must be non-negative")
+        integer(seed, "seed", 0, 2**32-1)
         self.seed, self.config = seed, config
         rng = np.random.default_rng(np.random.SeedSequence([seed, 11]))
         self._truth = np.zeros((config.steps, 4), np.float32)
@@ -103,7 +118,8 @@ class ToyScene:
                     p[j], v[j] = 2*hi-p[j], -abs(v[j])
             self._truth[k] = np.r_[p, v]
         self.occlusion_start = int(rng.integers(config.steps//4, config.steps//2))
-        self.occlusion_length = max(3, config.steps//6)
+        self.occlusion_length = (0 if config.occlusion_fraction == 0 else
+                                 max(3, int(config.steps*config.occlusion_fraction)))
 
     def truth_for_evaluation(self) -> np.ndarray:
         return self._truth.copy()
@@ -115,10 +131,11 @@ class ToyScene:
 
     def camera(self, step: int) -> Observation | None:
         c = self.config
+        integer(step, "step", 0, c.steps-1)
         if step % c.camera_period:
             return None
         rng = self._rng(step, 21)
-        if rng.random() < c.dropout:
+        if rng.random() < (c.dropout if c.camera_dropout is None else c.camera_dropout):
             return None
         n = c.image_size
         img = rng.uniform(.01, .055, (3, n, n)).astype(np.float32)
@@ -140,13 +157,15 @@ class ToyScene:
         return Observation(step*3, "vision", capture, capture+delay, img)
 
     def radio(self, step: int, action: int) -> Observation | None:
+        integer(step, "step", 0, self.config.steps-1)
+        integer(action, "action", 0, 2)
         if action not in (0, 1, 2):
             raise ValueError("Unknown sensing action")
         if action == 0:
             return None
         c, spec = self.config, ACTIONS[action]
         rng = self._rng(step, 22, action)
-        if rng.random() < c.dropout:
+        if rng.random() < (c.dropout if c.radio_dropout is None else c.radio_dropout):
             return None
         s = self._truth[step]
         r = max(np.linalg.norm(s[:2]), 1e-6)
@@ -154,10 +173,15 @@ class ToyScene:
         noisy_r = max(0., r+rng.normal(0, spec.range_sigma_m))
         noisy_a = angle+rng.normal(0, spec.angle_sigma_rad)
         vr = float(np.dot(s[:2], s[2:])/r)+rng.normal(0, spec.velocity_sigma_mps)
+        # Fault stream is separate: toggling outliers does not change scene/camera/noise.
+        fault_rng = self._rng(step, 99, action)
+        if fault_rng.random() < c.radio_outlier_probability:
+            noisy_r = max(0., noisy_r+fault_rng.choice([-1., 1.])*c.radio_outlier_scale_m)
+            noisy_a += float(fault_rng.normal(0, .2))
         features = np.array([noisy_r/(c.room_m*math.sqrt(2)), math.cos(noisy_a),
                              math.sin(noisy_a), vr/2], np.float32)
         capture = step*c.dt
-        delay = spec.delay_s+rng.uniform(0, c.delay_jitter_s)
+        delay = spec.delay_s+c.radio_delay_extra_s+rng.uniform(0, c.delay_jitter_s)
         return Observation(step*3+action, "radio", capture, capture+delay, features, action)
 
 

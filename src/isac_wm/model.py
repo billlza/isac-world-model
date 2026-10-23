@@ -5,6 +5,8 @@ No downloaded checkpoints, model teachers or external pretrained features.
 """
 from __future__ import annotations
 from dataclasses import asdict, dataclass
+import math
+from .validation import integer, finite
 import torch
 from torch import Tensor, nn
 
@@ -15,6 +17,8 @@ class ModelConfig:
     hidden_dim: int = 96
 
     def __post_init__(self) -> None:
+        integer(self.feature_dim, "feature_dim", 8, 1024)
+        integer(self.hidden_dim, "hidden_dim", 8, 2048)
         if self.feature_dim < 8 or self.hidden_dim < 8:
             raise ValueError("Model dimensions must be >= 8")
 
@@ -65,11 +69,14 @@ class EventBeliefModel(nn.Module):
 
     def forecast(self, h: Tensor, horizon: float | Tensor) -> dict[str, Tensor]:
         if isinstance(horizon, (int, float)):
+            finite(horizon, "horizon")
             if horizon < 0:
                 raise ValueError("Forecast horizon must be non-negative")
-            dt = torch.full((*h.shape[:-1], 1), float(horizon), device=h.device)
+            dt = torch.full((*h.shape[:-1], 1), float(horizon), device=h.device, dtype=h.dtype)
         else:
-            dt = horizon
+            if horizon.shape not in {h.shape[:-1]+(1,), torch.Size([])} or not bool(torch.isfinite(horizon).all()) or bool((horizon < 0).any()):
+                raise ValueError("horizon tensor must be finite, non-negative and broadcast-compatible")
+            dt = horizon.to(device=h.device, dtype=h.dtype)
         # Sensing actions are NOT arguments to exogenous environment dynamics.
         return self.decode_state(h + dt*self.dynamics(h))
 
@@ -80,14 +87,34 @@ class EventBeliefModel(nn.Module):
         return {"mean": base+.15*raw[..., :4].tanh(),
                 "logvar": -9.0+9.0*raw[..., 4:].sigmoid()}
 
-    def step(self, x: dict[str, Tensor], memory: tuple[Tensor, Tensor, Tensor]
+    def encode_new(self, x: dict[str, Tensor]) -> tuple[Tensor, Tensor]:
+        """Encode only newly delivered, valid evidence; never rerun stale frames.
+
+        No batch-normalisation/dropout is used. Batched sequence encoding therefore
+        cannot share future-frame statistics with previous frames.
+        """
+        result = []
+        masks = (x["new"]*x["valid"]).bool()
+        for i, (key, encoder) in enumerate((("image", self.visual), ("radio", self.radio_encoder))):
+            values = x[key]
+            output = values.new_zeros((values.shape[0], self.config.feature_dim))
+            indices = masks[:, i].nonzero(as_tuple=False).flatten()
+            if indices.numel():
+                output = output.index_copy(0, indices, encoder(values.index_select(0, indices)))
+            result.append(output)
+        return result[0], result[1]
+
+    def step(self, x: dict[str, Tensor], memory: tuple[Tensor, Tensor, Tensor],
+             encoded: tuple[Tensor, Tensor] | None = None
              ) -> tuple[dict[str, Tensor], tuple[Tensor, Tensor, Tensor]]:
         h, pv, pr = memory
         new = x["new"]*x["valid"]
         age = x["age"].clamp(0, 20)
         dt = x["dt"].clamp(0, 10)
-        visual = self.visual(x["image"])
-        radio = self.radio_encoder(x["radio"])
+        if encoded is None:
+            visual, radio = self.encode_new(x)
+        else:
+            visual, radio = encoded
         pv_new = self.visual_update(torch.cat([visual, age[:, :1]], -1), pv)
         pr_new = self.radio_update(torch.cat([radio, age[:, 1:]], -1), pr)
         pv = torch.where(new[:, :1].bool(), pv_new, pv)
@@ -100,14 +127,22 @@ class EventBeliefModel(nn.Module):
         out["hidden"] = h
         return out, (h, pv, pr)
 
-    def forward(self, batch: dict[str, Tensor], forecast_s: float = .3) -> dict[str, Tensor]:
+    def forward(self, batch: dict[str, Tensor], forecast_s: float = .3,
+                *, batched_encoding: bool = True) -> dict[str, Tensor]:
         b, t = batch["image"].shape[:2]
+        finite(forecast_s, "forecast_s")
         memory = self.initial(b, batch["image"].device)
+        encoding = None
+        if batched_encoding:
+            flat = {key: batch[key].reshape(b*t, *batch[key].shape[2:])
+                    for key in ("image", "radio", "new", "valid")}
+            encoding = tuple(y.reshape(b, t, -1) for y in self.encode_new(flat))
         outputs: dict[str, list[Tensor]] = {k: [] for k in (
             "mean", "logvar", "future_mean", "future_logvar", "obs_mean", "obs_logvar")}
         for k in range(t):
             inputs = {key: batch[key][:, k] for key in ("image", "radio", "age", "valid", "new", "dt")}
-            out, memory = self.step(inputs, memory)
+            out, memory = self.step(inputs, memory, None if encoding is None else
+                                    (encoding[0][:, k], encoding[1][:, k]))
             future = self.forecast(out["hidden"], forecast_s)
             obs = self.predict_observation(out["hidden"], batch["action_target"][:, k])
             for key in ("mean", "logvar"):
