@@ -1,0 +1,10 @@
+[package]
+name = "isac-event-core"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.74"
+description = "Deterministic availability-time event broker for ISAC experiments"
+
+[[bin]]
+name = "isac-event-replay"
+path = "src/main.rs"

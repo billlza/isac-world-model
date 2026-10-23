@@ -1,0 +1,77 @@
+{
+  "status": "engineering smoke experiment; no superiority claim",
+  "scored_from_step": 5,
+  "scene": {
+    "steps": 48,
+    "dt": 0.1,
+    "image_size": 24,
+    "room_m": 10.0,
+    "camera_period": 2,
+    "camera_delay_s": 0.13,
+    "delay_jitter_s": 0.04,
+    "dropout": 0.05,
+    "acceleration_std": 0.5,
+    "snr_linear": 10.0,
+    "bandwidth_hz": 1000000.0
+  },
+  "test_seed_start": 30000000,
+  "test_episodes": 8,
+  "summary": {
+    "kalman+fixed": {
+      "position_rmse_m": 0.2287295711377721,
+      "position_p95_m": 0.4349898533509196,
+      "acceptance_fraction": 1.0,
+      "accepted_error_gt_0_75m": 0.005813953488372093,
+      "sensing_airtime_fraction": 0.09999999999999998,
+      "communication_bits_proxy": 14944744.592513127,
+      "compute_p50_ms": 2.4685786249989405,
+      "compute_p95_ms": 5.5089162500145505,
+      "ignored_older_snapshot_packets": 0.0,
+      "undelivered_at_end": 2.0
+    },
+    "kalman+predictive": {
+      "position_rmse_m": 0.2287295711377721,
+      "position_p95_m": 0.4349898533509196,
+      "acceptance_fraction": 1.0,
+      "accepted_error_gt_0_75m": 0.005813953488372093,
+      "sensing_airtime_fraction": 0.09999999999999998,
+      "communication_bits_proxy": 14944744.592513127,
+      "compute_p50_ms": 2.339953875008405,
+      "compute_p95_ms": 4.438837750004865,
+      "ignored_older_snapshot_packets": 0.0,
+      "undelivered_at_end": 2.0
+    },
+    "model+fixed": {
+      "position_rmse_m": 0.36339284816395995,
+      "position_p95_m": 0.5840609293431043,
+      "acceptance_fraction": 0.0,
+      "accepted_error_gt_0_75m": null,
+      "sensing_airtime_fraction": 0.09999999999999998,
+      "communication_bits_proxy": 14944744.592513127,
+      "compute_p50_ms": 0.4775668750198747,
+      "compute_p95_ms": 0.6728396937333514,
+      "ignored_older_snapshot_packets": 0.0,
+      "undelivered_at_end": 2.0
+    },
+    "model+predictive": {
+      "position_rmse_m": 0.36339284816395995,
+      "position_p95_m": 0.5840609293431043,
+      "acceptance_fraction": 0.0,
+      "accepted_error_gt_0_75m": null,
+      "sensing_airtime_fraction": 0.09999999999999998,
+      "communication_bits_proxy": 14944744.592513127,
+      "compute_p50_ms": 0.51234225001906,
+      "compute_p95_ms": 0.7415620312677618,
+      "ignored_older_snapshot_packets": 0.0,
+      "undelivered_at_end": 2.0
+    }
+  },
+  "limitations": [
+    "synthetic orthographic images and processed radio features",
+    "AWGN time-sharing proxy, no waveform-level ISAC or quantum model",
+    "reported compute time is measured; it does not advance simulation clock",
+    "all methods share an airtime cap; actual usage may differ",
+    "neural late older packets are ignored; Kalman replays all delivered evidence",
+    "variances and acceptance thresholds have not been calibrated"
+  ]
+}

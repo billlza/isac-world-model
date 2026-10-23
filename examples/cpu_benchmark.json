@@ -1,0 +1,23 @@
+{
+  "runtime": {
+    "python": "3.13.5",
+    "platform": "Linux-6.18.55-x86_64-with-glibc2.41",
+    "torch": "2.10.0+cpu",
+    "numpy": "2.3.5",
+    "device": "cpu",
+    "threads": 2
+  },
+  "parameters": 142312,
+  "sequence_frames": 16,
+  "image_shape": [
+    3,
+    24,
+    24
+  ],
+  "batch_size": 4,
+  "warmup_iterations": 3,
+  "iterations": 5,
+  "train_step_p50_ms": 49.289172000044346,
+  "train_step_p95_ms": 49.99435759996231,
+  "scope": "small-model forward+backward+optimizer, not a peak hardware benchmark"
+}
