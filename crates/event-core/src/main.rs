@@ -3,9 +3,7 @@
 //! invalid-UTF8 input terminates with a nonzero status rather than allocating.
 use isac_event_core::{Event, EventQueue};
 use std::io::{self, BufRead, Read, Write};
-
 const MAX_LINE_BYTES: u64 = 256;
-
 fn dispatch(queue: &mut EventQueue, line: &str) -> Result<String, String> {
     let parts: Vec<&str> = line.split_whitespace().collect();
     let parse = |i: usize| -> Result<u64, String> {
@@ -33,7 +31,6 @@ fn dispatch(queue: &mut EventQueue, line: &str) -> Result<String, String> {
         _ => Err("expected P id capture_ns available_ns or R now_ns".to_owned()),
     }
 }
-
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut queue = EventQueue::new(4096).expect("positive capacity");
     let stdin = io::stdin();
@@ -60,11 +57,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     Ok(())
 }
-
 #[cfg(test)]
 mod tests {
     use super::*;
-
     #[test]
     fn protocol_rejects_non_decimal_and_extra_fields() {
         let mut q = EventQueue::new(5).unwrap();
@@ -73,7 +68,6 @@ mod tests {
             assert!(q.is_empty());
         }
     }
-
     #[test]
     fn protocol_duplicate_and_order() {
         let mut q = EventQueue::new(5).unwrap();

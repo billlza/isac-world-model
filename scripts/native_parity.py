@@ -3,14 +3,15 @@
 No NumPy or torch is needed, allowing the same probe on minimal native runners.
 The Python EventQueue is separately checked against this oracle in pytest.
 """
+
 from __future__ import annotations
 
 import argparse
 import hashlib
 import json
-from pathlib import Path
 import random
 import subprocess
+from pathlib import Path
 
 
 class Oracle:
@@ -29,8 +30,13 @@ class Oracle:
                 return "ERR"
             if fields[0] == "P" and len(values) == 3:
                 uid, cap, arrival = values
-                if (arrival < cap or arrival < self.now or uid in self.seen
-                        or len(self.pending) >= 4096 or len(self.seen) >= 1_000_000):
+                if (
+                    arrival < cap
+                    or arrival < self.now
+                    or uid in self.seen
+                    or len(self.pending) >= 4096
+                    or len(self.seen) >= 1_000_000
+                ):
                     return "ERR"
                 self.pending[uid] = arrival
                 self.seen.add(uid)
@@ -75,8 +81,14 @@ def verify(binary: Path, seeds=(7301, 17, 99, 201, 599), count=5000):
     reports = []
     for seed in seeds:
         commands, expected = make_transcript(seed, count)
-        result = subprocess.run([str(binary)], input="\n".join(commands) + "\n",
-                                text=True, capture_output=True, check=True, timeout=30)
+        result = subprocess.run(
+            [str(binary)],
+            input="\n".join(commands) + "\n",
+            text=True,
+            capture_output=True,
+            check=True,
+            timeout=30,
+        )
         actual = ["ERR" if line.startswith("ERR ") else line for line in result.stdout.splitlines()]
         if actual != expected:
             for index, pair in enumerate(zip(actual, expected)):
@@ -88,8 +100,12 @@ def verify(binary: Path, seeds=(7301, 17, 99, 201, 599), count=5000):
         result = subprocess.run([str(binary)], input=payload, capture_output=True, timeout=5)
         if result.returncode == 0:
             raise AssertionError("Oversized / non-UTF8 protocol input did not fail")
-    return {"status": "passed", "seeds": reports, "malformed_stream_tests": 2,
-            "binary_sha256": hashlib.sha256(binary.read_bytes()).hexdigest()}
+    return {
+        "status": "passed",
+        "seeds": reports,
+        "malformed_stream_tests": 2,
+        "binary_sha256": hashlib.sha256(binary.read_bytes()).hexdigest(),
+    }
 
 
 if __name__ == "__main__":

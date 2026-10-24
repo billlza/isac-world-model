@@ -1,11 +1,12 @@
 """Offline repository/CI policy checks. Not a general vulnerability scanner."""
+
 from __future__ import annotations
 
 import ast
-from pathlib import Path
 import re
 import sys
 import tomllib
+from pathlib import Path
 
 import yaml
 
@@ -25,16 +26,25 @@ def check(root: Path = ROOT) -> list[str]:
                 continue
             if isinstance(node.func, ast.Name) and node.func.id in {"eval", "exec"}:
                 errors.append(f"{path}:{node.lineno}: dynamic code execution")
-            if (isinstance(node.func, ast.Attribute)
-                    and isinstance(node.func.value, ast.Name)
-                    and node.func.value.id == "torch" and node.func.attr == "load"):
-                if not any(k.arg == "weights_only" and isinstance(k.value, ast.Constant)
-                           and k.value.value is True for k in node.keywords):
+            if (
+                isinstance(node.func, ast.Attribute)
+                and isinstance(node.func.value, ast.Name)
+                and node.func.value.id == "torch"
+                and node.func.attr == "load"
+            ):
+                if not any(
+                    k.arg == "weights_only" and isinstance(k.value, ast.Constant) and k.value.value is True
+                    for k in node.keywords
+                ):
                     errors.append(f"{path}:{node.lineno}: torch.load must use weights_only=True")
     config = tomllib.loads((root / "pyproject.toml").read_text())
     version = ast.parse((root / "src/isac_wm/__init__.py").read_text())
-    versions = [n.value.value for n in version.body if isinstance(n, ast.Assign)
-                and any(isinstance(t, ast.Name) and t.id == "__version__" for t in n.targets)]
+    versions = [
+        n.value.value
+        for n in version.body
+        if isinstance(n, ast.Assign)
+        and any(isinstance(t, ast.Name) and t.id == "__version__" for t in n.targets)
+    ]
     if versions != [config["project"]["version"]]:
         errors.append("Package version mismatch")
     cargo = tomllib.loads((root / "crates/event-core/Cargo.toml").read_text())

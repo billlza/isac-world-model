@@ -3,21 +3,22 @@
 Each selected check is mandatory. No missing tool silently becomes a pass.
 Network provisioning is deliberately separate (scripts/bootstrap.sh).
 """
+
 from __future__ import annotations
 
 import argparse
-from datetime import datetime, timezone
 import hashlib
-import signal
 import importlib.metadata
 import importlib.util
 import json
 import os
-from pathlib import Path
 import shutil
+import signal
 import subprocess
 import sys
 import time
+from datetime import datetime, timezone
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -27,8 +28,9 @@ def run_step(name, command, out, env, timeout=300):
     log = out / f"{name}.log"
     try:
         with log.open("w") as stream:
-            process = subprocess.Popen(command, cwd=ROOT, env=env, stdout=stream,
-                                       stderr=subprocess.STDOUT, start_new_session=True)
+            process = subprocess.Popen(
+                command, cwd=ROOT, env=env, stdout=stream, stderr=subprocess.STDOUT, start_new_session=True
+            )
             try:
                 code = process.wait(timeout=timeout)
             except subprocess.TimeoutExpired:
@@ -48,83 +50,207 @@ def run_step(name, command, out, env, timeout=300):
             stream.write("\nCI step exceeded its deadline\n")
         status, code = "failed", 124
     print(f"{name}: {status}", flush=True)
-    return {"name": name, "status": status, "exit_code": code,
-            "duration_s": time.perf_counter() - start, "command": command, "log": log.name}
+    return {
+        "name": name,
+        "status": status,
+        "exit_code": code,
+        "duration_s": time.perf_counter() - start,
+        "command": command,
+        "log": log.name,
+    }
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser()
-    parser.add_argument("--profile", choices=["python", "native", "quality", "all"], default="all")
+    parser.add_argument(
+        "--profile", choices=["python", "native", "quality", "security", "all"], default="all"
+    )
     parser.add_argument("--out", type=Path, default=ROOT / "validation/local-ci")
     args = parser.parse_args(argv)
     out = args.out.resolve()
     if out.exists() and any(out.iterdir()):
         parser.error("CI output directory must be empty; choose a new path to preserve prior evidence")
     out.mkdir(parents=True, exist_ok=True)
-    env = dict(os.environ, PYTHONPATH=str(ROOT / "src"), OMP_NUM_THREADS="2",
-               MKL_NUM_THREADS="2", OPENBLAS_NUM_THREADS="1", VECLIB_MAXIMUM_THREADS="1",
-               NUMEXPR_NUM_THREADS="1", PYTHONHASHSEED="0", PYTEST_DISABLE_PLUGIN_AUTOLOAD="1")
+    env = dict(
+        os.environ,
+        PYTHONPATH=str(ROOT / "src"),
+        OMP_NUM_THREADS="2",
+        MKL_NUM_THREADS="2",
+        OPENBLAS_NUM_THREADS="1",
+        VECLIB_MAXIMUM_THREADS="1",
+        NUMEXPR_NUM_THREADS="1",
+        PYTHONHASHSEED="0",
+        PYTEST_DISABLE_PLUGIN_AUTOLOAD="1",
+    )
     python = sys.executable
     specs = []
     profile = args.profile
     if profile in {"python", "all"}:
         specs += [
             ("contracts", [python, "scripts/check_contracts.py"], 60),
-            ("python-tests", [python, "-m", "pytest", "-p", "pytest_cov", "--cov=isac_wm", "--cov-fail-under=88",
-                              "--cov-report=term-missing", f"--cov-report=xml:{out / 'coverage.xml'}",
-                              f"--junitxml={out / 'pytest.xml'}"], 180),
+            ("dependency-policy", [python, "scripts/dependencies.py", "check"], 60),
+            ("dependency-environment", [python, "scripts/dependencies.py", "environment"], 60),
+            ("pip-check", [python, "-m", "pip", "check"], 60),
+            (
+                "environment-snapshot",
+                [python, "scripts/dependencies.py", "snapshot", "--out", str(out / "environment.json")],
+                60,
+            ),
+            (
+                "python-tests",
+                [
+                    python,
+                    "-m",
+                    "pytest",
+                    "-p",
+                    "pytest_cov",
+                    "--cov=isac_wm",
+                    "--cov-fail-under=88",
+                    "--cov-report=term-missing",
+                    f"--cov-report=xml:{out / 'coverage.xml'}",
+                    f"--junitxml={out / 'pytest.xml'}",
+                ],
+                180,
+            ),
             ("integration", [python, "scripts/ci_smoke.py", "--out", str(out / "smoke")], 300),
             ("distribution", [python, "scripts/build_dist.py", "--out", str(out / "dist")], 90),
             ("wheel-install", [python, "scripts/test_wheel.py", "--dist", str(out / "dist")], 120),
         ]
     if profile in {"quality", "all"}:
-        specs += [("ruff", [python, "-m", "ruff", "check", "src", "tests", "scripts"], 60)]
+        specs += [
+            ("ruff", [python, "-m", "ruff", "check", "src", "tests", "scripts"], 60),
+            ("ruff-format", [python, "-m", "ruff", "format", "--check", "src", "tests", "scripts"], 60),
+        ]
+    if profile in {"security", "all"}:
+        specs += [
+            (
+                "dependency-audit",
+                [python, "scripts/audit_dependencies.py", "--out", str(out / "audit.json")],
+                180,
+            )
+        ]
     if profile in {"native", "all"}:
         specs += [
             ("rustfmt", ["cargo", "fmt", "--all", "--", "--check"], 120),
-            ("clippy", ["cargo", "clippy", "--workspace", "--all-targets", "--locked", "--offline", "--", "-D", "warnings"], 180),
+            (
+                "clippy",
+                [
+                    "cargo",
+                    "clippy",
+                    "--workspace",
+                    "--all-targets",
+                    "--locked",
+                    "--offline",
+                    "--",
+                    "-D",
+                    "warnings",
+                ],
+                180,
+            ),
             ("rust-tests", ["cargo", "test", "--workspace", "--locked", "--offline"], 180),
             ("native-build", ["cargo", "build", "--workspace", "--release", "--locked", "--offline"], 180),
-            ("native-parity", [python, "scripts/native_parity.py", "--binary",
-                               str(ROOT / "target/release/isac-event-replay"), "--out", str(out / "native-parity.json")], 120),
+            (
+                "native-parity",
+                [
+                    python,
+                    "scripts/native_parity.py",
+                    "--binary",
+                    str(ROOT / "target/release/isac-event-replay"),
+                    "--out",
+                    str(out / "native-parity.json"),
+                ],
+                120,
+            ),
         ]
+
     def source_snapshot():
-        files = [p for base in ("src", "tests", "scripts", "crates", ".github", "ci")
-                 for p in (ROOT / base).rglob("*")
-                 if p.is_file() and p.suffix in {".py", ".rs", ".toml", ".yml", ".sh", ".txt"}
-                 and not any(part.endswith(".egg-info") or part == "__pycache__" for part in p.parts)]
-        files += [ROOT / p for p in ("pyproject.toml", "Cargo.toml", "Cargo.lock", "rust-toolchain.toml")]
+        files = [
+            p
+            for base in ("src", "tests", "scripts", "crates", ".github", "ci")
+            for p in (ROOT / base).rglob("*")
+            if p.is_file()
+            and p.suffix in {".py", ".rs", ".toml", ".yml", ".sh", ".txt", ".json", ".lock"}
+            and not any(part.endswith(".egg-info") or part == "__pycache__" for part in p.parts)
+        ]
+        files += [
+            ROOT / p
+            for p in (
+                "pyproject.toml",
+                "Cargo.toml",
+                "Cargo.lock",
+                "rust-toolchain.toml",
+                "uv.lock",
+                ".python-version",
+            )
+        ]
         return {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(files)}
+
     source_before = source_snapshot()
     results = []
     for name, command, timeout in specs:
         blocked = None
-        if name == "ruff" and importlib.util.find_spec("ruff") is None:
+        if name in {"ruff", "ruff-format"} and importlib.util.find_spec("ruff") is None:
             blocked = "ruff is not installed"
+        if name == "dependency-audit" and importlib.util.find_spec("pip_audit") is None:
+            blocked = "pip-audit is not installed"
         if name in {"rustfmt", "clippy", "rust-tests", "native-build"} and not shutil.which("cargo"):
             blocked = "cargo is not installed"
-        if name == "native-parity" and not any(r["name"] == "native-build" and r["status"] == "passed" for r in results):
+        if name == "native-parity" and not any(
+            r["name"] == "native-build" and r["status"] == "passed" for r in results
+        ):
             blocked = "a successful native build is required"
         if blocked:
             (out / f"{name}.log").write_text(blocked + "\n")
-            results.append({"name": name, "status": "blocked", "reason": blocked,
-                            "command": command, "log": f"{name}.log"})
+            results.append(
+                {
+                    "name": name,
+                    "status": "blocked",
+                    "reason": blocked,
+                    "command": command,
+                    "log": f"{name}.log",
+                }
+            )
             print(f"{name}: blocked ({blocked})", flush=True)
         else:
             results.append(run_step(name, command, out, env, timeout))
     if source_snapshot() != source_before:
         results.append({"name": "source-stability", "status": "failed", "reason": "Source changed during CI"})
-    status = ("failed" if any(r["status"] == "failed" for r in results) else
-              "blocked" if any(r["status"] == "blocked" for r in results) else "passed")
+    status = (
+        "failed"
+        if any(r["status"] == "failed" for r in results)
+        else "blocked"
+        if any(r["status"] == "blocked" for r in results)
+        else "passed"
+    )
     versions = {}
-    for package in ("torch", "numpy", "pytest", "pytest-cov", "ruff", "setuptools"):
+    for package in (
+        "torch",
+        "numpy",
+        "pytest",
+        "pytest-cov",
+        "coverage",
+        "ruff",
+        "setuptools",
+        "build",
+        "wheel",
+        "pip",
+        "uv",
+        "pip-audit",
+    ):
         try:
             versions[package] = importlib.metadata.version(package)
         except importlib.metadata.PackageNotFoundError:
             versions[package] = None
-    report = {"schema_version": 1, "profile": profile, "status": status,
-              "generated_utc": datetime.now(timezone.utc).isoformat(),
-              "python": sys.version, "packages": versions, "source_sha256": source_before, "steps": results}
+    report = {
+        "schema_version": 1,
+        "profile": profile,
+        "status": status,
+        "generated_utc": datetime.now(timezone.utc).isoformat(),
+        "python": sys.version,
+        "packages": versions,
+        "source_sha256": source_before,
+        "steps": results,
+    }
     (out / "ci-report.json").write_text(json.dumps(report, indent=2) + "\n")
     print(f"{profile} CI: {status.upper()}; report={out / 'ci-report.json'}")
     return {"passed": 0, "failed": 1, "blocked": 2}[status]

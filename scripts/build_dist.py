@@ -1,6 +1,8 @@
 """Build with the installed PEP-517 backend; no implicit network downloads."""
-from pathlib import Path
+
 import argparse
+from pathlib import Path
+
 import setuptools.build_meta
 
 parser = argparse.ArgumentParser()

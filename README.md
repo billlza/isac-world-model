@@ -1,27 +1,55 @@
-# ISAC World Model — v0.3.0
+# ISAC World Model — v0.4.0
 
 自主实现、随机初始化的视觉—无线世界模型研究原型。无外部预训练权重、教师模型或私有实验数据。当前为合成二维观测与共享时隙代理；Quantum、原始无线波形和真实设备尚未实现。
 
-本版补齐**显式计算服务时钟、结果延迟发布、感知指令延迟执行、Rust 原生队列验证与可失败的 CI 门禁**。详细证据见 `docs/VALIDATION_v030.md`。测试通过不等于模型已经超过经典基线，也不等于安全认证。
+**本版重点：最新稳定依赖、可复现工具链、完整 CI 实跑。**参考环境 Python 3.14.9 / PyTorch 2.14.1+cpu / NumPy 2.5.4 / Rust 1.99.1。17 个必需步骤全部通过，154 项 Python 测试、15 项 Rust 测试、Ruff、已知漏洞审计和打包安装检查通过。详情见 `docs/VALIDATION_v040.md`。
 
-## 安装与检查
+## 安装与全工具链检查
 
 ```bash
-python3 -m venv .venv
+# 在新解压目录内；需要一个现有 Python >=3.10 和系统链接器。
+# INSTALL_RUSTUP=1 明确允许下载安装器，只安装到本项目 .toolchains/。
+INSTALL_RUSTUP=1 bash scripts/bootstrap.sh
+```
+
+脚本创建 `.bootstrap/`、`.venv/`、`.toolchains/`；不需要 sudo，不改变系统默认 Rust/Python。已有 `.venv` 时先保存需要的内容，再显式设置 `RECREATE_VENV=1`。macOS 的系统链接器来自 Xcode Command Line Tools，Linux 需要系统 C 链接工具；脚本不会静默安装系统包。
+
+已有 uv 0.13.5，只安装锁定 Python 开发环境：
+
+```bash
+uv python install 3.14.9
+uv sync --locked --extra dev --python 3.14.9
 source .venv/bin/activate
-python -m pip install -c ci/constraints.txt -e '.[dev]'
 isac-wm doctor --device cpu
+python scripts/dependencies.py check
+python scripts/dependencies.py environment
 python scripts/ci.py --profile python --out validation/my-python-ci
 ```
 
-使用 Python 3.11–3.13。完整工具链可使用 `bash scripts/bootstrap.sh`：Rust 固定为 1.85.1，带 rustfmt/Clippy。脚本不会静默安装系统链接器；rustup 不存在时需先安装或显式授权下载安装器。开发依赖是直接版本约束，不是完整传递依赖的哈希锁。见 `docs/CI.md`。
+全部门禁（Rust 须在 PATH 中；bootstrap 已自动处理自己的子进程）：
 
 ```bash
-# 全部门禁：缺工具或任何失败都不允许返回成功
+export CARGO_HOME="$PWD/.toolchains/cargo"
+export RUSTUP_HOME="$PWD/.toolchains/rustup"
+export PATH="$PWD/.venv/bin:$CARGO_HOME/bin:$PATH"
 python scripts/ci.py --profile all --out validation/my-full-ci
 ```
 
-输出目录必须是新的，避免覆盖旧证据。退出码 0=通过、1=失败、2=缺前提条件。原生队列是独立组件；当前主实验使用 Python 参考队列，并用相同随机协议参考验证二者行为。
+输出目录必须是新的。退出码 0=全部通过、1=检查失败、2=缺工具等前提条件。`all` 包括 Python、Ruff、已知依赖漏洞审计和 Rust；已知漏洞查询需要联网。它不自动取得 GitHub 登录状态，也不声称验证了不可用的加速器。
+
+## “最新”的精确含义
+
+版本核对日为 **2026-10-24**。直接依赖均为当时核实到的稳定版本，传递依赖以 `uv.lock` 锁定。49 个实际安装第三方包中48个为最新稳定版；唯一传递例外为 mpmath 1.3.0，因为最新 SymPy 1.14.0 要求 `<1.4`，不能强装 mpmath 1.4.1。
+
+Python 最新为3.15.1，但 PyTorch 2.14.1尚无 CPython 3.15预编译包，因此使用3.14.9；项目支持范围改为 `>=3.12,<3.15`，不再声称支持不满足 NumPy 要求的3.11。详见 `docs/DEPENDENCIES.md`。
+
+`uv.lock` 包含精确版本、来源与哈希；当前审核平台是 Linux x86_64 CPU 和 macOS Apple Silicon 的 Python 3.12–3.14包集合。这里只实测了 Linux CPU。Linux 默认选择官方 CPU PyTorch 索引；CUDA训练环境应另行验证并锁定，不能用本轮结果冒充。可选 Playwright 1.64.1已锁定，本轮未执行浏览器验证。
+
+```bash
+# 只读查询，不会自动安装/升级或修改锁文件
+python scripts/dependencies.py latest --out runs/latest-versions.json
+python scripts/audit_dependencies.py --out runs/dependency-audit.json
+```
 
 ## 延迟进入模型与决策
 
@@ -31,7 +59,7 @@ isac-wm evaluate --checkpoint checkpoints/v020.pt \
   --latency-mode fixed --compute-ms 150
 ```
 
-附带 `v020.pt` 是上一版自主训练检查点，本版用它做配对回归和延迟敏感性评测，没有冒充新的精度突破。运行输出 `evaluation.json` 和独立 HTML 回放。
+附带 `v020.pt` 是上一版自主训练检查点，v0.3 用它做过配对延迟评测；本版只做工具链与集成训练验证，不把旧准确率当成新结果。运行输出 `evaluation.json` 和独立 HTML 回放。
 
 - `reference`：保留旧的逻辑瞬时推理模式，仅用于比较和旧校准兼容。
 - `fixed`：指定假设服务时延；计算完成前，输出和感知指令都不可用。
@@ -71,15 +99,16 @@ python scripts/latency_sweep.py --checkpoint checkpoints/v020.pt --out runs/timi
 
 故障扫描中的任一场景失败都会写记录并返回非零状态。明确选择不可用的 CUDA/MPS 会报错，不会冒充 GPU。本版实际测试 CPU；GitHub macOS job 也是 CPU，不等于 MPS 已经验证。
 
-## 发布和 GitHub CI
+## GitHub CI 与发布
 
-本版没有完成 GitHub 推送，不能把本地/隔离环境执行当成 GitHub Actions 绿灯。工作流定义 Linux/Python 3.11、3.13，macOS/Python 3.12 CPU、Rust、静态检查与聚合门禁。Actions固定SHA，默认只读权限，不使用密钥和特权PR触发器。
+工作流定义 Linux/Python 3.12.15、3.13.17、3.14.9，以及 macOS/Python 3.14.9的 CPU job；另有双平台 Rust、质量和已知漏洞审计、最终汇总门禁。Actions 更新并固定到完整提交SHA，只读权限，不保留checkout凭据。
+
+**本轮全门禁实跑于隔离 Linux 环境，尚未触发 GitHub Actions。**当前连接查询 `billlza/isac-world-model` 返回404，不伪造远端成功。macOS job尚未执行，不能据此声称 MPS已测。
 
 ```bash
-# 新私有仓库；拒绝覆盖已有仓库与 origin
+# 在你已登录 gh 的电脑上，为新仓库使用原有保守发布脚本
 bash scripts/publish_private.sh billlza/isac-world-model
-# 已推送后核对具体提交、触发并等待远端 CI
 bash scripts/verify_remote_ci.sh billlza/isac-world-model main
 ```
 
-需要由用户已认证的 GitHub CLI 执行；不向聊天提供访问令牌。机构/合作方的公开与知识产权安排仍按 `RIGHTS.md` 确认。
+脚本拒绝覆盖已存在的仓库或origin。默认私有；公开与知识产权安排见 `RIGHTS.md`。不要向聊天粘贴令牌。

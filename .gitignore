@@ -22,3 +22,17 @@ validation/local-ci/
 *.egg-info/
 dist/
 build/
+
+.bootstrap/
+.toolchains/
+validation/
+artifacts/
+*.tar.gz
+
+# Project-local toolchains and bootstrap caches
+.bootstrap/
+.toolchains/
+# Release metadata is generated after the source commit
+LOCAL_COMMIT.txt
+RELEASE.json
+SHA256SUMS

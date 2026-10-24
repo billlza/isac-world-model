@@ -1,0 +1,134 @@
+{
+  "status": "current",
+  "checked_utc": "2026-10-24T04:07:53.998222+00:00",
+  "packages": [
+    {
+      "package": "numpy",
+      "pinned": "2.5.4",
+      "latest": "2.5.4",
+      "status": "current",
+      "requires_python": ">=3.12",
+      "source": "https://pypi.org/pypi/numpy/json"
+    },
+    {
+      "package": "torch",
+      "pinned": "2.14.1",
+      "latest": "2.14.1",
+      "status": "current",
+      "requires_python": ">=3.10",
+      "source": "https://pypi.org/pypi/torch/json"
+    },
+    {
+      "package": "pytest",
+      "pinned": "9.1.1",
+      "latest": "9.1.1",
+      "status": "current",
+      "requires_python": ">=3.10",
+      "source": "https://pypi.org/pypi/pytest/json"
+    },
+    {
+      "package": "pytest-cov",
+      "pinned": "7.1.0",
+      "latest": "7.1.0",
+      "status": "current",
+      "requires_python": ">=3.9",
+      "source": "https://pypi.org/pypi/pytest-cov/json"
+    },
+    {
+      "package": "coverage",
+      "pinned": "7.17.0",
+      "latest": "7.17.0",
+      "status": "current",
+      "requires_python": ">=3.11",
+      "source": "https://pypi.org/pypi/coverage/json"
+    },
+    {
+      "package": "ruff",
+      "pinned": "0.17.2",
+      "latest": "0.17.2",
+      "status": "current",
+      "requires_python": ">=3.7",
+      "source": "https://pypi.org/pypi/ruff/json"
+    },
+    {
+      "package": "build",
+      "pinned": "1.6.1",
+      "latest": "1.6.1",
+      "status": "current",
+      "requires_python": ">=3.10",
+      "source": "https://pypi.org/pypi/build/json"
+    },
+    {
+      "package": "PyYAML",
+      "pinned": "6.0.3",
+      "latest": "6.0.3",
+      "status": "current",
+      "requires_python": ">=3.8",
+      "source": "https://pypi.org/pypi/PyYAML/json"
+    },
+    {
+      "package": "setuptools",
+      "pinned": "84.2.1",
+      "latest": "84.2.1",
+      "status": "current",
+      "requires_python": ">=3.10",
+      "source": "https://pypi.org/pypi/setuptools/json"
+    },
+    {
+      "package": "wheel",
+      "pinned": "0.48.0",
+      "latest": "0.48.0",
+      "status": "current",
+      "requires_python": ">=3.9",
+      "source": "https://pypi.org/pypi/wheel/json"
+    },
+    {
+      "package": "pip",
+      "pinned": "26.2.2",
+      "latest": "26.2.2",
+      "status": "current",
+      "requires_python": ">=3.10",
+      "source": "https://pypi.org/pypi/pip/json"
+    },
+    {
+      "package": "uv",
+      "pinned": "0.13.5",
+      "latest": "0.13.5",
+      "status": "current",
+      "requires_python": ">=3.8",
+      "source": "https://pypi.org/pypi/uv/json"
+    },
+    {
+      "package": "packaging",
+      "pinned": "26.3",
+      "latest": "26.3",
+      "status": "current",
+      "requires_python": ">=3.9",
+      "source": "https://pypi.org/pypi/packaging/json"
+    },
+    {
+      "package": "pyproject-hooks",
+      "pinned": "1.3.3",
+      "latest": "1.3.3",
+      "status": "current",
+      "requires_python": ">=3.8",
+      "source": "https://pypi.org/pypi/pyproject-hooks/json"
+    },
+    {
+      "package": "pip-audit",
+      "pinned": "2.10.1",
+      "latest": "2.10.1",
+      "status": "current",
+      "requires_python": ">=3.10",
+      "source": "https://pypi.org/pypi/pip-audit/json"
+    },
+    {
+      "package": "playwright",
+      "pinned": "1.64.1",
+      "latest": "1.64.1",
+      "status": "current",
+      "requires_python": ">=3.10",
+      "source": "https://pypi.org/pypi/playwright/json"
+    }
+  ]
+}

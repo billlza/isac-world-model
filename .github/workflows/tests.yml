@@ -1,5 +1,5 @@
-name: required-ci
-'on':
+name: CI
+on:
   push:
   pull_request:
   workflow_dispatch:
@@ -10,105 +10,90 @@ concurrency:
   cancel-in-progress: true
 jobs:
   python:
-    name: python-${{ matrix.os }}-${{ matrix.python }}
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 20
+    name: Python ${{ matrix.python }} / ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-24.04
-            python: '3.11'
-          - os: ubuntu-24.04
-            python: '3.13'
-          - os: macos-14
-            python: '3.12'
-    env:
-      OMP_NUM_THREADS: '2'
-      MKL_NUM_THREADS: '2'
-      PYTHONHASHSEED: '0'
+          - {os: ubuntu-latest, python: '3.12.15'}
+          - {os: ubuntu-latest, python: '3.13.17'}
+          - {os: ubuntu-latest, python: '3.14.9'}
+          - {os: macos-latest, python: '3.14.9'}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4, verified 2026-10-24
-        with:
-          persist-credentials: false
-      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
-        with:
-          python-version: ${{ matrix.python }}
-          cache: pip
-          cache-dependency-path: ci/constraints.txt
-      - name: Install CPU torch on Linux
-        if: runner.os == 'Linux'
-        run: python -m pip install torch==2.10.0 --index-url https://download.pytorch.org/whl/cpu
-      - name: Install torch on macOS (tests intentionally run on CPU)
-        if: runner.os == 'macOS'
-        run: python -m pip install torch==2.10.0
-      - run: python -m pip install -c ci/constraints.txt -e '.[dev]'
-      - run: python scripts/ci.py --profile python --out validation/local-ci
-      - name: Verify installation outside source tree
-        run: python scripts/test_wheel.py --dist validation/local-ci/dist
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: {persist-credentials: false}
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with: {version: '0.13.5', enable-cache: true}
+      - name: Install locked runtime
+        run: |
+          uv python install '${{ matrix.python }}'
+          uv sync --locked --extra dev --python '${{ matrix.python }}'
+      - name: Required Python CI
+        run: .venv/bin/python scripts/ci.py --profile python --out validation/python
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: python-${{ matrix.os }}-${{ matrix.python }}
-          path: validation/local-ci/
+          path: validation/python
           if-no-files-found: error
           retention-days: 14
   native:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix: {os: [ubuntu-latest, macos-latest]}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
-        with:
-          persist-credentials: false
-      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
-        with:
-          python-version: '3.13'
-      - name: Install pinned native toolchain
-        run: rustup toolchain install 1.85.1 --profile minimal --component rustfmt,clippy
-      - run: python scripts/ci.py --profile native --out validation/native-ci
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: {persist-credentials: false}
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with: {python-version: '3.14.9'}
+      - name: Install pinned Rust toolchain
+        run: rustup toolchain install 1.99.1 --profile minimal --component rustfmt,clippy
+      - name: Required native CI
+        run: python scripts/ci.py --profile native --out validation/native
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
-          name: native-linux
-          path: validation/native-ci/
+          name: native-${{ matrix.os }}
+          path: validation/native
           if-no-files-found: error
           retention-days: 14
   quality:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
-        with:
-          persist-credentials: false
-      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
-        with:
-          python-version: '3.13'
-      - run: python -m pip install ruff==0.14.3 PyYAML==6.0.3
-      - run: python scripts/check_contracts.py
-      - run: python scripts/ci.py --profile quality --out validation/quality-ci
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: {persist-credentials: false}
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with: {version: '0.13.5', enable-cache: true}
+      - name: Install exact dependencies
+        run: uv sync --locked --extra dev --python 3.14.9
+      - name: Required static checks
+        run: .venv/bin/python scripts/ci.py --profile quality --out validation/quality
+      - name: Required advisory audit
+        run: .venv/bin/python scripts/ci.py --profile security --out validation/security
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
-          name: quality
-          path: validation/quality-ci/
+          name: quality-and-security
+          path: validation/
           if-no-files-found: error
           retention-days: 14
   ci-gate:
     if: always()
     needs: [python, native, quality]
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     timeout-minutes: 2
-    env:
-      JOB_RESULTS: ${{ toJSON(needs) }}
     steps:
-      - name: Fail unless every required job succeeded
+      - name: All required jobs must pass
+        env:
+          PYTHON_RESULT: ${{ needs.python.result }}
+          NATIVE_RESULT: ${{ needs.native.result }}
+          QUALITY_RESULT: ${{ needs.quality.result }}
         run: |
-          python3 - <<'PY'
-          import json, os
-          jobs = json.loads(os.environ['JOB_RESULTS'])
-          failures = {name: result['result'] for name, result in jobs.items()
-                      if result['result'] != 'success'}
-          print(json.dumps(jobs, indent=2))
-          if failures:
-              raise SystemExit(f'Required checks did not pass: {failures}')
-          PY
+          test "$PYTHON_RESULT" = success
+          test "$NATIVE_RESULT" = success
+          test "$QUALITY_RESULT" = success

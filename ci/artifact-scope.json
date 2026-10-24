@@ -1,0 +1,660 @@
+{
+  "scope": "CPython 3.12-3.14, Linux x86_64 and macOS Apple Silicon; source archives retained; no accelerator/device test inferred",
+  "targets": [
+    "linux-x86_64-cp312",
+    "linux-x86_64-cp313",
+    "linux-x86_64-cp314",
+    "macos-arm64-cp312",
+    "macos-arm64-cp313",
+    "macos-arm64-cp314"
+  ],
+  "packages": [
+    {
+      "name": "boolean-py",
+      "version": "5.0",
+      "selected_wheels": {
+        "linux-x86_64-cp312": "boolean_py-5.0-py3-none-any.whl",
+        "linux-x86_64-cp313": "boolean_py-5.0-py3-none-any.whl",
+        "linux-x86_64-cp314": "boolean_py-5.0-py3-none-any.whl",
+        "macos-arm64-cp312": "boolean_py-5.0-py3-none-any.whl",
+        "macos-arm64-cp313": "boolean_py-5.0-py3-none-any.whl",
+        "macos-arm64-cp314": "boolean_py-5.0-py3-none-any.whl"
+      }
+    },
+    {
+      "name": "build",
+      "version": "1.6.1",
+      "selected_wheels": {
+        "linux-x86_64-cp312": "build-1.6.1-py3-none-any.whl",
+        "linux-x86_64-cp313": "build-1.6.1-py3-none-any.whl",
+        "linux-x86_64-cp314": "build-1.6.1-py3-none-any.whl",
+        "macos-arm64-cp312": "build-1.6.1-py3-none-any.whl",
+        "macos-arm64-cp313": "build-1.6.1-py3-none-any.whl",
+        "macos-arm64-cp314": "build-1.6.1-py3-none-any.whl"
+      }
+    },
+    {
+      "name": "cachecontrol",
+      "version": "0.14.4",
+      "selected_wheels": {
+        "linux-x86_64-cp312": "cachecontrol-0.14.4-py3-none-any.whl",
+        "linux-x86_64-cp313": "cachecontrol-0.14.4-py3-none-any.whl",
+        "linux-x86_64-cp314": "cachecontrol-0.14.4-py3-none-any.whl",
+        "macos-arm64-cp312": "cachecontrol-0.14.4-py3-none-any.whl",
+        "macos-arm64-cp313": "cachecontrol-0.14.4-py3-none-any.whl",
+        "macos-arm64-cp314": "cachecontrol-0.14.4-py3-none-any.whl"
+      }
+    },
+    {
+      "name": "certifi",
+      "version": "2026.10.23",
+      "selected_wheels": {
+        "linux-x86_64-cp312": "certifi-2026.10.23-py3-none-any.whl",
+        "linux-x86_64-cp313": "certifi-2026.10.23-py3-none-any.whl",
+        "linux-x86_64-cp314": "certifi-2026.10.23-py3-none-any.whl",
+        "macos-arm64-cp312": "certifi-2026.10.23-py3-none-any.whl",
+        "macos-arm64-cp313": "certifi-2026.10.23-py3-none-any.whl",
+        "macos-arm64-cp314": "certifi-2026.10.23-py3-none-any.whl"
+      }
+    },
+    {
+      "name": "charset-normalizer",
+      "version": "3.5.2",
+      "selected_wheels": {
+        "linux-x86_64-cp312": "charset_normalizer-3.5.2-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+        "linux-x86_64-cp313": "charset_normalizer-3.5.2-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+        "linux-x86_64-cp314": "charset_normalizer-3.5.2-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+        "macos-arm64-cp312": "charset_normalizer-3.5.2-cp312-cp312-macosx_10_13_universal2.whl",
+        "macos-arm64-cp313": "charset_normalizer-3.5.2-cp313-cp313-macosx_10_13_universal2.whl",
+        "macos-arm64-cp314": "charset_normalizer-3.5.2-cp314-cp314-macosx_10_15_universal2.whl"
+      }
+    },
+    {
+      "name": "colorama",
+      "version": "0.4.6",
+      "selected_wheels": {
+        "linux-x86_64-cp312": "colorama-0.4.6-py2.py3-none-any.whl",
+        "linux-x86_64-cp313": "colorama-0.4.6-py2.py3-none-any.whl",
+        "linux-x86_64-cp314": "colorama-0.4.6-py2.py3-none-any.whl",
+        "macos-arm64-cp312": "colorama-0.4.6-py2.py3-none-any.whl",
+        "macos-arm64-cp313": "colorama-0.4.6-py2.py3-none-any.whl",
+        "macos-arm64-cp314": "colorama-0.4.6-py2.py3-none-any.whl"
+      }
+    },
+    {
+      "name": "coverage",
+      "version": "7.17.0",
+      "selected_wheels": {
+        "linux-x86_64-cp312": "coverage-7.17.0-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl",
+        "linux-x86_64-cp313": "coverage-7.17.0-cp313-cp313-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl",
+        "linux-x86_64-cp314": "coverage-7.17.0-cp314-cp314-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl",
+        "macos-arm64-cp312": "coverage-7.17.0-cp312-cp312-macosx_11_0_arm64.whl",
+        "macos-arm64-cp313": "coverage-7.17.0-cp313-cp313-macosx_11_0_arm64.whl",
+        "macos-arm64-cp314": "coverage-7.17.0-cp314-cp314-macosx_11_0_arm64.whl"
+      }
+    },
+    {
+      "name": "cyclonedx-python-lib",
+      "version": "11.12.0",
+      "selected_wheels": {
+        "linux-x86_64-cp312": "cyclonedx_python_lib-11.12.0-py3-none-any.whl",
+        "linux-x86_64-cp313": "cyclonedx_python_lib-11.12.0-py3-none-any.whl",
+        "linux-x86_64-cp314": "cyclonedx_python_lib-11.12.0-py3-none-any.whl",
+        "macos-arm64-cp312": "cyclonedx_python_lib-11.12.0-py3-none-any.whl",
+        "macos-arm64-cp313": "cyclonedx_python_lib-11.12.0-py3-none-any.whl",
+        "macos-arm64-cp314": "cyclonedx_python_lib-11.12.0-py3-none-any.whl"
+      }
+    },
+    {
+      "name": "defusedxml",
+      "version": "0.7.1",
+      "selected_wheels": {
+        "linux-x86_64-cp312": "defusedxml-0.7.1-py2.py3-none-any.whl",
+        "linux-x86_64-cp313": "defusedxml-0.7.1-py2.py3-none-any.whl",
+        "linux-x86_64-cp314": "defusedxml-0.7.1-py2.py3-none-any.whl",
+        "macos-arm64-cp312": "defusedxml-0.7.1-py2.py3-none-any.whl",
+        "macos-arm64-cp313": "defusedxml-0.7.1-py2.py3-none-any.whl",
+        "macos-arm64-cp314": "defusedxml-0.7.1-py2.py3-none-any.whl"
+      }
+    },
+    {
+      "name": "filelock",
+      "version": "4.2.4",
+      "selected_wheels": {
+        "linux-x86_64-cp312": "filelock-4.2.4-py3-none-any.whl",
+        "linux-x86_64-cp313": "filelock-4.2.4-py3-none-any.whl",
+        "linux-x86_64-cp314": "filelock-4.2.4-py3-none-any.whl",
+        "macos-arm64-cp312": "filelock-4.2.4-py3-none-any.whl",
+        "macos-arm64-cp313": "filelock-4.2.4-py3-none-any.whl",
+        "macos-arm64-cp314": "filelock-4.2.4-py3-none-any.whl"
+      }
+    },
+    {
+      "name": "fsspec",
+      "version": "2026.9.0",
+      "selected_wheels": {
+        "linux-x86_64-cp312": "fsspec-2026.9.0-py3-none-any.whl",
+        "linux-x86_64-cp313": "fsspec-2026.9.0-py3-none-any.whl",
+        "linux-x86_64-cp314": "fsspec-2026.9.0-py3-none-any.whl",
+        "macos-arm64-cp312": "fsspec-2026.9.0-py3-none-any.whl",
+        "macos-arm64-cp313": "fsspec-2026.9.0-py3-none-any.whl",
+        "macos-arm64-cp314": "fsspec-2026.9.0-py3-none-any.whl"
+      }
+    },
+    {
+      "name": "greenlet",
+      "version": "3.5.6",
+      "selected_wheels": {
+        "linux-x86_64-cp312": "greenlet-3.5.6-cp312-cp312-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl",
+        "linux-x86_64-cp313": "greenlet-3.5.6-cp313-cp313-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl",
+        "linux-x86_64-cp314": "greenlet-3.5.6-cp314-cp314-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl",
+        "macos-arm64-cp312": "greenlet-3.5.6-cp312-cp312-macosx_11_0_universal2.whl",
+        "macos-arm64-cp313": "greenlet-3.5.6-cp313-cp313-macosx_11_0_universal2.whl",
+        "macos-arm64-cp314": "greenlet-3.5.6-cp314-cp314-macosx_11_0_universal2.whl"
+      }
+    },
+    {
+      "name": "idna",
+      "version": "3.20",
+      "selected_wheels": {
+        "linux-x86_64-cp312": "idna-3.20-py3-none-any.whl",
+        "linux-x86_64-cp313": "idna-3.20-py3-none-any.whl",
+        "linux-x86_64-cp314": "idna-3.20-py3-none-any.whl",
+        "macos-arm64-cp312": "idna-3.20-py3-none-any.whl",
+        "macos-arm64-cp313": "idna-3.20-py3-none-any.whl",
+        "macos-arm64-cp314": "idna-3.20-py3-none-any.whl"
+      }
+    },
+    {
+      "name": "iniconfig",
+      "version": "2.3.1",
+      "selected_wheels": {
+        "linux-x86_64-cp312": "iniconfig-2.3.1-py3-none-any.whl",
+        "linux-x86_64-cp313": "iniconfig-2.3.1-py3-none-any.whl",
+        "linux-x86_64-cp314": "iniconfig-2.3.1-py3-none-any.whl",
+        "macos-arm64-cp312": "iniconfig-2.3.1-py3-none-any.whl",
+        "macos-arm64-cp313": "iniconfig-2.3.1-py3-none-any.whl",
+        "macos-arm64-cp314": "iniconfig-2.3.1-py3-none-any.whl"
+      }
+    },
+    {
+      "name": "isac-world-model",
+      "version": "0.4.0",
+      "selected_wheels": {}
+    },
+    {
+      "name": "jinja2",
+      "version": "3.1.6",
+      "selected_wheels": {
+        "linux-x86_64-cp312": "jinja2-3.1.6-py3-none-any.whl",
+        "linux-x86_64-cp313": "jinja2-3.1.6-py3-none-any.whl",
+        "linux-x86_64-cp314": "jinja2-3.1.6-py3-none-any.whl",
+        "macos-arm64-cp312": "jinja2-3.1.6-py3-none-any.whl",
+        "macos-arm64-cp313": "jinja2-3.1.6-py3-none-any.whl",
+        "macos-arm64-cp314": "jinja2-3.1.6-py3-none-any.whl"
+      }
+    },
+    {
+      "name": "license-expression",
+      "version": "30.4.4",
+      "selected_wheels": {
+        "linux-x86_64-cp312": "license_expression-30.4.4-py3-none-any.whl",
+        "linux-x86_64-cp313": "license_expression-30.4.4-py3-none-any.whl",
+        "linux-x86_64-cp314": "license_expression-30.4.4-py3-none-any.whl",
+        "macos-arm64-cp312": "license_expression-30.4.4-py3-none-any.whl",
+        "macos-arm64-cp313": "license_expression-30.4.4-py3-none-any.whl",
+        "macos-arm64-cp314": "license_expression-30.4.4-py3-none-any.whl"
+      }
+    },
+    {
+      "name": "markdown-it-py",
+      "version": "4.2.0",
+      "selected_wheels": {
+        "linux-x86_64-cp312": "markdown_it_py-4.2.0-py3-none-any.whl",
+        "linux-x86_64-cp313": "markdown_it_py-4.2.0-py3-none-any.whl",
+        "linux-x86_64-cp314": "markdown_it_py-4.2.0-py3-none-any.whl",
+        "macos-arm64-cp312": "markdown_it_py-4.2.0-py3-none-any.whl",
+        "macos-arm64-cp313": "markdown_it_py-4.2.0-py3-none-any.whl",
+        "macos-arm64-cp314": "markdown_it_py-4.2.0-py3-none-any.whl"
+      }
+    },
+    {
+      "name": "markupsafe",
+      "version": "3.0.4",
+      "selected_wheels": {
+        "linux-x86_64-cp312": "markupsafe-3.0.4-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+        "linux-x86_64-cp313": "markupsafe-3.0.4-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+        "linux-x86_64-cp314": "markupsafe-3.0.4-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+        "macos-arm64-cp312": "markupsafe-3.0.4-cp312-cp312-macosx_11_0_arm64.whl",
+        "macos-arm64-cp313": "markupsafe-3.0.4-cp313-cp313-macosx_11_0_arm64.whl",
+        "macos-arm64-cp314": "markupsafe-3.0.4-cp314-cp314-macosx_11_0_arm64.whl"
+      }
+    },
+    {
+      "name": "mdurl",
+      "version": "0.1.2",
+      "selected_wheels": {
+        "linux-x86_64-cp312": "mdurl-0.1.2-py3-none-any.whl",
+        "linux-x86_64-cp313": "mdurl-0.1.2-py3-none-any.whl",
+        "linux-x86_64-cp314": "mdurl-0.1.2-py3-none-any.whl",
+        "macos-arm64-cp312": "mdurl-0.1.2-py3-none-any.whl",
+        "macos-arm64-cp313": "mdurl-0.1.2-py3-none-any.whl",
+        "macos-arm64-cp314": "mdurl-0.1.2-py3-none-any.whl"
+      }
+    },
+    {
+      "name": "mpmath",
+      "version": "1.3.0",
+      "selected_wheels": {
+        "linux-x86_64-cp312": "mpmath-1.3.0-py3-none-any.whl",
+        "linux-x86_64-cp313": "mpmath-1.3.0-py3-none-any.whl",
+        "linux-x86_64-cp314": "mpmath-1.3.0-py3-none-any.whl",
+        "macos-arm64-cp312": "mpmath-1.3.0-py3-none-any.whl",
+        "macos-arm64-cp313": "mpmath-1.3.0-py3-none-any.whl",
+        "macos-arm64-cp314": "mpmath-1.3.0-py3-none-any.whl"
+      }
+    },
+    {
+      "name": "msgpack",
+      "version": "1.2.3",
+      "selected_wheels": {
+        "linux-x86_64-cp312": "msgpack-1.2.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+        "linux-x86_64-cp313": "msgpack-1.2.3-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+        "linux-x86_64-cp314": "msgpack-1.2.3-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+        "macos-arm64-cp312": "msgpack-1.2.3-cp312-cp312-macosx_11_0_arm64.whl",
+        "macos-arm64-cp313": "msgpack-1.2.3-cp313-cp313-macosx_11_0_arm64.whl",
+        "macos-arm64-cp314": "msgpack-1.2.3-cp314-cp314-macosx_11_0_arm64.whl"
+      }
+    },
+    {
+      "name": "networkx",
+      "version": "3.7",
+      "selected_wheels": {
+        "linux-x86_64-cp312": "networkx-3.7-py3-none-any.whl",
+        "linux-x86_64-cp313": "networkx-3.7-py3-none-any.whl",
+        "linux-x86_64-cp314": "networkx-3.7-py3-none-any.whl",
+        "macos-arm64-cp312": "networkx-3.7-py3-none-any.whl",
+        "macos-arm64-cp313": "networkx-3.7-py3-none-any.whl",
+        "macos-arm64-cp314": "networkx-3.7-py3-none-any.whl"
+      }
+    },
+    {
+      "name": "numpy",
+      "version": "2.5.4",
+      "selected_wheels": {
+        "linux-x86_64-cp312": "numpy-2.5.4-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl",
+        "linux-x86_64-cp313": "numpy-2.5.4-cp313-cp313-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl",
+        "linux-x86_64-cp314": "numpy-2.5.4-cp314-cp314-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl",
+        "macos-arm64-cp312": "numpy-2.5.4-cp312-cp312-macosx_14_0_arm64.whl",
+        "macos-arm64-cp313": "numpy-2.5.4-cp313-cp313-macosx_14_0_arm64.whl",
+        "macos-arm64-cp314": "numpy-2.5.4-cp314-cp314-macosx_14_0_arm64.whl"
+      }
+    },
+    {
+      "name": "packageurl-python",
+      "version": "0.17.6",
+      "selected_wheels": {
+        "linux-x86_64-cp312": "packageurl_python-0.17.6-py3-none-any.whl",
+        "linux-x86_64-cp313": "packageurl_python-0.17.6-py3-none-any.whl",
+        "linux-x86_64-cp314": "packageurl_python-0.17.6-py3-none-any.whl",
+        "macos-arm64-cp312": "packageurl_python-0.17.6-py3-none-any.whl",
+        "macos-arm64-cp313": "packageurl_python-0.17.6-py3-none-any.whl",
+        "macos-arm64-cp314": "packageurl_python-0.17.6-py3-none-any.whl"
+      }
+    },
+    {
+      "name": "packaging",
+      "version": "26.3",
+      "selected_wheels": {
+        "linux-x86_64-cp312": "packaging-26.3-py3-none-any.whl",
+        "linux-x86_64-cp313": "packaging-26.3-py3-none-any.whl",
+        "linux-x86_64-cp314": "packaging-26.3-py3-none-any.whl",
+        "macos-arm64-cp312": "packaging-26.3-py3-none-any.whl",
+        "macos-arm64-cp313": "packaging-26.3-py3-none-any.whl",
+        "macos-arm64-cp314": "packaging-26.3-py3-none-any.whl"
+      }
+    },
+    {
+      "name": "pip",
+      "version": "26.2.2",
+      "selected_wheels": {
+        "linux-x86_64-cp312": "pip-26.2.2-py3-none-any.whl",
+        "linux-x86_64-cp313": "pip-26.2.2-py3-none-any.whl",
+        "linux-x86_64-cp314": "pip-26.2.2-py3-none-any.whl",
+        "macos-arm64-cp312": "pip-26.2.2-py3-none-any.whl",
+        "macos-arm64-cp313": "pip-26.2.2-py3-none-any.whl",
+        "macos-arm64-cp314": "pip-26.2.2-py3-none-any.whl"
+      }
+    },
+    {
+      "name": "pip-api",
+      "version": "0.0.35",
+      "selected_wheels": {
+        "linux-x86_64-cp312": "pip_api-0.0.35-py3-none-any.whl",
+        "linux-x86_64-cp313": "pip_api-0.0.35-py3-none-any.whl",
+        "linux-x86_64-cp314": "pip_api-0.0.35-py3-none-any.whl",
+        "macos-arm64-cp312": "pip_api-0.0.35-py3-none-any.whl",
+        "macos-arm64-cp313": "pip_api-0.0.35-py3-none-any.whl",
+        "macos-arm64-cp314": "pip_api-0.0.35-py3-none-any.whl"
+      }
+    },
+    {
+      "name": "pip-audit",
+      "version": "2.10.1",
+      "selected_wheels": {
+        "linux-x86_64-cp312": "pip_audit-2.10.1-py3-none-any.whl",
+        "linux-x86_64-cp313": "pip_audit-2.10.1-py3-none-any.whl",
+        "linux-x86_64-cp314": "pip_audit-2.10.1-py3-none-any.whl",
+        "macos-arm64-cp312": "pip_audit-2.10.1-py3-none-any.whl",
+        "macos-arm64-cp313": "pip_audit-2.10.1-py3-none-any.whl",
+        "macos-arm64-cp314": "pip_audit-2.10.1-py3-none-any.whl"
+      }
+    },
+    {
+      "name": "pip-requirements-parser",
+      "version": "32.0.1",
+      "selected_wheels": {
+        "linux-x86_64-cp312": "pip_requirements_parser-32.0.1-py3-none-any.whl",
+        "linux-x86_64-cp313": "pip_requirements_parser-32.0.1-py3-none-any.whl",
+        "linux-x86_64-cp314": "pip_requirements_parser-32.0.1-py3-none-any.whl",
+        "macos-arm64-cp312": "pip_requirements_parser-32.0.1-py3-none-any.whl",
+        "macos-arm64-cp313": "pip_requirements_parser-32.0.1-py3-none-any.whl",
+        "macos-arm64-cp314": "pip_requirements_parser-32.0.1-py3-none-any.whl"
+      }
+    },
+    {
+      "name": "platformdirs",
+      "version": "4.13.5",
+      "selected_wheels": {
+        "linux-x86_64-cp312": "platformdirs-4.13.5-py3-none-any.whl",
+        "linux-x86_64-cp313": "platformdirs-4.13.5-py3-none-any.whl",
+        "linux-x86_64-cp314": "platformdirs-4.13.5-py3-none-any.whl",
+        "macos-arm64-cp312": "platformdirs-4.13.5-py3-none-any.whl",
+        "macos-arm64-cp313": "platformdirs-4.13.5-py3-none-any.whl",
+        "macos-arm64-cp314": "platformdirs-4.13.5-py3-none-any.whl"
+      }
+    },
+    {
+      "name": "playwright",
+      "version": "1.64.1",
+      "selected_wheels": {
+        "linux-x86_64-cp312": "playwright-1.64.1-py3-none-manylinux1_x86_64.whl",
+        "linux-x86_64-cp313": "playwright-1.64.1-py3-none-manylinux1_x86_64.whl",
+        "linux-x86_64-cp314": "playwright-1.64.1-py3-none-manylinux1_x86_64.whl",
+        "macos-arm64-cp312": "playwright-1.64.1-py3-none-macosx_11_0_arm64.whl",
+        "macos-arm64-cp313": "playwright-1.64.1-py3-none-macosx_11_0_arm64.whl",
+        "macos-arm64-cp314": "playwright-1.64.1-py3-none-macosx_11_0_arm64.whl"
+      }
+    },
+    {
+      "name": "pluggy",
+      "version": "1.7.0",
+      "selected_wheels": {
+        "linux-x86_64-cp312": "pluggy-1.7.0-py3-none-any.whl",
+        "linux-x86_64-cp313": "pluggy-1.7.0-py3-none-any.whl",
+        "linux-x86_64-cp314": "pluggy-1.7.0-py3-none-any.whl",
+        "macos-arm64-cp312": "pluggy-1.7.0-py3-none-any.whl",
+        "macos-arm64-cp313": "pluggy-1.7.0-py3-none-any.whl",
+        "macos-arm64-cp314": "pluggy-1.7.0-py3-none-any.whl"
+      }
+    },
+    {
+      "name": "py-serializable",
+      "version": "2.1.0",
+      "selected_wheels": {
+        "linux-x86_64-cp312": "py_serializable-2.1.0-py3-none-any.whl",
+        "linux-x86_64-cp313": "py_serializable-2.1.0-py3-none-any.whl",
+        "linux-x86_64-cp314": "py_serializable-2.1.0-py3-none-any.whl",
+        "macos-arm64-cp312": "py_serializable-2.1.0-py3-none-any.whl",
+        "macos-arm64-cp313": "py_serializable-2.1.0-py3-none-any.whl",
+        "macos-arm64-cp314": "py_serializable-2.1.0-py3-none-any.whl"
+      }
+    },
+    {
+      "name": "pyee",
+      "version": "14.0.0",
+      "selected_wheels": {
+        "linux-x86_64-cp312": "pyee-14.0.0-py3-none-any.whl",
+        "linux-x86_64-cp313": "pyee-14.0.0-py3-none-any.whl",
+        "linux-x86_64-cp314": "pyee-14.0.0-py3-none-any.whl",
+        "macos-arm64-cp312": "pyee-14.0.0-py3-none-any.whl",
+        "macos-arm64-cp313": "pyee-14.0.0-py3-none-any.whl",
+        "macos-arm64-cp314": "pyee-14.0.0-py3-none-any.whl"
+      }
+    },
+    {
+      "name": "pygments",
+      "version": "2.21.0",
+      "selected_wheels": {
+        "linux-x86_64-cp312": "pygments-2.21.0-py3-none-any.whl",
+        "linux-x86_64-cp313": "pygments-2.21.0-py3-none-any.whl",
+        "linux-x86_64-cp314": "pygments-2.21.0-py3-none-any.whl",
+        "macos-arm64-cp312": "pygments-2.21.0-py3-none-any.whl",
+        "macos-arm64-cp313": "pygments-2.21.0-py3-none-any.whl",
+        "macos-arm64-cp314": "pygments-2.21.0-py3-none-any.whl"
+      }
+    },
+    {
+      "name": "pyparsing",
+      "version": "3.3.3",
+      "selected_wheels": {
+        "linux-x86_64-cp312": "pyparsing-3.3.3-py3-none-any.whl",
+        "linux-x86_64-cp313": "pyparsing-3.3.3-py3-none-any.whl",
+        "linux-x86_64-cp314": "pyparsing-3.3.3-py3-none-any.whl",
+        "macos-arm64-cp312": "pyparsing-3.3.3-py3-none-any.whl",
+        "macos-arm64-cp313": "pyparsing-3.3.3-py3-none-any.whl",
+        "macos-arm64-cp314": "pyparsing-3.3.3-py3-none-any.whl"
+      }
+    },
+    {
+      "name": "pyproject-hooks",
+      "version": "1.3.3",
+      "selected_wheels": {
+        "linux-x86_64-cp312": "pyproject_hooks-1.3.3-py3-none-any.whl",
+        "linux-x86_64-cp313": "pyproject_hooks-1.3.3-py3-none-any.whl",
+        "linux-x86_64-cp314": "pyproject_hooks-1.3.3-py3-none-any.whl",
+        "macos-arm64-cp312": "pyproject_hooks-1.3.3-py3-none-any.whl",
+        "macos-arm64-cp313": "pyproject_hooks-1.3.3-py3-none-any.whl",
+        "macos-arm64-cp314": "pyproject_hooks-1.3.3-py3-none-any.whl"
+      }
+    },
+    {
+      "name": "pytest",
+      "version": "9.1.1",
+      "selected_wheels": {
+        "linux-x86_64-cp312": "pytest-9.1.1-py3-none-any.whl",
+        "linux-x86_64-cp313": "pytest-9.1.1-py3-none-any.whl",
+        "linux-x86_64-cp314": "pytest-9.1.1-py3-none-any.whl",
+        "macos-arm64-cp312": "pytest-9.1.1-py3-none-any.whl",
+        "macos-arm64-cp313": "pytest-9.1.1-py3-none-any.whl",
+        "macos-arm64-cp314": "pytest-9.1.1-py3-none-any.whl"
+      }
+    },
+    {
+      "name": "pytest-cov",
+      "version": "7.1.0",
+      "selected_wheels": {
+        "linux-x86_64-cp312": "pytest_cov-7.1.0-py3-none-any.whl",
+        "linux-x86_64-cp313": "pytest_cov-7.1.0-py3-none-any.whl",
+        "linux-x86_64-cp314": "pytest_cov-7.1.0-py3-none-any.whl",
+        "macos-arm64-cp312": "pytest_cov-7.1.0-py3-none-any.whl",
+        "macos-arm64-cp313": "pytest_cov-7.1.0-py3-none-any.whl",
+        "macos-arm64-cp314": "pytest_cov-7.1.0-py3-none-any.whl"
+      }
+    },
+    {
+      "name": "pyyaml",
+      "version": "6.0.3",
+      "selected_wheels": {
+        "linux-x86_64-cp312": "pyyaml-6.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+        "linux-x86_64-cp313": "pyyaml-6.0.3-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+        "linux-x86_64-cp314": "pyyaml-6.0.3-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+        "macos-arm64-cp312": "pyyaml-6.0.3-cp312-cp312-macosx_11_0_arm64.whl",
+        "macos-arm64-cp313": "pyyaml-6.0.3-cp313-cp313-macosx_11_0_arm64.whl",
+        "macos-arm64-cp314": "pyyaml-6.0.3-cp314-cp314-macosx_11_0_arm64.whl"
+      }
+    },
+    {
+      "name": "requests",
+      "version": "2.34.2",
+      "selected_wheels": {
+        "linux-x86_64-cp312": "requests-2.34.2-py3-none-any.whl",
+        "linux-x86_64-cp313": "requests-2.34.2-py3-none-any.whl",
+        "linux-x86_64-cp314": "requests-2.34.2-py3-none-any.whl",
+        "macos-arm64-cp312": "requests-2.34.2-py3-none-any.whl",
+        "macos-arm64-cp313": "requests-2.34.2-py3-none-any.whl",
+        "macos-arm64-cp314": "requests-2.34.2-py3-none-any.whl"
+      }
+    },
+    {
+      "name": "rich",
+      "version": "15.0.0",
+      "selected_wheels": {
+        "linux-x86_64-cp312": "rich-15.0.0-py3-none-any.whl",
+        "linux-x86_64-cp313": "rich-15.0.0-py3-none-any.whl",
+        "linux-x86_64-cp314": "rich-15.0.0-py3-none-any.whl",
+        "macos-arm64-cp312": "rich-15.0.0-py3-none-any.whl",
+        "macos-arm64-cp313": "rich-15.0.0-py3-none-any.whl",
+        "macos-arm64-cp314": "rich-15.0.0-py3-none-any.whl"
+      }
+    },
+    {
+      "name": "ruff",
+      "version": "0.17.2",
+      "selected_wheels": {
+        "linux-x86_64-cp312": "ruff-0.17.2-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+        "linux-x86_64-cp313": "ruff-0.17.2-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+        "linux-x86_64-cp314": "ruff-0.17.2-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+        "macos-arm64-cp312": "ruff-0.17.2-py3-none-macosx_11_0_arm64.whl",
+        "macos-arm64-cp313": "ruff-0.17.2-py3-none-macosx_11_0_arm64.whl",
+        "macos-arm64-cp314": "ruff-0.17.2-py3-none-macosx_11_0_arm64.whl"
+      }
+    },
+    {
+      "name": "setuptools",
+      "version": "84.2.1",
+      "selected_wheels": {
+        "linux-x86_64-cp312": "setuptools-84.2.1-py3-none-any.whl",
+        "linux-x86_64-cp313": "setuptools-84.2.1-py3-none-any.whl",
+        "linux-x86_64-cp314": "setuptools-84.2.1-py3-none-any.whl",
+        "macos-arm64-cp312": "setuptools-84.2.1-py3-none-any.whl",
+        "macos-arm64-cp313": "setuptools-84.2.1-py3-none-any.whl",
+        "macos-arm64-cp314": "setuptools-84.2.1-py3-none-any.whl"
+      }
+    },
+    {
+      "name": "sortedcontainers",
+      "version": "2.4.0",
+      "selected_wheels": {
+        "linux-x86_64-cp312": "sortedcontainers-2.4.0-py2.py3-none-any.whl",
+        "linux-x86_64-cp313": "sortedcontainers-2.4.0-py2.py3-none-any.whl",
+        "linux-x86_64-cp314": "sortedcontainers-2.4.0-py2.py3-none-any.whl",
+        "macos-arm64-cp312": "sortedcontainers-2.4.0-py2.py3-none-any.whl",
+        "macos-arm64-cp313": "sortedcontainers-2.4.0-py2.py3-none-any.whl",
+        "macos-arm64-cp314": "sortedcontainers-2.4.0-py2.py3-none-any.whl"
+      }
+    },
+    {
+      "name": "sympy",
+      "version": "1.14.0",
+      "selected_wheels": {
+        "linux-x86_64-cp312": "sympy-1.14.0-py3-none-any.whl",
+        "linux-x86_64-cp313": "sympy-1.14.0-py3-none-any.whl",
+        "linux-x86_64-cp314": "sympy-1.14.0-py3-none-any.whl",
+        "macos-arm64-cp312": "sympy-1.14.0-py3-none-any.whl",
+        "macos-arm64-cp313": "sympy-1.14.0-py3-none-any.whl",
+        "macos-arm64-cp314": "sympy-1.14.0-py3-none-any.whl"
+      }
+    },
+    {
+      "name": "tomli",
+      "version": "2.5.0",
+      "selected_wheels": {
+        "linux-x86_64-cp312": "tomli-2.5.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+        "linux-x86_64-cp313": "tomli-2.5.0-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+        "linux-x86_64-cp314": "tomli-2.5.0-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+        "macos-arm64-cp312": "tomli-2.5.0-cp312-cp312-macosx_11_0_arm64.whl",
+        "macos-arm64-cp313": "tomli-2.5.0-cp313-cp313-macosx_11_0_arm64.whl",
+        "macos-arm64-cp314": "tomli-2.5.0-cp314-cp314-macosx_11_0_arm64.whl"
+      }
+    },
+    {
+      "name": "tomli-w",
+      "version": "1.2.0",
+      "selected_wheels": {
+        "linux-x86_64-cp312": "tomli_w-1.2.0-py3-none-any.whl",
+        "linux-x86_64-cp313": "tomli_w-1.2.0-py3-none-any.whl",
+        "linux-x86_64-cp314": "tomli_w-1.2.0-py3-none-any.whl",
+        "macos-arm64-cp312": "tomli_w-1.2.0-py3-none-any.whl",
+        "macos-arm64-cp313": "tomli_w-1.2.0-py3-none-any.whl",
+        "macos-arm64-cp314": "tomli_w-1.2.0-py3-none-any.whl"
+      }
+    },
+    {
+      "name": "torch",
+      "version": "2.14.1",
+      "selected_wheels": {
+        "macos-arm64-cp312": "torch-2.14.1-cp312-cp312-macosx_14_0_arm64.whl",
+        "macos-arm64-cp313": "torch-2.14.1-cp313-cp313-macosx_14_0_arm64.whl",
+        "macos-arm64-cp314": "torch-2.14.1-cp314-cp314-macosx_14_0_arm64.whl"
+      }
+    },
+    {
+      "name": "torch",
+      "version": "2.14.1+cpu",
+      "selected_wheels": {
+        "linux-x86_64-cp312": "torch-2.14.1%2Bcpu-cp312-cp312-manylinux_2_28_x86_64.whl",
+        "linux-x86_64-cp313": "torch-2.14.1%2Bcpu-cp313-cp313-manylinux_2_28_x86_64.whl",
+        "linux-x86_64-cp314": "torch-2.14.1%2Bcpu-cp314-cp314-manylinux_2_28_x86_64.whl"
+      }
+    },
+    {
+      "name": "typing-extensions",
+      "version": "4.16.0",
+      "selected_wheels": {
+        "linux-x86_64-cp312": "typing_extensions-4.16.0-py3-none-any.whl",
+        "linux-x86_64-cp313": "typing_extensions-4.16.0-py3-none-any.whl",
+        "linux-x86_64-cp314": "typing_extensions-4.16.0-py3-none-any.whl",
+        "macos-arm64-cp312": "typing_extensions-4.16.0-py3-none-any.whl",
+        "macos-arm64-cp313": "typing_extensions-4.16.0-py3-none-any.whl",
+        "macos-arm64-cp314": "typing_extensions-4.16.0-py3-none-any.whl"
+      }
+    },
+    {
+      "name": "urllib3",
+      "version": "2.8.0",
+      "selected_wheels": {
+        "linux-x86_64-cp312": "urllib3-2.8.0-py3-none-any.whl",
+        "linux-x86_64-cp313": "urllib3-2.8.0-py3-none-any.whl",
+        "linux-x86_64-cp314": "urllib3-2.8.0-py3-none-any.whl",
+        "macos-arm64-cp312": "urllib3-2.8.0-py3-none-any.whl",
+        "macos-arm64-cp313": "urllib3-2.8.0-py3-none-any.whl",
+        "macos-arm64-cp314": "urllib3-2.8.0-py3-none-any.whl"
+      }
+    },
+    {
+      "name": "uv",
+      "version": "0.13.5",
+      "selected_wheels": {
+        "linux-x86_64-cp312": "uv-0.13.5-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+        "linux-x86_64-cp313": "uv-0.13.5-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+        "linux-x86_64-cp314": "uv-0.13.5-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+        "macos-arm64-cp312": "uv-0.13.5-py3-none-macosx_11_0_arm64.whl",
+        "macos-arm64-cp313": "uv-0.13.5-py3-none-macosx_11_0_arm64.whl",
+        "macos-arm64-cp314": "uv-0.13.5-py3-none-macosx_11_0_arm64.whl"
+      }
+    },
+    {
+      "name": "wheel",
+      "version": "0.48.0",
+      "selected_wheels": {
+        "linux-x86_64-cp312": "wheel-0.48.0-py3-none-any.whl",
+        "linux-x86_64-cp313": "wheel-0.48.0-py3-none-any.whl",
+        "linux-x86_64-cp314": "wheel-0.48.0-py3-none-any.whl",
+        "macos-arm64-cp312": "wheel-0.48.0-py3-none-any.whl",
+        "macos-arm64-cp313": "wheel-0.48.0-py3-none-any.whl",
+        "macos-arm64-cp314": "wheel-0.48.0-py3-none-any.whl"
+      }
+    }
+  ]
+}

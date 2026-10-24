@@ -1,0 +1,166 @@
+running bdist_wheel
+running build
+running build_py
+running egg_info
+writing src/isac_world_model.egg-info/PKG-INFO
+writing dependency_links to src/isac_world_model.egg-info/dependency_links.txt
+writing entry points to src/isac_world_model.egg-info/entry_points.txt
+writing requirements to src/isac_world_model.egg-info/requires.txt
+writing top-level names to src/isac_world_model.egg-info/top_level.txt
+reading manifest file 'src/isac_world_model.egg-info/SOURCES.txt'
+reading manifest template 'MANIFEST.in'
+warning: no files found matching 'RIGHTS.md'
+warning: no files found matching 'CHANGELOG.md'
+warning: no files found matching 'AGENTS.md'
+warning: no files found matching '*.lock' under directory 'ci'
+warning: no files found matching '*.md' under directory 'docs'
+no previously-included directories found matching 'runs'
+no previously-included directories found matching 'checkpoints'
+no previously-included directories found matching 'target'
+no previously-included directories found matching 'validation'
+writing manifest file 'src/isac_world_model.egg-info/SOURCES.txt'
+installing to build/bdist.linux-x86_64/wheel
+running install
+running install_lib
+creating build/bdist.linux-x86_64/wheel
+creating build/bdist.linux-x86_64/wheel/isac_wm
+copying build/lib/isac_wm/validation.py -> build/bdist.linux-x86_64/wheel/./isac_wm
+copying build/lib/isac_wm/model.py -> build/bdist.linux-x86_64/wheel/./isac_wm
+copying build/lib/isac_wm/events.py -> build/bdist.linux-x86_64/wheel/./isac_wm
+copying build/lib/isac_wm/simulator.py -> build/bdist.linux-x86_64/wheel/./isac_wm
+copying build/lib/isac_wm/runtime.py -> build/bdist.linux-x86_64/wheel/./isac_wm
+copying build/lib/isac_wm/scenarios.py -> build/bdist.linux-x86_64/wheel/./isac_wm
+copying build/lib/isac_wm/safety.py -> build/bdist.linux-x86_64/wheel/./isac_wm
+copying build/lib/isac_wm/baselines.py -> build/bdist.linux-x86_64/wheel/./isac_wm
+copying build/lib/isac_wm/artifacts.py -> build/bdist.linux-x86_64/wheel/./isac_wm
+copying build/lib/isac_wm/toolchain.py -> build/bdist.linux-x86_64/wheel/./isac_wm
+copying build/lib/isac_wm/__init__.py -> build/bdist.linux-x86_64/wheel/./isac_wm
+copying build/lib/isac_wm/__main__.py -> build/bdist.linux-x86_64/wheel/./isac_wm
+copying build/lib/isac_wm/training.py -> build/bdist.linux-x86_64/wheel/./isac_wm
+copying build/lib/isac_wm/calibration.py -> build/bdist.linux-x86_64/wheel/./isac_wm
+copying build/lib/isac_wm/evaluation.py -> build/bdist.linux-x86_64/wheel/./isac_wm
+copying build/lib/isac_wm/streaming.py -> build/bdist.linux-x86_64/wheel/./isac_wm
+copying build/lib/isac_wm/cli.py -> build/bdist.linux-x86_64/wheel/./isac_wm
+copying build/lib/isac_wm/viewer.py -> build/bdist.linux-x86_64/wheel/./isac_wm
+running install_egg_info
+Copying src/isac_world_model.egg-info to build/bdist.linux-x86_64/wheel/./isac_world_model-0.4.0-py3.14.egg-info
+running install_scripts
+creating build/bdist.linux-x86_64/wheel/isac_world_model-0.4.0.dist-info/WHEEL
+creating '/vercel/sandbox/project/validation/v040-release/dist/.tmp-g71hp2xc/isac_world_model-0.4.0-py3-none-any.whl' and adding 'build/bdist.linux-x86_64/wheel' to it
+adding 'isac_wm/__init__.py'
+adding 'isac_wm/__main__.py'
+adding 'isac_wm/artifacts.py'
+adding 'isac_wm/baselines.py'
+adding 'isac_wm/calibration.py'
+adding 'isac_wm/cli.py'
+adding 'isac_wm/evaluation.py'
+adding 'isac_wm/events.py'
+adding 'isac_wm/model.py'
+adding 'isac_wm/runtime.py'
+adding 'isac_wm/safety.py'
+adding 'isac_wm/scenarios.py'
+adding 'isac_wm/simulator.py'
+adding 'isac_wm/streaming.py'
+adding 'isac_wm/toolchain.py'
+adding 'isac_wm/training.py'
+adding 'isac_wm/validation.py'
+adding 'isac_wm/viewer.py'
+adding 'isac_world_model-0.4.0.dist-info/METADATA'
+adding 'isac_world_model-0.4.0.dist-info/WHEEL'
+adding 'isac_world_model-0.4.0.dist-info/entry_points.txt'
+adding 'isac_world_model-0.4.0.dist-info/top_level.txt'
+adding 'isac_world_model-0.4.0.dist-info/RECORD'
+removing build/bdist.linux-x86_64/wheel
+isac_world_model-0.4.0-py3-none-any.whl
+running sdist
+running egg_info
+writing src/isac_world_model.egg-info/PKG-INFO
+writing dependency_links to src/isac_world_model.egg-info/dependency_links.txt
+writing entry points to src/isac_world_model.egg-info/entry_points.txt
+writing requirements to src/isac_world_model.egg-info/requires.txt
+writing top-level names to src/isac_world_model.egg-info/top_level.txt
+reading manifest file 'src/isac_world_model.egg-info/SOURCES.txt'
+reading manifest template 'MANIFEST.in'
+warning: no files found matching 'RIGHTS.md'
+warning: no files found matching 'CHANGELOG.md'
+warning: no files found matching 'AGENTS.md'
+warning: no files found matching '*.lock' under directory 'ci'
+warning: no files found matching '*.md' under directory 'docs'
+no previously-included directories found matching 'runs'
+no previously-included directories found matching 'checkpoints'
+no previously-included directories found matching 'target'
+no previously-included directories found matching 'validation'
+writing manifest file 'src/isac_world_model.egg-info/SOURCES.txt'
+running check
+creating isac_world_model-0.4.0
+creating isac_world_model-0.4.0/.github/workflows
+creating isac_world_model-0.4.0/ci
+creating isac_world_model-0.4.0/crates/event-core
+creating isac_world_model-0.4.0/crates/event-core/src
+creating isac_world_model-0.4.0/scripts
+creating isac_world_model-0.4.0/src/isac_wm
+creating isac_world_model-0.4.0/src/isac_world_model.egg-info
+creating isac_world_model-0.4.0/tests
+copying files to isac_world_model-0.4.0...
+copying .python-version -> isac_world_model-0.4.0
+copying Cargo.lock -> isac_world_model-0.4.0
+copying Cargo.toml -> isac_world_model-0.4.0
+copying MANIFEST.in -> isac_world_model-0.4.0
+copying README.md -> isac_world_model-0.4.0
+copying pyproject.toml -> isac_world_model-0.4.0
+copying rust-toolchain.toml -> isac_world_model-0.4.0
+copying uv.lock -> isac_world_model-0.4.0
+copying .github/workflows/tests.yml -> isac_world_model-0.4.0/.github/workflows
+copying ci/artifact-scope.json -> isac_world_model-0.4.0/ci
+copying ci/constraints.txt -> isac_world_model-0.4.0/ci
+copying ci/versions.json -> isac_world_model-0.4.0/ci
+copying crates/event-core/Cargo.toml -> isac_world_model-0.4.0/crates/event-core
+copying crates/event-core/src/lib.rs -> isac_world_model-0.4.0/crates/event-core/src
+copying crates/event-core/src/main.rs -> isac_world_model-0.4.0/crates/event-core/src
+copying scripts/audit_dependencies.py -> isac_world_model-0.4.0/scripts
+copying scripts/benchmark_local.py -> isac_world_model-0.4.0/scripts
+copying scripts/bootstrap.sh -> isac_world_model-0.4.0/scripts
+copying scripts/build_dist.py -> isac_world_model-0.4.0/scripts
+copying scripts/check_contracts.py -> isac_world_model-0.4.0/scripts
+copying scripts/ci.py -> isac_world_model-0.4.0/scripts
+copying scripts/ci_smoke.py -> isac_world_model-0.4.0/scripts
+copying scripts/dependencies.py -> isac_world_model-0.4.0/scripts
+copying scripts/latency_sweep.py -> isac_world_model-0.4.0/scripts
+copying scripts/native_parity.py -> isac_world_model-0.4.0/scripts
+copying scripts/test_wheel.py -> isac_world_model-0.4.0/scripts
+copying src/isac_wm/__init__.py -> isac_world_model-0.4.0/src/isac_wm
+copying src/isac_wm/__main__.py -> isac_world_model-0.4.0/src/isac_wm
+copying src/isac_wm/artifacts.py -> isac_world_model-0.4.0/src/isac_wm
+copying src/isac_wm/baselines.py -> isac_world_model-0.4.0/src/isac_wm
+copying src/isac_wm/calibration.py -> isac_world_model-0.4.0/src/isac_wm
+copying src/isac_wm/cli.py -> isac_world_model-0.4.0/src/isac_wm
+copying src/isac_wm/evaluation.py -> isac_world_model-0.4.0/src/isac_wm
+copying src/isac_wm/events.py -> isac_world_model-0.4.0/src/isac_wm
+copying src/isac_wm/model.py -> isac_world_model-0.4.0/src/isac_wm
+copying src/isac_wm/runtime.py -> isac_world_model-0.4.0/src/isac_wm
+copying src/isac_wm/safety.py -> isac_world_model-0.4.0/src/isac_wm
+copying src/isac_wm/scenarios.py -> isac_world_model-0.4.0/src/isac_wm
+copying src/isac_wm/simulator.py -> isac_world_model-0.4.0/src/isac_wm
+copying src/isac_wm/streaming.py -> isac_world_model-0.4.0/src/isac_wm
+copying src/isac_wm/toolchain.py -> isac_world_model-0.4.0/src/isac_wm
+copying src/isac_wm/training.py -> isac_world_model-0.4.0/src/isac_wm
+copying src/isac_wm/validation.py -> isac_world_model-0.4.0/src/isac_wm
+copying src/isac_wm/viewer.py -> isac_world_model-0.4.0/src/isac_wm
+copying src/isac_world_model.egg-info/PKG-INFO -> isac_world_model-0.4.0/src/isac_world_model.egg-info
+copying src/isac_world_model.egg-info/SOURCES.txt -> isac_world_model-0.4.0/src/isac_world_model.egg-info
+copying src/isac_world_model.egg-info/dependency_links.txt -> isac_world_model-0.4.0/src/isac_world_model.egg-info
+copying src/isac_world_model.egg-info/entry_points.txt -> isac_world_model-0.4.0/src/isac_world_model.egg-info
+copying src/isac_world_model.egg-info/requires.txt -> isac_world_model-0.4.0/src/isac_world_model.egg-info
+copying src/isac_world_model.egg-info/top_level.txt -> isac_world_model-0.4.0/src/isac_world_model.egg-info
+copying tests/test_ci_v030.py -> isac_world_model-0.4.0/tests
+copying tests/test_dependencies_v040.py -> isac_world_model-0.4.0/tests
+copying tests/test_evaluation.py -> isac_world_model-0.4.0/tests
+copying tests/test_events.py -> isac_world_model-0.4.0/tests
+copying tests/test_model.py -> isac_world_model-0.4.0/tests
+copying tests/test_runtime_v030.py -> isac_world_model-0.4.0/tests
+copying tests/test_simulator.py -> isac_world_model-0.4.0/tests
+copying tests/test_v020.py -> isac_world_model-0.4.0/tests
+Writing isac_world_model-0.4.0/setup.cfg
+Creating tar archive
+removing 'isac_world_model-0.4.0' (and everything under it)
+isac_world_model-0.4.0.tar.gz

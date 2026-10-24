@@ -1,0 +1,22 @@
+Processing /vercel/sandbox/project/validation/v040-release/dist/isac_world_model-0.4.0-py3-none-any.whl
+Installing collected packages: isac-world-model
+Successfully installed isac-world-model-0.4.0
+usage: python -m isac_wm [-h] {train,evaluate,calibrate,stress,doctor} ...
+
+Independent visual-radio world model; research use only
+
+positional arguments:
+  {train,evaluate,calibrate,stress,doctor}
+    train               Train all weights from random initialization, or
+                        resume your own run
+    evaluate            Paired independent evaluation with optional episode
+                        calibration
+    calibrate           Calibrate on separate whole episodes, not dependent
+                        individual frames
+    stress              Paired fault scenarios; never reuse nominal
+                        calibration under shift
+    doctor              Report actual available runtime
+
+options:
+  -h, --help            show this help message and exit
+Installed-wheel import and CLI: PASS {'path': '/tmp/isac-wheel-4sktp993/site/isac_wm/__init__.py', 'version': '0.4.0'}

@@ -1,0 +1,34 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.01s
+     Running unittests src/lib.rs (target/debug/deps/isac_event_core-d3166da172694acd)
+
+running 13 tests
+test tests::batch_internal_duplicate_is_atomic ... ok
+test tests::batch_overflow_is_atomic ... ok
+test tests::batch_reject_is_atomic ... ok
+test tests::bounded_capacity_does_not_consume_id ... ok
+test tests::bounded_lifetime_ids ... ok
+test tests::capacity_limits ... ok
+test tests::deterministic_arrival_order ... ok
+test tests::duplicate_even_after_release ... ok
+test tests::maximum_integer_does_not_overflow ... ok
+test tests::monotonic_time ... ok
+test tests::next_available_time ... ok
+test tests::no_early_release ... ok
+test tests::reject_invalid_capture ... ok
+
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/main.rs (target/debug/deps/isac_event_replay-4940e2c2074535f4)
+
+running 2 tests
+test tests::protocol_rejects_non_decimal_and_extra_fields ... ok
+test tests::protocol_duplicate_and_order ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests isac_event_core
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

@@ -127,7 +127,6 @@ mod tests {
             available_ns: avail,
         }
     }
-
     #[test]
     fn no_early_release() {
         let mut q = EventQueue::new(3).unwrap();
@@ -135,7 +134,6 @@ mod tests {
         assert!(q.release(9).unwrap().is_empty());
         assert_eq!(q.release(10).unwrap()[0].id, 1);
     }
-
     #[test]
     fn deterministic_arrival_order() {
         let mut q = EventQueue::new(3).unwrap();
@@ -144,13 +142,11 @@ mod tests {
         let ids: Vec<_> = q.release(20).unwrap().iter().map(|e| e.id).collect();
         assert_eq!(ids, vec![3, 4, 7]);
     }
-
     #[test]
     fn reject_invalid_capture() {
         let mut q = EventQueue::new(2).unwrap();
         assert_eq!(q.push(e(1, 10, 9)), Err(QueueError::ArrivalBeforeCapture));
     }
-
     #[test]
     fn duplicate_even_after_release() {
         let mut q = EventQueue::new(2).unwrap();
@@ -158,7 +154,6 @@ mod tests {
         q.release(1).unwrap();
         assert_eq!(q.push(e(1, 1, 2)), Err(QueueError::DuplicateId));
     }
-
     #[test]
     fn bounded_capacity_does_not_consume_id() {
         let mut q = EventQueue::new(1).unwrap();
@@ -167,7 +162,6 @@ mod tests {
         q.release(2).unwrap();
         assert!(q.push(e(2, 2, 3)).is_ok());
     }
-
     #[test]
     fn monotonic_time() {
         let mut q = EventQueue::new(1).unwrap();
@@ -175,7 +169,6 @@ mod tests {
         assert_eq!(q.release(9), Err(QueueError::TimeWentBackwards));
         assert_eq!(q.push(e(1, 0, 9)), Err(QueueError::PastArrival));
     }
-
     #[test]
     fn bounded_lifetime_ids() {
         let mut q = EventQueue::with_id_budget(1, 1).unwrap();
@@ -183,7 +176,6 @@ mod tests {
         q.release(1).unwrap();
         assert_eq!(q.push(e(2, 1, 2)), Err(QueueError::IdBudgetExhausted));
     }
-
     #[test]
     fn next_available_time() {
         let mut q = EventQueue::new(1).unwrap();
@@ -191,7 +183,6 @@ mod tests {
         q.push(e(1, 0, 5)).unwrap();
         assert_eq!(q.next_available_ns(), Some(5));
     }
-
     #[test]
     fn capacity_limits() {
         assert!(matches!(EventQueue::new(0), Err(QueueError::ZeroCapacity)));
@@ -204,7 +195,6 @@ mod tests {
             Err(QueueError::InvalidIdBudget)
         ));
     }
-
     #[test]
     fn batch_reject_is_atomic() {
         let mut q = EventQueue::new(3).unwrap();
@@ -215,7 +205,6 @@ mod tests {
         assert!(q.is_empty());
         q.push(e(1, 0, 5)).unwrap();
     }
-
     #[test]
     fn batch_internal_duplicate_is_atomic() {
         let mut q = EventQueue::new(3).unwrap();
@@ -225,7 +214,6 @@ mod tests {
         );
         assert!(q.is_empty());
     }
-
     #[test]
     fn batch_overflow_is_atomic() {
         let mut q = EventQueue::new(1).unwrap();
@@ -235,7 +223,6 @@ mod tests {
         );
         q.push(e(1, 0, 5)).unwrap();
     }
-
     #[test]
     fn maximum_integer_does_not_overflow() {
         let mut q = EventQueue::new(2).unwrap();

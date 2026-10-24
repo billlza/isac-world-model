@@ -1,0 +1,317 @@
+{
+  "schema_version": 1,
+  "profile": "all",
+  "status": "passed",
+  "generated_utc": "2026-10-24T04:12:44.029048+00:00",
+  "python": "3.14.9 (main, Oct 21 2026, 17:48:02) [Clang 23.1.3 ]",
+  "packages": {
+    "torch": "2.14.1+cpu",
+    "numpy": "2.5.4",
+    "pytest": "9.1.1",
+    "pytest-cov": "7.1.0",
+    "coverage": "7.17.0",
+    "ruff": "0.17.2",
+    "setuptools": "84.2.1",
+    "build": "1.6.1",
+    "wheel": "0.48.0",
+    "pip": "26.2.2",
+    "uv": "0.13.5",
+    "pip-audit": "2.10.1"
+  },
+  "source_sha256": {
+    ".github/workflows/tests.yml": "3efd73e723b4572d692a5db7548e25fed8c5b9af1cd6eba453adeaf937260b5e",
+    ".python-version": "7651ce7dab58e5733ba35597459414699ca339dde25a68aac3d8a89a0c89e5c6",
+    "Cargo.lock": "fb76f88db2cd26950155db85fef6aa04ae2ca6f9d445a67e5d752e88d31b94e4",
+    "Cargo.toml": "226091910f5c08c33bda8f4cf618c60320e7f4e1c323ffee6b9cbafb229c1397",
+    "ci/artifact-scope.json": "2118f19fa3e70d02b9db8384e74e35eadc828b6e3c3d7a42b53fca74745227c6",
+    "ci/constraints.txt": "8fd671bbd4f96b2d89002b4f0be6c6d2fd13d28d89662a78c748c3376cbb8ce2",
+    "ci/versions.json": "9816a7077eb9b3999c92e0739850f15de45e1961f4b51c885640f3d3443c9a31",
+    "crates/event-core/Cargo.toml": "6c83dd73983dd724024ba9d4823cf0d18d05b05ea52eec402af14c7529fccd54",
+    "crates/event-core/src/lib.rs": "7a3874cf5b3e8059512d0bc2eb15b30cf7ea84aee72260aaa7cf9fea3e701c78",
+    "crates/event-core/src/main.rs": "cdf7ec31e716af452498b7bfe9ff765e48e36ac989d6726fb4058f1145947837",
+    "pyproject.toml": "cdd3dc738b9a5e712b299e4cc621f873ba469f83b8be488c904a0dc97f616fee",
+    "rust-toolchain.toml": "d13306be0ecda81ce779baa290ffb417380d525928477f16200884b5169cca33",
+    "scripts/audit_dependencies.py": "70a932e60cfed4f3d2373e4529065ce4ca9ee69dffda20118cc68fea19d4fc5f",
+    "scripts/benchmark_local.py": "f1a6f5c4af998965c323103174a5f536634c7225d157b8c1b05de39e0d865560",
+    "scripts/bootstrap.sh": "1b7fd1f76decec8cca21daf982b23dfdcb1fef07de67e69f5d2c94057a9e8bc5",
+    "scripts/build_dist.py": "8105e0758aa7f25925d6ba74cbdebf522dbd9a88dc395ca3fed217178cb769cf",
+    "scripts/check_contracts.py": "4db9d24237580cde6d184f8086e93068ad5a6471b66f9728be621df6b445c137",
+    "scripts/ci.py": "b0c57ae094c2116bb047bffab270c8a5681884b7234b742196af1d8ec65674ea",
+    "scripts/ci_smoke.py": "1abb282786d26ad0b3ff601fe34668a31e896a8401980dcd411976f55276f8ff",
+    "scripts/dependencies.py": "26947505b6903f45c243663fe8202c46fc71132ffab9b2163ceabc2a7b5f5fdc",
+    "scripts/latency_sweep.py": "f7387188c3e94af2acbb79302222e586f06251b54f8861c39d66404f12b7169a",
+    "scripts/native_parity.py": "58d8a4db93dbb35113cbe931401c29bbcc0651f42f76fa3a457c3b860f39db66",
+    "scripts/test_wheel.py": "10f55130ff2ab14c3ab8d9360e1cd74b0b513c55f17cd075103e445b8f472150",
+    "src/isac_wm/__init__.py": "02952b1c7d2eed7fccaab82cc336ad7484a06431a1cfbab80a3c8ccd14e6a6c6",
+    "src/isac_wm/__main__.py": "6d8b7d7846a845059d7a3107143f11131f63c5511d669b44085b15ec5e3d2279",
+    "src/isac_wm/artifacts.py": "b30594023f649cd5ef6b1a4780222a60ad2c6ad36164fd51163c7475517efd23",
+    "src/isac_wm/baselines.py": "0d647a838aa6e9e2af81a0404dda156c7f1bea5dcb7813d686dab870d2270a51",
+    "src/isac_wm/calibration.py": "c7c216e4fe64031d5be307408e4a7bdc30c3d1fca82b8530485db23cab7c4f70",
+    "src/isac_wm/cli.py": "ab58a80a83a6ca87493e70fe7aeb5629664c8e93d20406204ff5ebe8dafb94cd",
+    "src/isac_wm/evaluation.py": "50194918049c5837ad281240a75732fc72001cdfb0fcea2a0bf320ba19eb1b94",
+    "src/isac_wm/events.py": "fd326bf7177d0b383f8ba823a84cd06e0184900547ecc719ce308e7f8f627db2",
+    "src/isac_wm/model.py": "dcc5cab0376144a9e6c12529c63949a9123b75bb3b09bf282173421d893b75b6",
+    "src/isac_wm/runtime.py": "880928cea4c661cdb1a31eb41a7f607719b5ae85ad1fa26961e76aba5ba27a66",
+    "src/isac_wm/safety.py": "033927f9d84a1186ef30062a147b4a6dd889625228af219fed9fc9082669c5c9",
+    "src/isac_wm/scenarios.py": "5743c89b6b9610d025832bff72602a2f5bf9d71c272e40966e5d914357cb9b20",
+    "src/isac_wm/simulator.py": "4115207f4683761eca4f08dd44cb184f9dfeb62a00ca82b60165db7633128f26",
+    "src/isac_wm/streaming.py": "f77c0e80a4ea2a9aa1f5d21ca374b045deafc751da103705715b1fed8b7028bb",
+    "src/isac_wm/toolchain.py": "677a140bd1f3413d6560fbd5cc2ce6bb3881f6ec0f8269c1261c13848ceb9fba",
+    "src/isac_wm/training.py": "02c4fc21bb48289b65796964b9eabf4dfacc003d7409de007b0e718d1b61ea49",
+    "src/isac_wm/validation.py": "f0b63e2ac045724f631e355f9491fdb341c50cad8ba74e324b0075a0bdd75732",
+    "src/isac_wm/viewer.py": "9794767b4e60486d0bc15a35d5206d1dde8e6677de2a07e8a2bb7cb9f6beeef8",
+    "tests/test_ci_v030.py": "a819826e4642f86a8b08cc3c787be79ae8901f986f9d03a92042a52977fbd649",
+    "tests/test_dependencies_v040.py": "5f2479a0c2fe509e7e9649dbad37774ca1fd8503d1f4ff83866eab1d77dba76d",
+    "tests/test_evaluation.py": "51b7b28cd8c7ed0eafb65c96134ddd48ec8744a06ccf44824eeb8afc03d0ce98",
+    "tests/test_events.py": "b961ac4e38963a4980de4a9bca5a5ef4b3b453c844699c904d967a1577e37a32",
+    "tests/test_model.py": "aee1354054103f934a7bccd8557eae7b74c06150052f28fea95856a2bd3c7853",
+    "tests/test_runtime_v030.py": "fb805a6a3a488126dc15629a3805dd75064f6db6a47ab7136e926c1ddb72dada",
+    "tests/test_simulator.py": "d6c6b18f74d000b15c9a15c53bbc1f7efc07d1f319c2ceec63927a82d97d2f09",
+    "tests/test_v020.py": "a049409787995c8a3c8e09178e022685f8b6d911a1d56f82c524f8840b3379b5",
+    "uv.lock": "70049a284243dbdac7f599636358881bd424d35f199b1bda1f6f01e2211cdc9e"
+  },
+  "steps": [
+    {
+      "name": "contracts",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_s": 0.11387232200013386,
+      "command": [
+        "/vercel/sandbox/project/.venv/bin/python",
+        "scripts/check_contracts.py"
+      ],
+      "log": "contracts.log"
+    },
+    {
+      "name": "dependency-policy",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_s": 0.11394140800030073,
+      "command": [
+        "/vercel/sandbox/project/.venv/bin/python",
+        "scripts/dependencies.py",
+        "check"
+      ],
+      "log": "dependency-policy.log"
+    },
+    {
+      "name": "dependency-environment",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_s": 0.11392673499994999,
+      "command": [
+        "/vercel/sandbox/project/.venv/bin/python",
+        "scripts/dependencies.py",
+        "environment"
+      ],
+      "log": "dependency-environment.log"
+    },
+    {
+      "name": "pip-check",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_s": 0.21408869700007926,
+      "command": [
+        "/vercel/sandbox/project/.venv/bin/python",
+        "-m",
+        "pip",
+        "check"
+      ],
+      "log": "pip-check.log"
+    },
+    {
+      "name": "environment-snapshot",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_s": 0.16397469000003184,
+      "command": [
+        "/vercel/sandbox/project/.venv/bin/python",
+        "scripts/dependencies.py",
+        "snapshot",
+        "--out",
+        "/vercel/sandbox/project/validation/v040-release/environment.json"
+      ],
+      "log": "environment-snapshot.log"
+    },
+    {
+      "name": "python-tests",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_s": 6.237857357999928,
+      "command": [
+        "/vercel/sandbox/project/.venv/bin/python",
+        "-m",
+        "pytest",
+        "-p",
+        "pytest_cov",
+        "--cov=isac_wm",
+        "--cov-fail-under=88",
+        "--cov-report=term-missing",
+        "--cov-report=xml:/vercel/sandbox/project/validation/v040-release/coverage.xml",
+        "--junitxml=/vercel/sandbox/project/validation/v040-release/pytest.xml"
+      ],
+      "log": "python-tests.log"
+    },
+    {
+      "name": "integration",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_s": 9.94811622899988,
+      "command": [
+        "/vercel/sandbox/project/.venv/bin/python",
+        "scripts/ci_smoke.py",
+        "--out",
+        "/vercel/sandbox/project/validation/v040-release/smoke"
+      ],
+      "log": "integration.log"
+    },
+    {
+      "name": "distribution",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_s": 0.31415324599993255,
+      "command": [
+        "/vercel/sandbox/project/.venv/bin/python",
+        "scripts/build_dist.py",
+        "--out",
+        "/vercel/sandbox/project/validation/v040-release/dist"
+      ],
+      "log": "distribution.log"
+    },
+    {
+      "name": "wheel-install",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_s": 1.515999993999685,
+      "command": [
+        "/vercel/sandbox/project/.venv/bin/python",
+        "scripts/test_wheel.py",
+        "--dist",
+        "/vercel/sandbox/project/validation/v040-release/dist"
+      ],
+      "log": "wheel-install.log"
+    },
+    {
+      "name": "ruff",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_s": 0.03170162399965193,
+      "command": [
+        "/vercel/sandbox/project/.venv/bin/python",
+        "-m",
+        "ruff",
+        "check",
+        "src",
+        "tests",
+        "scripts"
+      ],
+      "log": "ruff.log"
+    },
+    {
+      "name": "ruff-format",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_s": 0.0315957999996499,
+      "command": [
+        "/vercel/sandbox/project/.venv/bin/python",
+        "-m",
+        "ruff",
+        "format",
+        "--check",
+        "src",
+        "tests",
+        "scripts"
+      ],
+      "log": "ruff-format.log"
+    },
+    {
+      "name": "dependency-audit",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_s": 0.5142694799997116,
+      "command": [
+        "/vercel/sandbox/project/.venv/bin/python",
+        "scripts/audit_dependencies.py",
+        "--out",
+        "/vercel/sandbox/project/validation/v040-release/audit.json"
+      ],
+      "log": "dependency-audit.log"
+    },
+    {
+      "name": "rustfmt",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_s": 0.06595600699984061,
+      "command": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "log": "rustfmt.log"
+    },
+    {
+      "name": "clippy",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_s": 0.06377737299999353,
+      "command": [
+        "cargo",
+        "clippy",
+        "--workspace",
+        "--all-targets",
+        "--locked",
+        "--offline",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "log": "clippy.log"
+    },
+    {
+      "name": "rust-tests",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_s": 0.06377337500043723,
+      "command": [
+        "cargo",
+        "test",
+        "--workspace",
+        "--locked",
+        "--offline"
+      ],
+      "log": "rust-tests.log"
+    },
+    {
+      "name": "native-build",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_s": 0.03167446599991308,
+      "command": [
+        "cargo",
+        "build",
+        "--workspace",
+        "--release",
+        "--locked",
+        "--offline"
+      ],
+      "log": "native-build.log"
+    },
+    {
+      "name": "native-parity",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_s": 0.16381670400005532,
+      "command": [
+        "/vercel/sandbox/project/.venv/bin/python",
+        "scripts/native_parity.py",
+        "--binary",
+        "/vercel/sandbox/project/target/release/isac-event-replay",
+        "--out",
+        "/vercel/sandbox/project/validation/v040-release/native-parity.json"
+      ],
+      "log": "native-parity.log"
+    }
+  ]
+}

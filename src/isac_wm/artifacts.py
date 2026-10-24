@@ -3,14 +3,17 @@
 Checksums detect accidental modification when compared to a trusted manifest;
 they are not publisher authentication. Only load checkpoints you trust.
 """
+
 from __future__ import annotations
-import io
+
 import hashlib
+import io
 import json
 import os
-from pathlib import Path
 import tempfile
 import zipfile
+from pathlib import Path
+
 import torch
 
 MAX_CHECKPOINT_BYTES = 256 * 1024 * 1024
@@ -19,7 +22,7 @@ MAX_CHECKPOINT_BYTES = 256 * 1024 * 1024
 def sha256_file(path: Path) -> str:
     h = hashlib.sha256()
     with Path(path).open("rb") as f:
-        for part in iter(lambda: f.read(1024*1024), b""):
+        for part in iter(lambda: f.read(1024 * 1024), b""):
             h.update(part)
     return h.hexdigest()
 
@@ -32,23 +35,28 @@ def atomic_write(path: Path, data: bytes) -> None:
     fd, tmp = tempfile.mkstemp(prefix=".isac-wm-", dir=path.parent)
     try:
         with os.fdopen(fd, "wb") as f:
-            f.write(data); f.flush(); os.fsync(f.fileno())
+            f.write(data)
+            f.flush()
+            os.fsync(f.fileno())
         os.replace(tmp, path)
     finally:
-        if os.path.exists(tmp): os.unlink(tmp)
+        if os.path.exists(tmp):
+            os.unlink(tmp)
 
 
 def write_json(path: Path, value: object) -> None:
-    atomic_write(path, (json.dumps(value, indent=2, allow_nan=False)+"\n").encode())
+    atomic_write(path, (json.dumps(value, indent=2, allow_nan=False) + "\n").encode())
 
 
 def save_checkpoint(path: Path, value: dict) -> None:
     import io
-    output = io.BytesIO(); torch.save(value, output)
+
+    output = io.BytesIO()
+    torch.save(value, output)
     if output.tell() > MAX_CHECKPOINT_BYTES:
         raise ValueError("Checkpoint exceeds this prototype's 256 MiB artifact budget")
     atomic_write(path, output.getvalue())
-    atomic_write(Path(str(path)+".sha256"), (sha256_file(path)+"\n").encode())
+    atomic_write(Path(str(path) + ".sha256"), (sha256_file(path) + "\n").encode())
 
 
 def read_checkpoint(path: Path) -> dict:
@@ -63,7 +71,7 @@ def read_checkpoint(path: Path) -> dict:
         raw = f.read(MAX_CHECKPOINT_BYTES + 1)
     if not 0 < len(raw) <= MAX_CHECKPOINT_BYTES:
         raise ValueError("Checkpoint file-size limit exceeded")
-    sidecar = Path(str(path)+".sha256")
+    sidecar = Path(str(path) + ".sha256")
     if sidecar.is_symlink():
         raise ValueError("Checkpoint checksum must not be a symlink")
     if sidecar.exists():
@@ -96,6 +104,8 @@ def model_fingerprint(model: torch.nn.Module) -> str:
     h = hashlib.sha256()
     for name, value in sorted(model.state_dict().items()):
         cpu = value.detach().cpu().contiguous()
-        h.update(name.encode()); h.update(str(cpu.dtype).encode())
-        h.update(str(tuple(cpu.shape)).encode()); h.update(cpu.numpy().tobytes())
+        h.update(name.encode())
+        h.update(str(cpu.dtype).encode())
+        h.update(str(tuple(cpu.shape)).encode())
+        h.update(cpu.numpy().tobytes())
     return h.hexdigest()

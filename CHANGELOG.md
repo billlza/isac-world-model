@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.4.0 — 2026-10-24
+
+- Upgrade runtime/dev/build pins to current stable compatible releases; Python3.14.9,
+  torch2.14.1, NumPy2.5.4, Rust/Cargo1.99.1, Ruff0.17.2 and uv0.13.5.
+- Add exact version manifest, locked transitive resolution with artifact hashes, installed-environment
+  checks, read-only latest checks and project-local reproducible bootstrap.
+- Add fail-closed known-advisory audit; eliminate skipped torch+cpu audit by explicit public-version
+  mapping without ignoring unresolved packages.
+- Upgrade and SHA-pin GitHub Actions and Python matrix; retain read-only permissions and required gate.
+- Format/lint the complete Python implementation and tests; preserve model behavior.
+- Validate17all-profile checks:154Python tests,15Rust tests,25,005protocol commands,49audited third-party
+  dependencies; no skipped tests or blocked checks. Coverage combined88.98%, existing88%gate unchanged.
+- Explicit exceptions: CPython3.15 lacks current torch wheels; SymPy requires mpmath<1.4.
+- No new accuracy/superiority claim. CPU only; remote Actions/macOS/CUDA/MPS remain unexecuted.
+
+
+
 ## 0.2.0 — 2026-10-23
 
 - Cache exact OOSM Kalman posterior prefixes; retain reference implementation for parity and profiling.

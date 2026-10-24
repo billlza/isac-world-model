@@ -1,2 +1,3 @@
-"""Research-only visual-radio world model, independently implemented."""
-__version__ = "0.3.0"
+"""ISAC visual-radio world-model research prototype."""
+
+__version__ = "0.4.0"

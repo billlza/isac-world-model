@@ -1,4 +1,5 @@
 """Versioned execution-time contract; no hidden wall-clock simulation assumptions."""
+
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass

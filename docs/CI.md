@@ -1,64 +1,69 @@
-# Reproducible checks
+# CI and toolchain contract — v0.4.0
 
-## Setup
+## Policy
 
-Use Python 3.11-3.13. `bash scripts/bootstrap.sh` creates a project-local venv,
-installs pinned direct dependencies, installs Rust 1.85.1 components using an
-existing rustup, then runs all gates. On Linux it deliberately installs CPU torch.
-For a CUDA environment install the appropriate official torch build separately;
-do not overwrite an existing research environment without checking compatibility.
-If rustup is absent, the script stops. Explicit opt-in `INSTALL_RUSTUP=1` downloads
-and executes the official installer. OS linker/build tools must be installed.
+The source of truth for direct versions is `ci/versions.json`; runtime/build/dev pins and
+`ci/constraints.txt` must agree. Full selected dependency resolution and artifact hashes live in
+`uv.lock`. Do not replace exact versions with moving `latest` references in required CI.
+`ci/artifact-scope.json` describes the reviewed wheel targets. Linux intentionally uses the explicit
+PyTorch CPU index; accelerator environments require a separate validated profile.
 
-The dependency constraints are direct pins, **not** a transitive hash lock or
-supply-chain audit. Cargo.lock has no third-party Rust crates; Cargo checks run
-`--locked --offline` after toolchain provisioning.
+The default/reference interpreter is 3.14.9. Supported minors are 3.12, 3.13, 3.14, not 3.15 until the
+PyTorch binary compatibility decision is reviewed. mpmath remains 1.3.0 because SymPy requires <1.4.
+These are recorded compatibility exceptions, not skipped upgrades.
 
-## Local execution
+## Bootstrap
 
 ```bash
-source .venv/bin/activate
-python scripts/ci.py --profile all --out validation/run-001
+INSTALL_RUSTUP=1 bash scripts/bootstrap.sh
 ```
 
-Output must be a new directory so prior evidence is not silently overwritten.
-`python`, `native`, and `quality` profiles allow the same jobs on separate workers.
-Exit 0 means all selected checks passed, 1 means a failed check, and 2 means a
-missing prerequisite. Unavailable Cargo/Ruff is never silently skipped. Each step
-has a deadline, log and JSON status. Pytest auto-discovery of unrelated globally
-installed plugins is disabled; the coverage plugin is loaded explicitly. Native
-and BLAS thread settings are bounded for repeatability.
+Use a fresh directory. Existing .venv causes an explicit stop unless RECREATE_VENV=1 is set.
+The bootstrap needs a pre-existing Python >=3.10 to install uv and the chosen managed interpreter.
+It creates project-local .bootstrap, .venv, CARGO_HOME and RUSTUP_HOME, and does not change global
+Rust/Python defaults. It checks, but does not sudo-install, the system linker. Rust installation is
+opt-in; the rustup installer is fetched over HTTPS, while the Rust toolchain itself is pinned.
 
-Python gates cover source/workflow contracts, pytest + combined statement/branch coverage (floor 88%),
-actual train/resume/calibrate/delayed-evaluate/stress, wheel+sdist, and importing the
-installed wheel outside the source tree. Wheel validation reuses host dependencies;
-it is not a clean-room reproduction of the whole dependency graph.
+The bootstrap script's policy and shell syntax were checked; dependencies were installed and all
+commands executed in the isolated CI environment. The entire bootstrap has not been re-executed on
+macOS or every Linux distribution. Do not equate platform configuration with platform execution.
 
-Native gates cover rustfmt, Clippy with warnings denied, unit tests, release build,
-and 25,005 seeded differential protocol commands plus malformed stream rejection.
-The same oracle is checked against Python EventQueue. Integer test timestamps are
-in the exactly representable float64 domain; this does not establish equivalence
-for arbitrary u64 nanosecond values in Python's float-seconds representation.
-
-Quality requires Ruff fatal-correctness checks (E9/F63/F7/F82). Broader style rules
-and a vulnerability database audit are not claimed by this gate.
-
-## GitHub Actions
-
-`.github/workflows/tests.yml` defines Ubuntu/Python 3.11 and 3.13, macOS/Python 3.12
-(CPU, **not MPS**), native Linux, quality, and an aggregate `ci-gate` that fails on
-failed/cancelled/skipped prerequisites. Actions are pinned to verified commit SHAs;
-permissions are read-only, checkout does not persist credentials, and no secrets
-or privileged `pull_request_target` trigger is used. Failure logs are uploaded.
-Branch protection must still be configured in the repository to require `ci-gate`.
-
-After deliberately pushing the exact commit to the private repository:
+## Profiles
 
 ```bash
-bash scripts/verify_remote_ci.sh billlza/isac-world-model main
+python scripts/ci.py --profile all --out validation/new-run
+python scripts/ci.py --profile python --out validation/new-python-run
+python scripts/ci.py --profile native --out validation/new-native-run
+python scripts/ci.py --profile quality --out validation/new-quality-run
+python scripts/ci.py --profile security --out validation/new-security-run
 ```
 
-It verifies owner, private visibility, and matching local/remote SHA, dispatches
-an identifiable workflow run, waits and exits nonzero if the run fails. Writing
-this workflow or executing local checks is **not** evidence of a GitHub Actions run.
-See the release validation record for which environments were actually executed.
+The output directory must be empty. Commands have deadlines; child process groups are terminated
+on timeout on POSIX. The selected checks are mandatory. Status codes are 0 passed, 1 failed,
+2 missing prerequisite. Network advisories can fail a release gate if the service is unavailable;
+there is no fallback to an invented clean audit.
+
+The all-profile has 17 required steps: repository contracts, direct dependency policy, installed
+versions, pip check, inventory, pytest with the unchanged 88% combined coverage gate, end-to-end
+smoke, sdist/wheel build, wheel installation outside the source checkout, Ruff lint, Ruff format,
+known-advisory audit, rustfmt, Clippy, Rust tests, release build, native protocol differential test.
+
+The known-advisory audit explicitly maps torch backend suffixes to upstream release metadata and
+records the mapping. Skipped/unrecognised packages fail the audit. This is not binary provenance
+verification and does not imply absence of unknown vulnerabilities.
+
+## Remote jobs
+
+Linux CPU Python 3.12.15 / 3.13.17 / 3.14.9; macOS CPU Python 3.14.9; Rust on Linux and macOS;
+quality/advisory audit; required ci-gate. The selected official Actions were checked and SHA-pinned:
+checkout v7.0.1, setup-python v7.1.0, upload-artifact v7.0.2, setup-uv v10.3.2.
+
+GitHub itself has not run this revision. No access token was obtained and the target repository is
+not visible to the connector. Branch protection is an account/repository setting, not something
+created by adding workflow YAML. Require `ci-gate` after the real repository is available.
+
+## Evidence
+
+`validation/v040-release/ci-report.json` contains the actually executed checks. Its 50 source hashes
+match the exported implementation. User documentation and release packaging were completed after
+those checks; no tested source was changed during packaging. CI report logs are retained.

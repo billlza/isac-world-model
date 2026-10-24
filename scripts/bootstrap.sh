@@ -1,29 +1,41 @@
 #!/usr/bin/env bash
-# Installs into project-local Python venv; Rust into the user's normal rustup home.
-# Does not install OS packages, modify a repo, or silently ignore missing tools.
+# Project-local toolchains. No sudo, no global default Rust or Python changes.
 set -euo pipefail
 cd "$(dirname "$0")/.."
+ROOT="$PWD"
 PYTHON="${PYTHON:-python3}"
-"$PYTHON" -c 'import sys; assert (3,11) <= sys.version_info[:2] <= (3,13), "Use Python 3.11-3.13"'
-"$PYTHON" -m venv .venv
-.venv/bin/python -m pip install --upgrade 'pip>=25,<26'
-if [[ "$(uname -s)" == Linux ]]; then
-  .venv/bin/python -m pip install 'torch==2.10.0' --index-url https://download.pytorch.org/whl/cpu
-else
-  .venv/bin/python -m pip install 'torch==2.10.0'
+"$PYTHON" -c 'import sys; assert sys.version_info >= (3,10), "Bootstrap needs Python >=3.10"'
+UV_VERSION="$("$PYTHON" -c 'import json; print(json.load(open("ci/versions.json"))["packages"]["uv"])')"
+PIP_VERSION="$("$PYTHON" -c 'import json; print(json.load(open("ci/versions.json"))["packages"]["pip"])')"
+RUST_VERSION="$("$PYTHON" -c 'import json; print(json.load(open("ci/versions.json"))["rust"]["version"])')"
+TARGET_PYTHON="${TARGET_PYTHON:-$(cat .python-version)}"
+"$PYTHON" -m venv .bootstrap
+.bootstrap/bin/python -m pip install --upgrade "pip==$PIP_VERSION" "uv==$UV_VERSION"
+export PATH="$ROOT/.bootstrap/bin:$PATH"
+uv python install "$TARGET_PYTHON"
+if [[ -e .venv && "${RECREATE_VENV:-0}" != 1 ]]; then
+  echo '.venv exists; refusing a silent cross-version replacement. Use RECREATE_VENV=1 after saving it.' >&2
+  exit 2
 fi
-.venv/bin/python -m pip install -c ci/constraints.txt -e '.[dev]'
-if ! command -v rustup >/dev/null; then
+uv venv --python "$TARGET_PYTHON" --clear .venv
+uv sync --locked --extra dev --python "$TARGET_PYTHON"
+export CARGO_HOME="$ROOT/.toolchains/cargo"
+export RUSTUP_HOME="$ROOT/.toolchains/rustup"
+export PATH="$ROOT/.venv/bin:$CARGO_HOME/bin:$PATH"
+if [[ ! -x "$CARGO_HOME/bin/rustup" ]]; then
   if [[ "${INSTALL_RUSTUP:-0}" != 1 ]]; then
-    echo 'rustup missing. Install from rustup.rs, or explicitly rerun INSTALL_RUSTUP=1 bash scripts/bootstrap.sh.' >&2
+    echo 'Project-local rustup is absent. Re-run with INSTALL_RUSTUP=1 to authorize installation.' >&2
     exit 2
   fi
+  command -v curl >/dev/null || { echo 'curl is required' >&2; exit 2; }
   installer="$(mktemp)"
   trap 'rm -f "$installer"' EXIT
-  curl --proto '=https' --tlsv1.2 --fail --location https://sh.rustup.rs -o "$installer"
-  sh "$installer" -y --profile minimal --default-toolchain 1.85.1
-  source "$HOME/.cargo/env"
+  curl --proto '=https' --tlsv1.2 --fail --location --max-time 90 https://sh.rustup.rs -o "$installer"
+  sh "$installer" -y --no-modify-path --profile minimal --default-toolchain "$RUST_VERSION"
 fi
-rustup toolchain install 1.85.1 --profile minimal --component rustfmt,clippy
-cargo --version
-.venv/bin/python scripts/ci.py --profile all --out "validation/local-ci/$(date -u +%Y%m%dT%H%M%SZ)"
+rustup toolchain install "$RUST_VERSION" --profile minimal --component rustfmt,clippy
+command -v cc >/dev/null || { echo 'A system linker is required: Xcode CLT on macOS; build-essential on Linux.' >&2; exit 2; }
+python scripts/dependencies.py check
+python scripts/dependencies.py environment
+python -m pip check
+python scripts/ci.py --profile all --out "validation/local-ci/$(date -u +%Y%m%dT%H%M%SZ)"

@@ -1,11 +1,14 @@
 """Acquisition time and availability time are deliberately different fields."""
+
 from __future__ import annotations
-from dataclasses import dataclass, field
+
 import heapq
-import math
+from dataclasses import dataclass, field
 from typing import Any
+
 import numpy as np
-from .validation import integer, finite
+
+from .validation import finite, integer
 
 
 @dataclass(frozen=True)
@@ -31,11 +34,15 @@ class Observation:
         if self.modality == "vision" and self.action != 0:
             raise ValueError("Vision action must be zero")
         original = np.asarray(self.payload)
-        expected = ((4,) if self.modality == "radio" else None)
+        expected = (4,) if self.modality == "radio" else None
         if expected and original.shape != expected:
             raise ValueError("Radio payload must have shape (4,)")
-        if self.modality == "vision" and (original.ndim != 3 or original.shape[0] != 3
-                or original.shape[1] != original.shape[2] or not 16 <= original.shape[1] <= 1024):
+        if self.modality == "vision" and (
+            original.ndim != 3
+            or original.shape[0] != 3
+            or original.shape[1] != original.shape[2]
+            or not 16 <= original.shape[1] <= 1024
+        ):
             raise ValueError("Vision payload must have shape (3, N, N), 16 <= N <= 1024")
         value = np.array(original, dtype=np.float32, copy=True)
         if not np.isfinite(value).all():
@@ -50,6 +57,7 @@ class EventQueue:
     IDs remain recorded for the lifetime of one episode. Instantiate a new queue
     for another episode. Overflow raises rather than silently dropping evidence.
     """
+
     def __init__(self, capacity: int = 4096, max_ids: int = 1_000_000):
         integer(capacity, "capacity", 1, 1_000_000)
         integer(max_ids, "max_ids", capacity, 10_000_000)
@@ -97,12 +105,13 @@ class SnapshotBuffer:
     Newer-arriving but older-acquired packets are recorded as ignored. Each packet
     can trigger an encoder update at most once. Full OOSM replay is a baseline.
     """
+
     def __init__(self, image_size: int, max_ids: int = 1_000_000):
         integer(image_size, "image_size", 16, 1024)
         integer(max_ids, "max_ids", 1)
         self.max_ids = max_ids
         self._seen: set[int] = set()
-        self.now = 0.
+        self.now = 0.0
         self.image_size = image_size
         self.latest: dict[str, Observation] = {}
         self.ignored_older = 0
@@ -140,11 +149,13 @@ class SnapshotBuffer:
         radio = self.latest.get("radio")
         return {
             "image": np.zeros((3, self.image_size, self.image_size), np.float32)
-                if vision is None else vision.payload.copy(),
+            if vision is None
+            else vision.payload.copy(),
             "radio": np.zeros(4, np.float32) if radio is None else radio.payload.copy(),
             "valid": np.array([vision is not None, radio is not None], np.float32),
             "new": new,
-            "age": np.array([0.0 if o is None else max(0.0, now-o.capture_s)
-                             for o in (vision, radio)], np.float32),
+            "age": np.array(
+                [0.0 if o is None else max(0.0, now - o.capture_s) for o in (vision, radio)], np.float32
+            ),
             "dt": np.array([dt], np.float32),
         }
