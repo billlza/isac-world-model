@@ -1,0 +1,33 @@
+{
+  "status": "passed",
+  "execution": "isolated Vercel sandbox, not GitHub Actions",
+  "toolchain": "rustc/cargo 1.85.1",
+  "platform": "Linux x86_64; Ubuntu gcc 15.2.0",
+  "commands": {
+    "cargo fmt --all -- --check": 0,
+    "cargo clippy --workspace --all-targets --locked --offline -- -D warnings": 0,
+    "cargo test --workspace --locked --offline": 0,
+    "cargo build --workspace --release --locked --offline": 0
+  },
+  "unit_tests": 15,
+  "protocol_seeds": [
+    7301,
+    17,
+    99,
+    201,
+    599
+  ],
+  "protocol_commands": 25005,
+  "malformed_stream_tests": 2,
+  "source_sha256": {
+    "crates/event-core/src/lib.rs": "d18d254cca890cfa97c1f6f085b021752e42f1e13ef286e38ae2e16ccd9b2cee",
+    "crates/event-core/src/main.rs": "e94d23bbe6286a18035f1ffd26cff5491fd626bd72afea06784ed86a9c9ce08c"
+  },
+  "cargo_lock_sha256": "416414bbd7e43c725561500a48aa62eef83239aad3ca1cf97bda67883a35a2b7",
+  "binary_sha256": "32d834a7f792ea15eac2a73e9728c7d2d7dcae3e231b58144f96d23cf9739998",
+  "remote_command_ids": [
+    "cmd_2ee00105bb214314929bc4a4d72b",
+    "cmd_75c6cf2eb20741d0b2bbd35cd639"
+  ],
+  "note": "Recorded from tool outputs; source hashes match delivered files. Native binaries are not bundled; build them for your platform."
+}

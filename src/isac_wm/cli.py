@@ -13,6 +13,8 @@ from .scenarios import SCENARIOS, scenario_config
 from .calibration import calibrate, load_calibration
 from .safety import MonitorConfig
 from .artifacts import write_json
+from .runtime import RuntimeConfig
+from .toolchain import inspect_toolchain
 
 
 def _policies(text: str) -> tuple[str, ...]:
@@ -69,6 +71,11 @@ def main() -> None:
     for p in sub.choices.values():
         p.add_argument("--device", default="auto", choices=["auto", "cpu", "mps", "cuda"])
         p.add_argument("--threads", type=int, default=4)
+    for command in ("evaluate", "calibrate", "stress"):
+        p = sub.choices[command]
+        p.add_argument("--latency-mode", choices=["reference", "fixed", "measured"], default="reference")
+        p.add_argument("--compute-ms", type=float, default=0., help="Service time in fixed mode, not a measured benchmark")
+        p.add_argument("--queue-capacity", type=int, default=4096)
     args = parser.parse_args()
     if not 1 <= args.threads <= 1024:
         parser.error("--threads must be between 1 and 1024")
@@ -83,17 +90,18 @@ def main() -> None:
                            resume=args.resume, learning_rate=args.learning_rate, patience=args.patience,
                            max_dataset_bytes=int(args.max_dataset_gb*1024**3))
         elif args.command in {"evaluate", "calibrate", "stress"}:
+            runtime = RuntimeConfig(args.latency_mode, args.compute_ms, args.queue_capacity)
             model, scene, device = load_model(args.checkpoint, args.device)
             if args.command == "calibrate":
                 artifact = calibrate(args.out, model, scene, device, args.episodes, args.seed,
-                                     args.alpha, args.policies)
+                                     args.alpha, args.policies, runtime=runtime)
                 result = {"path": str(args.out), "scope": artifact["scope"],
                           "quantiles": {k: v["quantile"] for k, v in artifact["variants"].items()}}
             elif args.command == "evaluate":
                 calibration = load_calibration(args.calibration) if args.calibration else None
                 scene = scenario_config(args.scenario, scene)
                 report = evaluate(args.out, model, scene, device, args.episodes, args.seed,
-                                  policies=args.policies, calibration=calibration, sensor_budget=args.budget,
+                                  policies=args.policies, calibration=calibration, sensor_budget=args.budget, runtime=runtime,
                                   monitor=MonitorConfig(max_information_age_s=args.max_age,
                                                         compute_deadline_ms=args.deadline_ms))
                 write_viewer(report, args.out/"replay.html")
@@ -108,7 +116,7 @@ def main() -> None:
                 for name in args.scenarios:
                     try:
                         report = evaluate(args.out/name, model, scenario_config(name, scene), device,
-                                          args.episodes, args.seed, policies=args.policies,
+                                          args.episodes, args.seed, policies=args.policies, runtime=runtime,
                                           monitor=MonitorConfig(compute_deadline_ms=args.deadline_ms))
                         write_viewer(report, args.out/name/"replay.html")
                         result["scenarios"][name] = {"status": "completed", "summary": report["summary"]}
@@ -117,8 +125,11 @@ def main() -> None:
                 write_json(args.out/"stress.json", result)
         else:
             result = runtime_info(resolve_device(args.device))
+            result["toolchain"] = inspect_toolchain()
         print(json.dumps(result, indent=2, allow_nan=False))
-    except (ValueError, FileExistsError, MemoryError) as exc:
+        if args.command == "stress" and any(v["status"] != "completed" for v in result["scenarios"].values()):
+            raise SystemExit(1)
+    except (ValueError, OSError, MemoryError) as exc:
         parser.error(str(exc))
 
 

@@ -1,0 +1,26 @@
+{
+  "baseline_v020": {
+    "tests_passed": 86,
+    "tests_failed": 1,
+    "failure": "strict prefix equality changed at floating point scale when future observation masks changed batch shape",
+    "resolution": "sequential prefix-stable default plus independent gradient and fast-path equivalence tests"
+  },
+  "initial_wheel_check": {
+    "status": "interrupted",
+    "issue": "venv/ensurepip did not finish in this environment",
+    "resolution": "bounded offline --target install outside source tree, host dependencies explicitly reused"
+  },
+  "first_final_python_attempt": {
+    "status": "failed",
+    "issue": "source-stability scanner included generated egg-info SOURCES.txt",
+    "resolution": "exclude build metadata, rerun all five Python steps; final evidence release-python-2"
+  },
+  "ruff": {
+    "status": "blocked",
+    "reason": "no local package; external installation alone not counted as a source lint run"
+  },
+  "browser": {
+    "file_navigation": "blocked by environment policy",
+    "rendering_check": "direct self-contained document rendering passed; no browser policy disabled"
+  }
+}

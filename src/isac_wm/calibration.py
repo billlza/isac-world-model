@@ -15,6 +15,7 @@ from .artifacts import model_fingerprint, write_json
 from .model import EventBeliefModel
 from .simulator import SceneConfig
 from .validation import integer
+from .runtime import RuntimeConfig
 
 
 def fit_episode_quantile(runs: list[dict], alpha: float = .1, scored_from: int = 5) -> dict:
@@ -52,8 +53,14 @@ def fit_episode_quantile(runs: list[dict], alpha: float = .1, scored_from: int =
 
 def calibrate(out: Path, model: EventBeliefModel, scene: SceneConfig, device: torch.device,
               episodes: int = 32, seed: int = 20_000_000, alpha: float = .1,
-              policies: tuple[str, ...] = ("fixed", "guarded")) -> dict:
+              policies: tuple[str, ...] = ("fixed", "guarded"),
+              *, runtime: RuntimeConfig | None = None) -> dict:
     from .evaluation import rollout
+    runtime = runtime or RuntimeConfig()
+    if runtime.mode == "measured":
+        raise ValueError("Calibration needs a repeatable fixed timing profile, not measured timing")
+    if not policies or len(policies) != len(set(policies)) or set(policies)-{"fixed", "predictive", "risk", "guarded"}:
+        raise ValueError("Invalid calibration policies")
     integer(episodes, "episodes", 1, 10000)
     integer(seed, "seed", 0, 2**32-1-episodes)
     if out.exists():
@@ -65,9 +72,9 @@ def calibrate(out: Path, model: EventBeliefModel, scene: SceneConfig, device: to
     variants = {}
     for estimator in ("kalman", "model"):
         for policy in policies:
-            runs = [rollout(i, scene, estimator, policy, model, device) for i in sorted(seeds)]
+            runs = [rollout(i, scene, estimator, policy, model, device, runtime=runtime) for i in sorted(seeds)]
             variants[f"{estimator}+{policy}"] = fit_episode_quantile(runs, alpha)
-    artifact = {"schema_version": 1, "model_fingerprint": fingerprint,
+    artifact = {"schema_version": 2, "runtime": runtime.to_dict(), "model_fingerprint": fingerprint,
                 "scene": scene.to_dict(), "variants": variants,
                 "scope": "episode-marginal, same-policy, same-distribution; not conditional accepted-risk assurance"}
     write_json(out, artifact)
@@ -80,8 +87,10 @@ def load_calibration(path: Path) -> dict:
     if path.stat().st_size > 4*1024*1024:
         raise ValueError("Calibration artifact too large")
     data = json.loads(path.read_text())
-    if not isinstance(data, dict) or data.get("schema_version") != 1 or not isinstance(data.get("variants"), dict):
+    if not isinstance(data, dict) or data.get("schema_version") not in {1, 2} or not isinstance(data.get("variants"), dict):
         raise ValueError("Invalid calibration artifact")
+    if data.get("schema_version") == 2:
+        RuntimeConfig.from_dict(data.get("runtime"))
     fingerprint = data.get("model_fingerprint")
     if not isinstance(fingerprint, str) or len(fingerprint) != 64 or any(c not in "0123456789abcdef" for c in fingerprint):
         raise ValueError("Invalid model fingerprint")
@@ -104,7 +113,13 @@ def load_calibration(path: Path) -> dict:
 
 
 def validate_calibration(data: dict, model: EventBeliefModel, scene: SceneConfig,
-                         test_seeds: list[int]) -> None:
+                         test_seeds: list[int], *, runtime: RuntimeConfig | None = None) -> None:
+    runtime = runtime or RuntimeConfig()
+    expected_runtime = data.get("runtime", RuntimeConfig().to_dict())
+    if expected_runtime != runtime.to_dict():
+        raise ValueError("Calibration runtime mismatch; recalibrate for the new execution timing")
+    if runtime.mode == "measured":
+        raise ValueError("Measured timing cannot use fixed-profile calibration")
     if data["scene"] != scene.to_dict() or data["model_fingerprint"] != model_fingerprint(model):
         raise ValueError("Calibration model/scene mismatch; recalibrate instead of reusing a certificate")
     for value in data["variants"].values():

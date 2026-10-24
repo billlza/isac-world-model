@@ -1,0 +1,29 @@
+........................................................................ [ 52%]
+.................................................................        [100%]
+================================ tests coverage ================================
+_______________ coverage: platform linux, python 3.13.5-final-0 ________________
+
+Name                         Stmts   Miss Branch BrPart  Cover   Missing
+------------------------------------------------------------------------
+src/isac_wm/__main__.py          2      2      0      0     0%   1-2
+src/isac_wm/artifacts.py        80      6     34      6    89%   49, 57, 59, 65, 83, 89
+src/isac_wm/baselines.py       203     13     66     14    90%   14, 16, 61, 63, 73, 117, 120, 122, 177, 187, 209, 221->212, 237, 268
+src/isac_wm/calibration.py     102     15     60     15    81%   23, 35, 41, 44, 63, 67, 70, 86, 88, 98, 102, 104, 107, 111, 122
+src/isac_wm/cli.py             117     23     28      9    75%   21-24, 81, 85-87, 96-98, 101-108, 111, 113, 121-122, 127-128, 130->exit, 133, 137
+src/isac_wm/evaluation.py      133     12     58     12    87%   21, 23, 31, 33, 67, 144, 146, 168, 173, 177, 180, 190
+src/isac_wm/events.py          115      8     46      7    91%   24, 30, 32, 39, 64, 88, 119, 131
+src/isac_wm/model.py           118      6     22      4    91%   23, 74, 77-79, 162
+src/isac_wm/runtime.py          34      1     12      1    96%   54
+src/isac_wm/safety.py           37      1     14      1    96%   20
+src/isac_wm/scenarios.py        12      2     12      1    79%   15-16
+src/isac_wm/simulator.py       169      6     48      5    95%   59, 63, 84, 163, 179-180
+src/isac_wm/streaming.py       134      5     26      1    94%   106-114
+src/isac_wm/toolchain.py        26      1      8      0    97%   24
+src/isac_wm/training.py        141     10     38     10    89%   25, 27, 61, 111, 128, 147, 159, 170, 183, 187
+------------------------------------------------------------------------
+TOTAL                         1447    111    480     86    89%
+
+3 files skipped due to complete coverage.
+Coverage XML written to file /mnt/data/work_v030/isac-world-model/validation/v030/release-python-2/coverage.xml
+Required test coverage of 88% reached. Total coverage: 89.15%
+137 passed in 11.70s

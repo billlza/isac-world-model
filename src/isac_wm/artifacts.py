@@ -4,6 +4,7 @@ Checksums detect accidental modification when compared to a trusted manifest;
 they are not publisher authentication. Only load checkpoints you trust.
 """
 from __future__ import annotations
+import io
 import hashlib
 import json
 import os
@@ -56,15 +57,34 @@ def read_checkpoint(path: Path) -> dict:
         raise ValueError("Checkpoint must be a regular non-symlink file")
     if not 0 < path.stat().st_size <= MAX_CHECKPOINT_BYTES:
         raise ValueError("Checkpoint file-size limit exceeded")
+    # Deserialize the SAME bounded bytes whose hash was verified. A later path
+    # replacement cannot change the object between verification and loading.
+    with path.open("rb") as f:
+        raw = f.read(MAX_CHECKPOINT_BYTES + 1)
+    if not 0 < len(raw) <= MAX_CHECKPOINT_BYTES:
+        raise ValueError("Checkpoint file-size limit exceeded")
     sidecar = Path(str(path)+".sha256")
-    if sidecar.exists() and sidecar.read_text().strip() != sha256_file(path):
-        raise ValueError("Checkpoint SHA-256 mismatch")
-    if not zipfile.is_zipfile(path):
+    if sidecar.is_symlink():
+        raise ValueError("Checkpoint checksum must not be a symlink")
+    if sidecar.exists():
+        if not sidecar.is_file() or sidecar.stat().st_size > 128:
+            raise ValueError("Invalid checkpoint checksum sidecar")
+        expected = sidecar.read_text(encoding="ascii").strip()
+        if len(expected) != 64 or any(c not in "0123456789abcdef" for c in expected):
+            raise ValueError("Invalid SHA-256 checksum format")
+        if expected != hashlib.sha256(raw).hexdigest():
+            raise ValueError("Checkpoint SHA-256 mismatch")
+    stream = io.BytesIO(raw)
+    if not zipfile.is_zipfile(stream):
         raise ValueError("Only PyTorch ZIP checkpoints are supported")
-    with zipfile.ZipFile(path) as z:
-        if len(z.infolist()) > 100_000 or sum(i.file_size for i in z.infolist()) > MAX_CHECKPOINT_BYTES:
+    with zipfile.ZipFile(stream) as z:
+        infos = z.infolist()
+        if len(infos) > 100_000 or sum(i.file_size for i in infos) > MAX_CHECKPOINT_BYTES:
             raise ValueError("Expanded checkpoint exceeds resource budget")
-    result = torch.load(path, map_location="cpu", weights_only=True)
+        if len({i.filename for i in infos}) != len(infos) or any(i.flag_bits & 1 for i in infos):
+            raise ValueError("Duplicate or encrypted checkpoint members")
+    stream.seek(0)
+    result = torch.load(stream, map_location="cpu", weights_only=True)
     if not isinstance(result, dict):
         raise ValueError("Checkpoint root must be a mapping")
     if result.get("schema_version", 1) not in (1, 2):

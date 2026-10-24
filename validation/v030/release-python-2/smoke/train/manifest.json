@@ -1,0 +1,66 @@
+{
+  "version": "0.3.0",
+  "initialization": "random; no pretrained weights",
+  "scene": {
+    "steps": 48,
+    "dt": 0.1,
+    "image_size": 24,
+    "room_m": 10.0,
+    "camera_period": 2,
+    "camera_delay_s": 0.13,
+    "delay_jitter_s": 0.04,
+    "dropout": 0.05,
+    "acceleration_std": 0.5,
+    "snr_linear": 10.0,
+    "bandwidth_hz": 1000000.0,
+    "camera_dropout": null,
+    "radio_dropout": null,
+    "radio_outlier_probability": 0.0,
+    "radio_outlier_scale_m": 4.0,
+    "occlusion_fraction": 0.16666666666666666,
+    "radio_delay_extra_s": 0.0
+  },
+  "model": {
+    "feature_dim": 48,
+    "hidden_dim": 96
+  },
+  "seed": 7,
+  "epochs": 1,
+  "episodes": 4,
+  "batch_size": 2,
+  "train_episode_seeds": [
+    700000,
+    700001,
+    700002,
+    700003
+  ],
+  "validation_episode_seeds": [
+    10700000,
+    10700001,
+    10700002,
+    10700003,
+    10700004,
+    10700005,
+    10700006,
+    10700007
+  ],
+  "parameters": 142312,
+  "runtime": {
+    "python": "3.13.5",
+    "platform": "Linux-6.18.55-x86_64-with-glibc2.41",
+    "torch": "2.10.0+cpu",
+    "numpy": "2.3.5",
+    "device": "cpu",
+    "threads": 2
+  },
+  "hardware_validated": [
+    "cpu"
+  ],
+  "learning_rate": 0.001,
+  "early_stopping_patience": 0,
+  "dataset_estimated_bytes": 6758400,
+  "resume_source": null,
+  "completed_epochs": 1,
+  "training_seconds": 1.1039682669998,
+  "best_validation_rmse_m": 3.3539014946841528
+}

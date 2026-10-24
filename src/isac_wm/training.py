@@ -56,6 +56,7 @@ def train(outdir: Path, epochs: int = 10, episodes: int = 96, batch_size: int = 
     integer(seed, "seed", 0, 99)
     integer(patience, "patience", 0, 100_000)
     finite(learning_rate, "learning_rate", positive=True)
+    integer(max_dataset_bytes, "max_dataset_bytes", 1)
     if min(epochs, episodes, batch_size) <= 0 or seed < 0:
         raise ValueError("Training counts must be positive; seed must be non-negative")
     if outdir.exists() and any(outdir.iterdir()):
@@ -64,7 +65,9 @@ def train(outdir: Path, epochs: int = 10, episodes: int = 96, batch_size: int = 
     scene = scene or SceneConfig()
     device = resolve_device(device_name)
     seed_all(seed)
-    estimated = int((episodes+max(8, episodes//8))*scene.steps*
+    # Account for the transient second copy while stacking and staging batches.
+    # This budgets dataset arrays, not model/optimizer memory or process RSS.
+    estimated = int((2*episodes+max(8, episodes//8)+2*min(batch_size, episodes))*scene.steps*
                     (3*scene.image_size**2+32)*4)
     if estimated > max_dataset_bytes:
         raise MemoryError(f"Dataset estimate {estimated} exceeds configured RAM budget {max_dataset_bytes}")
@@ -76,7 +79,7 @@ def train(outdir: Path, epochs: int = 10, episodes: int = 96, batch_size: int = 
     model = EventBeliefModel(model_config).to(device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=1e-4)
     rng = np.random.default_rng(seed)
-    manifest = {"version": "0.2.0", "initialization": "random; no pretrained weights",
+    manifest = {"version": "0.3.0", "initialization": "random; no pretrained weights",
                 "scene": scene.to_dict(), "model": model.config.to_dict(),
                 "seed": seed, "epochs": epochs, "episodes": episodes, "batch_size": batch_size,
                 "train_episode_seeds": train_seeds, "validation_episode_seeds": val_seeds,
@@ -119,7 +122,7 @@ def train(outdir: Path, epochs: int = 10, episodes: int = 96, batch_size: int = 
             selection = torch.as_tensor(indices, dtype=torch.long)
             batch = {k: v.index_select(0, selection).to(device) for k, v in train_tensors.items()}
             optimizer.zero_grad(set_to_none=True)
-            output = model(batch, forecast_s=3*scene.dt)
+            output = model(batch, forecast_s=3*scene.dt, batched_encoding=True)
             loss, _ = training_loss(output, batch)
             if not torch.isfinite(loss):
                 raise FloatingPointError("Non-finite training loss")
@@ -132,7 +135,7 @@ def train(outdir: Path, epochs: int = 10, episodes: int = 96, batch_size: int = 
         with torch.no_grad():
             for i in range(0, len(val), batch_size):
                 b = batchify(val[i:i+batch_size], device)
-                pred = model(b, forecast_s=3*scene.dt)
+                pred = model(b, forecast_s=3*scene.dt, batched_encoding=True)
                 mse = (pred["mean"][:, 5:, :2]-b["state_target"][:, 5:, :2]).square().sum(-1)
                 sums += float(mse.sum())*scene.room_m**2
                 count += mse.numel()

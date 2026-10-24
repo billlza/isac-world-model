@@ -22,8 +22,8 @@ class Observation:
         integer(self.action, "action", 0, 2)
         if self.modality not in {"vision", "radio"}:
             raise ValueError("Invalid observation identity/modality")
-        if not all(math.isfinite(x) and x >= 0 for x in (self.capture_s, self.available_s)):
-            raise ValueError("Times must be finite and non-negative")
+        finite(self.capture_s, "capture_s")
+        finite(self.available_s, "available_s")
         if self.available_s < self.capture_s:
             raise ValueError("An observation cannot arrive before acquisition")
         if self.modality == "radio" and self.action not in (1, 2):
@@ -74,7 +74,8 @@ class EventQueue:
         self._seen.add(observation.uid)
 
     def release(self, now: float) -> list[Observation]:
-        if not math.isfinite(now) or now < self.now:
+        finite(now, "now")
+        if now < self.now:
             raise ValueError("Release time must be finite and monotonic")
         self.now = now
         ready: list[Observation] = []

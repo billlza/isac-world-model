@@ -1,86 +1,85 @@
-# ISAC World Model — v0.2.0
+# ISAC World Model — v0.3.0
 
-独立设计、随机初始化的视觉—无线世界模型研究原型。主模型不依赖 DINO、JEPA、World-Mirror 等预训练权重或教师模型。研究目标是异步观测下的状态预测、观测价值与通信资源取舍。Quantum尚未建模。
+自主实现、随机初始化的视觉—无线世界模型研究原型。无外部预训练权重、教师模型或私有实验数据。当前为合成二维观测与共享时隙代理；Quantum、原始无线波形和真实设备尚未实现。
 
-**本版已实际完成：87项Python测试、从零训练、独立测试、故障扫描、CPU微基准与浏览器回放验证。Rust/CUDA/MPS尚未实测。**
+本版补齐**显式计算服务时钟、结果延迟发布、感知指令延迟执行、Rust 原生队列验证与可失败的 CI 门禁**。详细证据见 `docs/VALIDATION_v030.md`。测试通过不等于模型已经超过经典基线，也不等于安全认证。
 
-详细结果与失败见 [`docs/VALIDATION_v020.md`](docs/VALIDATION_v020.md)。未隐藏经典基线更准、实验策略失效或接受比例为零的结果。
-
-## 安装
+## 安装与检查
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-python -m pip install -e '.[dev]'
-isac-wm doctor
-pytest
+python -m pip install -c ci/constraints.txt -e '.[dev]'
+isac-wm doctor --device cpu
+python scripts/ci.py --profile python --out validation/my-python-ci
 ```
 
-最低Python3.11。此版本在Python3.13.5、PyTorch2.10.0+cpu、NumPy2.3.5上实测。`--device auto`选择实际可用的CUDA/MPS/CPU，明确指定不可用设备会报错，不会冒充GPU执行。
-
-## 运行附带检查点
+使用 Python 3.11–3.13。完整工具链可使用 `bash scripts/bootstrap.sh`：Rust 固定为 1.85.1，带 rustfmt/Clippy。脚本不会静默安装系统链接器；rustup 不存在时需先安装或显式授权下载安装器。开发依赖是直接版本约束，不是完整传递依赖的哈希锁。见 `docs/CI.md`。
 
 ```bash
-isac-wm evaluate --checkpoint checkpoints/v020.pt   --calibration checkpoints/calibration-v020.json   --out runs/my-evaluation --episodes 8 --threads 2
+# 全部门禁：缺工具或任何失败都不允许返回成功
+python scripts/ci.py --profile all --out validation/my-full-ci
 ```
 
-打开输出目录的 `replay.html`。它是自包含本地文件，支持暂停、速度、拖动、选择实验、误差曲线和状态诊断。`checkpoints/development.pt`为v0.1旧检查点，保留兼容性测试，勿与新检查点的校准文件混用。
+输出目录必须是新的，避免覆盖旧证据。退出码 0=通过、1=失败、2=缺前提条件。原生队列是独立组件；当前主实验使用 Python 参考队列，并用相同随机协议参考验证二者行为。
 
-## 自己从零训练与恢复
+## 延迟进入模型与决策
 
 ```bash
-isac-wm train --out runs/train-a --episodes 192 --epochs 24   --batch-size 8 --features 48 --hidden 96 --threads 2
-
-# 恢复到总计40轮；必须使用新输出目录和匹配的原训练参数。
-isac-wm train --resume runs/train-a/resume.pt --out runs/train-b   --episodes 192 --epochs 40 --batch-size 8 --features 48 --hidden 96 --threads 2
+isac-wm evaluate --checkpoint checkpoints/v020.pt \
+  --out runs/fixed-150ms --episodes 4 --device cpu --threads 2 \
+  --latency-mode fixed --compute-ms 150
 ```
 
-`--patience`启用早停；`--max-dataset-gb`限制估算的数据集分配。续训保存优化器、随机状态、当前与最佳模型；本轮CPU小任务恢复与连续训练逐参数一致，不承诺跨设备位级一致。
+附带 `v020.pt` 是上一版自主训练检查点，本版用它做配对回归和延迟敏感性评测，没有冒充新的精度突破。运行输出 `evaluation.json` 和独立 HTML 回放。
 
-## 校准与故障扫描
+- `reference`：保留旧的逻辑瞬时推理模式，仅用于比较和旧校准兼容。
+- `fixed`：指定假设服务时延；计算完成前，输出和感知指令都不可用。
+- `measured`：以实际主机推理耗时驱动虚拟时间，依赖机器负载，只作诊断。
+
+传感器采集在推理忙碌时继续；队列有界，丢弃新包必须记入日志。无输出时显示 `no_output`。结果发布取上一个已完成任务，并按声明的运动/协方差模型传播到当前时刻。
+
+**时间分辨率仍由仿真 dt 决定。**默认 dt=100ms 时，结果发布向上取整到下一 tick；不能用这一离散实验宣称硬件有几毫秒的优势。`fixed` 的150ms不是这台电脑的实测耗时。完整语义见 `docs/RUNTIME.md`。
+
+## 从零训练、恢复与校准
 
 ```bash
-isac-wm calibrate --checkpoint runs/train-a/model.pt   --out runs/my-calibration.json --episodes 32 --alpha .1 --threads 2
-
-isac-wm evaluate --checkpoint runs/train-a/model.pt   --calibration runs/my-calibration.json --out runs/test --episodes 8 --threads 2
-
-isac-wm stress --checkpoint checkpoints/v020.pt   --out runs/fault-tests --episodes 4 --threads 2
-
-# 显式实验选项：未校准方差风险策略已观察到失效，不作为默认策略。
-isac-wm evaluate --checkpoint checkpoints/v020.pt --out runs/experimental   --policies fixed,predictive,risk,guarded --episodes 8 --threads 2
-
-python scripts/benchmark_local.py --out runs/benchmark-new.json
+isac-wm train --out runs/train-a --episodes 192 --epochs 24 \
+  --batch-size 8 --features 48 --hidden 96 --device cpu --threads 2
+isac-wm train --resume runs/train-a/resume.pt --out runs/train-b \
+  --episodes 192 --epochs 40 --batch-size 8 --features 48 --hidden 96 \
+  --device cpu --threads 2
+isac-wm calibrate --checkpoint runs/train-a/model.pt \
+  --out runs/calibration-150ms.json --episodes 32 \
+  --latency-mode fixed --compute-ms 150 --device cpu --threads 2
+isac-wm evaluate --checkpoint runs/train-a/model.pt \
+  --calibration runs/calibration-150ms.json --out runs/test-150ms --episodes 8 \
+  --latency-mode fixed --compute-ms 150 --device cpu --threads 2
 ```
 
-校准按独立轨迹而不是逐帧划分；指纹、场景、策略和数据分割不匹配会拒绝使用。故障扫描不会把正常场景校准证书套到分布外场景。监测是有效性检查，不是车辆或真实设备安全认证。
+校准绑定模型、场景、策略、分割和**运行时协议**。改时延/队列上限/协方差模型，需重新校准；实测时延模式不接受固定配置校准。独立轨迹覆盖不是条件接受风险保证，也不是对分布外或物理安全的保证。
 
-## 模型与运行语义
+训练显式使用批量编码，逐步评测默认严格前缀模式。既测试两条路径的数值/梯度一致性，也独立测试未来输入梯度为零。数据集内存预算是预估分配检查，不是整个进程的硬内存隔离。
 
-- 视觉CNN和无线MLP从零初始化；模态记忆、共同状态、显式时间跨度动态、状态分布和动作条件观测预测。
-- 测量动作不改变目标真实运动。
-- `capture_s`描述观测时刻，`available_s`描述数据可用时刻。未到达和重复证据不可进入估计器。
-- 神经快照保留最新采集时刻的模态观测；老包被记录为忽略。卡尔曼参考则按全部已交付观测重放，因此两者保留证据的机制不同。
-- 缓存卡尔曼只重放受乱序插入影响的后缀；重复查询不重复注入过程噪声。
-- 整序列训练时批量编码新的观测，不反复编码相同旧图像；保持时间因果性。
-- `fixed`每周期请求quick；`predictive`是旧代理；`risk`是阈值启发式；`guarded`给risk加入无线证据新鲜度约束。均非已训练的VoI网络。
-- 感知使用共享时隙预算。通信量是AWGN时间分配代理，不是实测链路吞吐率。
-
-## 工程边界
-
-输入检查、数据上限、原子产物、校验和、超时与数据陈旧监测均已加入。仅加载可信检查点；本地校验和不提供来源认证。监测不访问真值。推理耗时只被记录，尚未进入模拟时钟排队。
-
-训练种子、校准种子、测试种子分别记录，整轨迹划分。首次5步保留在回放中但不计入汇总；所有方法一致。
-
-## 目录
-
-`src/isac_wm` 模型/仿真/估计/训练/校准/监测/CLI；`tests` Python测试；`crates/event-core` 原生队列；`docs` 设计与验证；`checkpoints` 本地分发检查点；`runs` 实际实验产物（不提交Git）；`validation` 执行记录。
-
-## GitHub
-
-本次没有远端推送。源码包配套Git bundle保留提交历史；`scripts/publish_private.sh`只在用户本机已认证、目标不存在时创建private仓库。检查点与原始运行产物被.gitignore排除，必要时另行作为受控产物存储，不要把完整原始数据塞入Git历史。
+## 故障测试与硬件
 
 ```bash
+isac-wm stress --checkpoint checkpoints/v020.pt --out runs/stress-150ms \
+  --episodes 4 --latency-mode fixed --compute-ms 150 --device cpu --threads 2
+python scripts/latency_sweep.py --checkpoint checkpoints/v020.pt --out runs/timing-sweep
+```
+
+故障扫描中的任一场景失败都会写记录并返回非零状态。明确选择不可用的 CUDA/MPS 会报错，不会冒充 GPU。本版实际测试 CPU；GitHub macOS job 也是 CPU，不等于 MPS 已经验证。
+
+## 发布和 GitHub CI
+
+本版没有完成 GitHub 推送，不能把本地/隔离环境执行当成 GitHub Actions 绿灯。工作流定义 Linux/Python 3.11、3.13，macOS/Python 3.12 CPU、Rust、静态检查与聚合门禁。Actions固定SHA，默认只读权限，不使用密钥和特权PR触发器。
+
+```bash
+# 新私有仓库；拒绝覆盖已有仓库与 origin
 bash scripts/publish_private.sh billlza/isac-world-model
+# 已推送后核对具体提交、触发并等待远端 CI
+bash scripts/verify_remote_ci.sh billlza/isac-world-model main
 ```
 
-不得把第三方受限代码、未授权权重或内部实验数据加入仓库。研究成果所有权与公开发布按学校/合作方约定确认，见 `RIGHTS.md`。
+需要由用户已认证的 GitHub CLI 执行；不向聊天提供访问令牌。机构/合作方的公开与知识产权安排仍按 `RIGHTS.md` 确认。

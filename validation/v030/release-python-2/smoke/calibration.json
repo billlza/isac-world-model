@@ -1,0 +1,161 @@
+{
+  "schema_version": 2,
+  "runtime": {
+    "protocol_version": "streaming-v1",
+    "mode": "fixed",
+    "compute_ms": 150.0,
+    "queue_capacity": 4096,
+    "output_acceleration_noise": 0.8
+  },
+  "model_fingerprint": "1ffe44962b2f1e22eb91f5d791ff321c779e282831ea4232252efc4f8334e18b",
+  "scene": {
+    "steps": 48,
+    "dt": 0.1,
+    "image_size": 24,
+    "room_m": 10.0,
+    "camera_period": 2,
+    "camera_delay_s": 0.13,
+    "delay_jitter_s": 0.04,
+    "dropout": 0.05,
+    "acceleration_std": 0.5,
+    "snr_linear": 10.0,
+    "bandwidth_hz": 1000000.0,
+    "camera_dropout": null,
+    "radio_dropout": null,
+    "radio_outlier_probability": 0.0,
+    "radio_outlier_scale_m": 4.0,
+    "occlusion_fraction": 0.16666666666666666,
+    "radio_delay_extra_s": 0.0
+  },
+  "variants": {
+    "kalman+fixed": {
+      "quantile": 4.147414290307834,
+      "alpha": 0.1,
+      "n_episodes": 10,
+      "rank": 10,
+      "episode_seeds": [
+        20000000,
+        20000001,
+        20000002,
+        20000003,
+        20000004,
+        20000005,
+        20000006,
+        20000007,
+        20000008,
+        20000009
+      ],
+      "episode_scores": [
+        1.6805427421527899,
+        1.6090634873783782,
+        1.6296338854800678,
+        1.518902339183769,
+        2.146749529211251,
+        2.2084388573177165,
+        4.147414290307834,
+        3.139372742235351,
+        1.442694849448238,
+        1.5402813259267019
+      ],
+      "score": "episode maximum diagonal-Mahalanobis position error",
+      "scored_from_step": 5
+    },
+    "kalman+guarded": {
+      "quantile": 3.998150878152511,
+      "alpha": 0.1,
+      "n_episodes": 10,
+      "rank": 10,
+      "episode_seeds": [
+        20000000,
+        20000001,
+        20000002,
+        20000003,
+        20000004,
+        20000005,
+        20000006,
+        20000007,
+        20000008,
+        20000009
+      ],
+      "episode_scores": [
+        1.8566847063275187,
+        1.5993340668318576,
+        1.6296338854800678,
+        1.4901043179679727,
+        2.0544124019529426,
+        2.217190703754696,
+        3.998150878152511,
+        2.9995258182420326,
+        1.493451773845009,
+        1.2745570615356414
+      ],
+      "score": "episode maximum diagonal-Mahalanobis position error",
+      "scored_from_step": 5
+    },
+    "model+fixed": {
+      "quantile": 2.368072742439527,
+      "alpha": 0.1,
+      "n_episodes": 10,
+      "rank": 10,
+      "episode_seeds": [
+        20000000,
+        20000001,
+        20000002,
+        20000003,
+        20000004,
+        20000005,
+        20000006,
+        20000007,
+        20000008,
+        20000009
+      ],
+      "episode_scores": [
+        1.5324583629152997,
+        1.859128811910761,
+        1.7567668501840883,
+        1.5717318076317237,
+        1.0639767219224239,
+        1.909953811009003,
+        2.368072742439527,
+        1.8516685584730563,
+        2.0584892151037244,
+        2.0454088220671345
+      ],
+      "score": "episode maximum diagonal-Mahalanobis position error",
+      "scored_from_step": 5
+    },
+    "model+guarded": {
+      "quantile": 2.368072742439527,
+      "alpha": 0.1,
+      "n_episodes": 10,
+      "rank": 10,
+      "episode_seeds": [
+        20000000,
+        20000001,
+        20000002,
+        20000003,
+        20000004,
+        20000005,
+        20000006,
+        20000007,
+        20000008,
+        20000009
+      ],
+      "episode_scores": [
+        1.5324583629152997,
+        1.859128811910761,
+        1.7567668501840883,
+        1.5717318076317237,
+        1.0639767219224239,
+        1.909953811009003,
+        2.368072742439527,
+        1.8516685584730563,
+        2.0584892151037244,
+        2.0454088220671345
+      ],
+      "score": "episode maximum diagonal-Mahalanobis position error",
+      "scored_from_step": 5
+    }
+  },
+  "scope": "episode-marginal, same-policy, same-distribution; not conditional accepted-risk assurance"
+}

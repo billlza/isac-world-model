@@ -13,6 +13,7 @@ from .events import EventQueue, SnapshotBuffer
 from .model import EventBeliefModel
 from .simulator import SceneConfig, ToyScene, communication_bits
 from .training import INPUT_KEYS
+from .runtime import RuntimeConfig
 
 
 def synchronize(device: torch.device) -> None:
@@ -22,7 +23,7 @@ def synchronize(device: torch.device) -> None:
         torch.mps.synchronize()
 
 
-def rollout(seed: int, config: SceneConfig, estimator: str, policy: str,
+def _reference_rollout(seed: int, config: SceneConfig, estimator: str, policy: str,
             model: EventBeliefModel | None = None, device: torch.device | None = None,
             *, monitor: MonitorConfig | None = None, quantile: float | None = None,
             sensor_budget: float = .1, gate_threshold: float | None = None) -> dict:
@@ -89,6 +90,17 @@ def rollout(seed: int, config: SceneConfig, estimator: str, policy: str,
                      "age_s": snap["age"].tolist(), "valid": snap["valid"].tolist(),
                      "arrived_ids": [o.uid for o in ready], "queue_depth": len(queue),
                      "compute_s": elapsed})
+    metrics, statuses = summarize_trace(rows, timings, monitor, quantile, budget,
+                                        config, tracker, buffer, queue)
+    if estimator != "kalman":
+        metrics["replayed_filter_updates"] = 0
+        metrics["gated_radio_or_vision_measurements"] = 0
+    return {"seed": seed, "estimator": estimator, "policy": policy,
+            "runtime": RuntimeConfig().to_dict(),
+            "metrics": metrics, "status_counts": statuses, "trace": rows}
+
+
+def summarize_trace(rows, timings, monitor, quantile, budget, config, tracker, buffer, queue):
     scored = rows[5:]  # startup is retained in trace, explicitly excluded from summary
     errors = np.array([r["error_m"] for r in scored])
     accepted_rows = [r for r in scored if r["accepted"]]
@@ -109,8 +121,8 @@ def rollout(seed: int, config: SceneConfig, estimator: str, policy: str,
                "deadline_miss_fraction": sum(t*1000 > monitor.compute_deadline_ms for t in timings)/len(timings),
                "queue_peak": max(r["queue_depth"] for r in rows),
                "maximum_error_m": float(errors.max()),
-               "replayed_filter_updates": tracker.replayed_updates if estimator == "kalman" else 0,
-               "gated_radio_or_vision_measurements": tracker.rejected_measurements if estimator == "kalman" else 0,
+               "replayed_filter_updates": tracker.replayed_updates,
+               "gated_radio_or_vision_measurements": tracker.rejected_measurements,
                "action_skip_count": sum(r["action"] == 0 for r in rows),
                "action_quick_count": sum(r["action"] == 1 for r in rows),
                "action_precise_count": sum(r["action"] == 2 for r in rows),
@@ -119,21 +131,44 @@ def rollout(seed: int, config: SceneConfig, estimator: str, policy: str,
                           np.asarray(r["position_variance"])) <= quantile**2 for r in scored))),
                "ignored_older_snapshot_packets": buffer.ignored_older,
                "undelivered_at_end": len(queue)}
-    return {"seed": seed, "estimator": estimator, "policy": policy,
-            "metrics": metrics, "status_counts": statuses, "trace": rows}
+    return metrics, statuses
+
+
+def rollout(seed: int, config: SceneConfig, estimator: str, policy: str,
+            model: EventBeliefModel | None = None, device: torch.device | None = None,
+            *, monitor: MonitorConfig | None = None, quantile: float | None = None,
+            sensor_budget: float = .1, gate_threshold: float | None = None,
+            runtime: RuntimeConfig | None = None) -> dict:
+    integer(seed, "seed", 0, 2**32-1)
+    if estimator not in {"kalman", "model"} or policy not in {"fixed", "predictive", "risk", "guarded"}:
+        raise ValueError("Unknown estimator/policy")
+    if estimator == "model" and (model is None or device is None):
+        raise ValueError("Neural estimator needs a loaded model/device")
+    runtime = runtime or RuntimeConfig()
+    if runtime.mode == "measured" and quantile is not None:
+        raise ValueError("Measured timing is diagnostic; use fixed timing for calibration")
+    options = dict(monitor=monitor, quantile=quantile, sensor_budget=sensor_budget,
+                   gate_threshold=gate_threshold)
+    if runtime.mode == "reference":
+        return _reference_rollout(seed, config, estimator, policy, model, device, **options)
+    from .streaming import streaming_rollout
+    return streaming_rollout(seed, config, estimator, policy, model, device,
+                             runtime=runtime, **options)
 
 
 def evaluate(outdir: Path, model: EventBeliefModel, scene: SceneConfig, device: torch.device,
              episodes: int = 8, seed: int = 30_000_000, *,
              policies: tuple[str, ...] = ("fixed", "predictive"), calibration: dict | None = None,
-             monitor: MonitorConfig | None = None, sensor_budget: float = .1) -> dict:
+             monitor: MonitorConfig | None = None, sensor_budget: float = .1,
+             runtime: RuntimeConfig | None = None) -> dict:
+    runtime = runtime or RuntimeConfig()
     integer(episodes, "episodes", 1, 10_000)
     integer(seed, "seed", 0, 2**32-1-episodes)
     if not policies or len(policies) != len(set(policies)) or set(policies)-{"fixed", "predictive", "risk", "guarded"}:
         raise ValueError("Invalid policies")
     if calibration is not None:
         from .calibration import validate_calibration
-        validate_calibration(calibration, model, scene, list(range(seed, seed+episodes)))
+        validate_calibration(calibration, model, scene, list(range(seed, seed+episodes)), runtime=runtime)
         if sensor_budget != .1:
             raise ValueError("Calibration was collected at default budget; changed budget needs new calibration")
     if set(range(seed, seed+episodes)).intersection(getattr(model, "provenance_seeds", set())):
@@ -155,7 +190,7 @@ def evaluate(outdir: Path, model: EventBeliefModel, scene: SceneConfig, device: 
                         raise ValueError("No calibration for the selected estimator/policy")
                     quantile = calibration["variants"][key]["quantile"]
                 runs.append(rollout(s, scene, estimator, policy, model, device,
-                                    quantile=quantile, monitor=monitor, sensor_budget=sensor_budget))
+                                    quantile=quantile, monitor=monitor, sensor_budget=sensor_budget, runtime=runtime))
     summary = {}
     for estimator in ("kalman", "model"):
         for policy in policies:
@@ -164,13 +199,16 @@ def evaluate(outdir: Path, model: EventBeliefModel, scene: SceneConfig, device: 
                 key: (None if not (values := [m[key] for m in metrics if m[key] is not None])
                       else float(np.mean(values))) for key in metrics[0]}
     report = {"status": "engineering smoke experiment; no superiority claim",
+              "schema_version": 2, "runtime": runtime.to_dict(),
               "scored_from_step": 5, "scene": scene.to_dict(), "test_seed_start": seed,
               "test_episodes": episodes, "summary": summary, "runs": runs,
               "monitor": (monitor or MonitorConfig()).to_dict(),
               "calibration": "none" if calibration is None else {"fingerprint": calibration["model_fingerprint"], "scope": calibration["scope"]},
               "limitations": ["synthetic orthographic images and processed radio features",
                               "AWGN time-sharing proxy, no waveform-level ISAC or quantum model",
-                              "reported compute time is measured; it does not advance simulation clock",
+                              ("reference: measured compute does not advance the simulation clock" if runtime.mode == "reference" else
+                               "single-worker tick-quantized timing; no GPU/OS scheduler or physical latency validation"),
+                              "outputs between completions use an explicit constant-velocity covariance model",
                               "all methods share an airtime cap; actual usage may differ",
                               "neural late older packets are ignored; Kalman replays all delivered evidence",
                               ("no calibration: results are not accepted by the default monitor" if calibration is None else

@@ -1,0 +1,18 @@
+{
+  "status": "passed",
+  "runner": "system Chromium via Playwright, set_content (file navigation unavailable)",
+  "html_sha256": "4babed5d0f894c5e91fb1939137f93c9cbe436bbaca49441bd96f92cccbbf269",
+  "run_count": 16,
+  "checks": [
+    "run selection",
+    "timeline slider",
+    "play/pause advances time",
+    "reset",
+    "desktop render",
+    "390px render",
+    "no JS error",
+    "no external request"
+  ],
+  "page_errors": [],
+  "requests": []
+}

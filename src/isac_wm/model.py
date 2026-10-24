@@ -128,7 +128,10 @@ class EventBeliefModel(nn.Module):
         return out, (h, pv, pr)
 
     def forward(self, batch: dict[str, Tensor], forecast_s: float = .3,
-                *, batched_encoding: bool = True) -> dict[str, Tensor]:
+                *, batched_encoding: bool = False) -> dict[str, Tensor]:
+        # Streaming-safe is the default: a future frame cannot even change the
+        # encoder batch shape used for a past frame. Explicit batched_encoding
+        # is a training throughput optimisation, equivalent within FP tolerance.
         b, t = batch["image"].shape[:2]
         finite(forecast_s, "forecast_s")
         memory = self.initial(b, batch["image"].device)

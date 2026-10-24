@@ -14,3 +14,11 @@ data/
 .DS_Store
 .env
 .env.*
+
+.coverage
+htmlcov/
+.ruff_cache/
+validation/local-ci/
+*.egg-info/
+dist/
+build/
