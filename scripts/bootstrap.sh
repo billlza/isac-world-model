@@ -21,7 +21,8 @@ TARGET_PYTHON="${TARGET_PYTHON:-$(cat .python-version)}"
 "$PYTHON" -m venv .bootstrap
 .bootstrap/bin/python -m pip install --upgrade "pip==$PIP_VERSION" "uv==$UV_VERSION"
 export PATH="$ROOT/.bootstrap/bin:$PATH"
-uv python install "$TARGET_PYTHON"
+# The venv resolves this managed interpreter directly; do not create user-level launchers.
+uv python install --no-bin "$TARGET_PYTHON"
 if [[ -e .venv && "${RECREATE_VENV:-0}" != 1 ]]; then
   echo '.venv exists; refusing a silent cross-version replacement. Use RECREATE_VENV=1 after saving it.' >&2
   exit 2
