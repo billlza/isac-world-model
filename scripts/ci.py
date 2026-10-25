@@ -7,7 +7,6 @@ Network provisioning is deliberately separate (scripts/bootstrap.sh).
 from __future__ import annotations
 
 import argparse
-import hashlib
 import importlib.metadata
 import importlib.util
 import json
@@ -21,6 +20,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "scripts"))
+from evidence import output_snapshot, source_snapshot, tree_digest  # noqa: E402
 
 
 def run_step(name, command, out, env, timeout=300):
@@ -63,7 +64,9 @@ def run_step(name, command, out, env, timeout=300):
 def main(argv=None):
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--profile", choices=["python", "native", "quality", "security", "all"], default="all"
+        "--profile",
+        choices=["python", "native", "quality", "security", "reproducibility", "all"],
+        default="all",
     )
     parser.add_argument("--out", type=Path, default=ROOT / "validation/local-ci")
     args = parser.parse_args(argv)
@@ -91,6 +94,7 @@ def main(argv=None):
             ("dependency-policy", [python, "scripts/dependencies.py", "check"], 60),
             ("dependency-environment", [python, "scripts/dependencies.py", "environment"], 60),
             ("pip-check", [python, "-m", "pip", "check"], 60),
+            ("lock-check", [python, "-m", "uv", "lock", "--check", "--python", python], 90),
             (
                 "environment-snapshot",
                 [python, "scripts/dependencies.py", "snapshot", "--out", str(out / "environment.json")],
@@ -131,6 +135,7 @@ def main(argv=None):
         ]
     if profile in {"native", "all"}:
         specs += [
+            ("rust-toolchain", [python, "scripts/check_rust.py"], 60),
             ("rustfmt", ["cargo", "fmt", "--all", "--", "--check"], 120),
             (
                 "clippy",
@@ -163,27 +168,14 @@ def main(argv=None):
             ),
         ]
 
-    def source_snapshot():
-        files = [
-            p
-            for base in ("src", "tests", "scripts", "crates", ".github", "ci")
-            for p in (ROOT / base).rglob("*")
-            if p.is_file()
-            and p.suffix in {".py", ".rs", ".toml", ".yml", ".sh", ".txt", ".json", ".lock"}
-            and not any(part.endswith(".egg-info") or part == "__pycache__" for part in p.parts)
-        ]
-        files += [
-            ROOT / p
-            for p in (
-                "pyproject.toml",
-                "Cargo.toml",
-                "Cargo.lock",
-                "rust-toolchain.toml",
-                "uv.lock",
-                ".python-version",
+    if profile in {"reproducibility", "all"}:
+        specs += [
+            (
+                "reproducible-install",
+                [python, "scripts/clean_install.py", "--out", str(out / "reproducible-install.json")],
+                1200,
             )
         ]
-        return {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(files)}
 
     source_before = source_snapshot()
     results = []
@@ -193,7 +185,9 @@ def main(argv=None):
             blocked = "ruff is not installed"
         if name == "dependency-audit" and importlib.util.find_spec("pip_audit") is None:
             blocked = "pip-audit is not installed"
-        if name in {"rustfmt", "clippy", "rust-tests", "native-build"} and not shutil.which("cargo"):
+        if name in {"rust-toolchain", "rustfmt", "clippy", "rust-tests", "native-build"} and not shutil.which(
+            "cargo"
+        ):
             blocked = "cargo is not installed"
         if name == "native-parity" and not any(
             r["name"] == "native-build" and r["status"] == "passed" for r in results
@@ -242,13 +236,15 @@ def main(argv=None):
         except importlib.metadata.PackageNotFoundError:
             versions[package] = None
     report = {
-        "schema_version": 1,
+        "schema_version": 2,
         "profile": profile,
         "status": status,
         "generated_utc": datetime.now(timezone.utc).isoformat(),
         "python": sys.version,
         "packages": versions,
         "source_sha256": source_before,
+        "source_tree_sha256": tree_digest(source_before),
+        "artifact_sha256": output_snapshot(out),
         "steps": results,
     }
     (out / "ci-report.json").write_text(json.dumps(report, indent=2) + "\n")

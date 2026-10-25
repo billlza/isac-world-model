@@ -36,3 +36,9 @@ artifacts/
 LOCAL_COMMIT.txt
 RELEASE.json
 SHA256SUMS
+
+# Git history shipped with source archives; never push the bundle itself
+history.bundle
+
+# Optional historical research checkpoints stay local, including their sidecars
+checkpoints/

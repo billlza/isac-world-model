@@ -1,3 +1,13 @@
+# v0.4.1 — release evidence and isolated installation
+
+- Fix first-publish omission of uv.lock and .python-version; preserve exact Git history.
+- Require a matching full-CI source digest before remote writes.
+- Add bounded, explicit GitHub publication/verification receipts; no force-push or visibility changes.
+- Add cold-cache installation and a second offline installation into separate virtual environments.
+- Check actual Rust/Cargo/linker tools, lock consistency and persistent project-local activation.
+- Bind complete CI check results to top-level evidence files and executable source/build inputs.
+- Keep dependency pins from v0.4.0 after a fresh upstream check; no model-accuracy claim.
+
 # Changelog
 
 ## 0.4.0 — 2026-10-24

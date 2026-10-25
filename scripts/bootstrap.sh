@@ -3,6 +3,15 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 ROOT="$PWD"
+# Stop before any installation if an existing environment was not explicitly approved.
+if [[ -e .venv && "${RECREATE_VENV:-0}" != 1 ]]; then
+  echo '.venv exists; use scripts/env.sh, or explicitly set RECREATE_VENV=1.' >&2
+  exit 2
+fi
+command -v git >/dev/null || { echo 'git is required for archive/history verification.' >&2; exit 2; }
+command -v cc >/dev/null || { echo 'A system linker is required (Xcode CLT or build-essential).' >&2; exit 2; }
+export UV_PYTHON_INSTALL_DIR="$ROOT/.toolchains/python"
+export UV_CACHE_DIR="$ROOT/.toolchains/uv-cache"
 PYTHON="${PYTHON:-python3}"
 "$PYTHON" -c 'import sys; assert sys.version_info >= (3,10), "Bootstrap needs Python >=3.10"'
 UV_VERSION="$("$PYTHON" -c 'import json; print(json.load(open("ci/versions.json"))["packages"]["uv"])')"
@@ -38,4 +47,7 @@ command -v cc >/dev/null || { echo 'A system linker is required: Xcode CLT on ma
 python scripts/dependencies.py check
 python scripts/dependencies.py environment
 python -m pip check
-python scripts/ci.py --profile all --out "validation/local-ci/$(date -u +%Y%m%dT%H%M%SZ)"
+OUT="validation/local-ci/$(date -u +%Y%m%dT%H%M%SZ)-$$"
+python scripts/ci.py --profile all --out "$OUT"
+python scripts/evidence.py --report "$OUT/ci-report.json"
+printf '\nReusable environment: bash scripts/env.sh <command>\nFull evidence: %s/ci-report.json\n' "$OUT"

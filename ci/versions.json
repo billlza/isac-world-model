@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "checked_utc": "2026-10-24",
+  "checked_utc": "2026-10-25",
   "policy": "latest non-yanked stable releases; exact pins after validation",
   "python": {
     "preferred": "3.14.9",
