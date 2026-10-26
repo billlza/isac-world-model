@@ -14,6 +14,7 @@ from .runtime import RuntimeConfig
 from .safety import MonitorConfig
 from .scenarios import SCENARIOS, scenario_config
 from .simulator import SceneConfig
+from .structured import StructuredConfig
 from .toolchain import inspect_toolchain
 from .training import load_model, resolve_device, runtime_info, train
 from .viewer import write_viewer
@@ -41,6 +42,9 @@ def main() -> None:
     p.add_argument("--episodes", type=int, default=96)
     p.add_argument("--batch-size", type=int, default=8)
     p.add_argument("--seed", type=int, default=7)
+    p.add_argument("--architecture", choices=["gru", "structured", "structured-attention"], default="gru")
+    p.add_argument("--memory-size", type=int, default=16)
+    p.add_argument("--heads", type=int, default=4)
     p.add_argument("--features", type=int, default=48)
     p.add_argument("--hidden", type=int, default=96)
     p.add_argument("--steps", type=int, default=48)
@@ -107,7 +111,13 @@ def main() -> None:
                 args.device,
                 args.seed,
                 scene=SceneConfig(steps=args.steps, dt=args.dt),
-                model_config=ModelConfig(args.features, args.hidden),
+                model_config=(
+                    ModelConfig(args.features, args.hidden)
+                    if args.architecture == "gru"
+                    else StructuredConfig(
+                        args.features, args.hidden, args.architecture, args.memory_size, args.heads
+                    )
+                ),
                 resume=args.resume,
                 learning_rate=args.learning_rate,
                 patience=args.patience,
