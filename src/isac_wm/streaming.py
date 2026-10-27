@@ -19,6 +19,7 @@ from .imm import IMMConfig, ReplayIMM
 from .safety import MonitorConfig, assess
 from .simulator import ToyScene, communication_bits
 from .training import INPUT_KEYS
+from .voi import VoIConfig, choose_sensing_by_voi
 
 
 @dataclass
@@ -32,6 +33,7 @@ class _Result:
     age: np.ndarray
     requested_action: int
     observation_ids: list[int]
+    voi_decision: dict | None = None
 
 
 def propagate(state: np.ndarray, covariance: np.ndarray, dt: float, noise: float):
@@ -68,6 +70,7 @@ def streaming_rollout(
     gate_threshold=None,
     baseline_process_noise=0.8,
     imm_config: IMMConfig | None = None,
+    voi_config: VoIConfig | None = None,
 ):
     from .evaluation import summarize_trace, synchronize
 
@@ -132,8 +135,25 @@ def streaming_rollout(
                     )
                     decision_var = future["logvar"][0, :2].exp().cpu().numpy() * config.room_m**2
                 synchronize(device)
-            if policy == "fixed":
+            voi_detail = None
+            if policy == "skip":
+                request = 0
+            elif policy == "fixed":
                 request = 1
+            elif policy == "voi":
+                # Acquisition cannot begin until computation has completed and
+                # the action is published at the next simulator tick.
+                service_guess = runtime.service_seconds(time.perf_counter() - started)
+                proposal = choose_sensing_by_voi(
+                    state,
+                    covariance,
+                    config,
+                    budget.tokens,
+                    planned_actuation_wait_s=service_guess,
+                    configuration=voi_config,
+                )
+                request = proposal.action
+                voi_detail = proposal.to_dict()
             elif policy == "predictive":
                 request = predictive_action(
                     decision_var, float(snap["age"].max()), config.room_m, budget.tokens
@@ -168,6 +188,7 @@ def streaming_rollout(
                 snap["age"].copy(),
                 request,
                 ready_ids,
+                voi_detail,
             )
             jobs.append(
                 {
@@ -180,6 +201,7 @@ def streaming_rollout(
                     "max_input_available_s": max((o.available_s for o in ready), default=None),
                     "published_s": None,
                     "requested_action": request,
+                    "voi_decision": voi_detail,
                     "executed_action": None,
                 }
             )
@@ -251,6 +273,7 @@ def streaming_rollout(
                 "radius_m": verdict["radius_m"],
                 "action": action,
                 "requested_action": requested,
+                "voi_decision": None if published is None else published.voi_decision,
                 "budget_tokens": budget.tokens,
                 "communication_bits_proxy": communication_bits(config, action),
                 "age_s": age.tolist(),

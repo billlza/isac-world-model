@@ -17,6 +17,7 @@ from .safety import MonitorConfig, assess
 from .simulator import SceneConfig, ToyScene, communication_bits
 from .training import INPUT_KEYS
 from .validation import integer
+from .voi import VoIConfig, choose_sensing_by_voi
 
 
 def synchronize(device: torch.device) -> None:
@@ -40,12 +41,15 @@ def _reference_rollout(
     gate_threshold: float | None = None,
     baseline_process_noise: float = 0.8,
     imm_config: IMMConfig | None = None,
+    voi_config: VoIConfig | None = None,
 ) -> dict:
     if estimator not in {"kalman", "kalman-gated", "imm", "imm-gated", "model"} or policy not in {
         "fixed",
+        "skip",
         "predictive",
         "risk",
         "guarded",
+        "voi",
     }:
         raise ValueError("Unknown estimator/policy")
     if estimator == "model" and (model is None or device is None):
@@ -73,6 +77,7 @@ def _reference_rollout(
         if estimator != "model":
             tracker.ingest(ready, now)
             state, cov = tracker.estimate(now)
+            covariance = cov
             var = np.diag(cov)
             decision_var = var[:2] + (3 * config.dt) ** 2 * var[2:]
         else:
@@ -82,13 +87,27 @@ def _reference_rollout(
                 future = model.forecast(pred["hidden"], 3 * config.dt)
                 state = pred["mean"][0].cpu().numpy() * config.state_scale
                 var = pred["logvar"][0].exp().cpu().numpy() * config.state_scale**2
+                covariance = (
+                    pred["covariance"][0].cpu().numpy() * np.outer(config.state_scale, config.state_scale)
+                    if "covariance" in pred
+                    else np.diag(var)
+                )
                 decision_var = future["logvar"][0, :2].exp().cpu().numpy() * config.room_m**2
             synchronize(device)
         elapsed = time.perf_counter() - tick
         timings.append(elapsed)
         budget.refill()
-        if policy == "fixed":
+        voi_detail = None
+        if policy == "skip":
+            requested = 0
+        elif policy == "fixed":
             requested = 1
+        elif policy == "voi":
+            proposal = choose_sensing_by_voi(
+                state, covariance, config, budget.tokens, configuration=voi_config
+            )
+            requested = proposal.action
+            voi_detail = proposal.to_dict()
         elif policy == "predictive":
             requested = predictive_action(
                 decision_var, float(snap["age"].max()), config.room_m, budget.tokens
@@ -136,6 +155,7 @@ def _reference_rollout(
                 "status": verdict["status"],
                 "radius_m": verdict["radius_m"],
                 "requested_action": requested,
+                "voi_decision": voi_detail,
                 "budget_tokens": budget.tokens,
                 "action": action,
                 "communication_bits_proxy": communication_bits(config, action),
@@ -232,13 +252,16 @@ def rollout(
     runtime: RuntimeConfig | None = None,
     baseline_process_noise: float = 0.8,
     imm_config: IMMConfig | None = None,
+    voi_config: VoIConfig | None = None,
 ) -> dict:
     integer(seed, "seed", 0, 2**32 - 1)
     if estimator not in {"kalman", "kalman-gated", "imm", "imm-gated", "model"} or policy not in {
         "fixed",
+        "skip",
         "predictive",
         "risk",
         "guarded",
+        "voi",
     }:
         raise ValueError("Unknown estimator/policy")
     if estimator == "model" and (model is None or device is None):
@@ -253,6 +276,7 @@ def rollout(
         gate_threshold=gate_threshold,
         baseline_process_noise=baseline_process_noise,
         imm_config=imm_config,
+        voi_config=voi_config,
     )
     if runtime.mode == "reference":
         return _reference_rollout(seed, config, estimator, policy, model, device, **options)
@@ -277,6 +301,7 @@ def evaluate(
     estimators: tuple[str, ...] = ("kalman", "model"),
     baseline_process_noise: float = 0.8,
     imm_config: IMMConfig | None = None,
+    voi_config: VoIConfig | None = None,
 ) -> dict:
     runtime = runtime or RuntimeConfig()
     integer(episodes, "episodes", 1, 10_000)
@@ -284,7 +309,7 @@ def evaluate(
     if (
         not policies
         or len(policies) != len(set(policies))
-        or set(policies) - {"fixed", "predictive", "risk", "guarded"}
+        or set(policies) - {"fixed", "skip", "predictive", "risk", "guarded", "voi"}
     ):
         raise ValueError("Invalid policies")
     if (
@@ -296,7 +321,14 @@ def evaluate(
     if calibration is not None:
         from .calibration import validate_calibration
 
-        validate_calibration(calibration, model, scene, list(range(seed, seed + episodes)), runtime=runtime)
+        validate_calibration(
+            calibration,
+            model,
+            scene,
+            list(range(seed, seed + episodes)),
+            runtime=runtime,
+            voi_config=voi_config,
+        )
         if "kalman" in estimators and baseline_process_noise != 0.8:
             raise ValueError(
                 "Calibration was collected with Kalman process noise 0.8; changed process noise is unsupported"
@@ -337,6 +369,7 @@ def evaluate(
                         runtime=runtime,
                         baseline_process_noise=baseline_process_noise,
                         imm_config=imm_config,
+                        voi_config=voi_config,
                     )
                 )
     summary = {}
@@ -356,6 +389,7 @@ def evaluate(
         "schema_version": 2,
         "runtime": runtime.to_dict(),
         "scored_from_step": 5,
+        "voi_configuration": (voi_config or VoIConfig()).__dict__,
         "scene": scene.to_dict(),
         "test_seed_start": seed,
         "test_episodes": episodes,
@@ -375,6 +409,7 @@ def evaluate(
             ),
             "outputs between completions use an explicit constant-velocity covariance model",
             "all methods share an airtime cap; actual usage may differ",
+            "VoI uses Gaussian covariance proxy; no unmeasured radio counterfactual observations",
             "neural late older packets are ignored; Kalman replays all delivered evidence",
             (
                 "no calibration: results are not accepted by the default monitor"

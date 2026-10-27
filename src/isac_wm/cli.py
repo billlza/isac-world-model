@@ -19,6 +19,7 @@ from .structured import StructuredConfig
 from .toolchain import inspect_toolchain
 from .training import load_model, resolve_device, runtime_info, train
 from .viewer import write_viewer
+from .voi import VoIConfig
 
 
 def _policies(text: str) -> tuple[str, ...]:
@@ -26,9 +27,19 @@ def _policies(text: str) -> tuple[str, ...]:
     if (
         not values
         or len(values) != len(set(values))
-        or set(values) - {"fixed", "predictive", "risk", "guarded"}
+        or set(values) - {"fixed", "skip", "predictive", "risk", "guarded", "voi"}
     ):
-        raise argparse.ArgumentTypeError("Use distinct policies from fixed,predictive,risk,guarded")
+        raise argparse.ArgumentTypeError("Use distinct policies from fixed,skip,predictive,risk,guarded,voi")
+    return values
+
+
+def _estimators(text: str) -> tuple[str, ...]:
+    values = tuple(x.strip() for x in text.split(","))
+    allowed = {"kalman", "kalman-gated", "imm", "imm-gated", "model"}
+    if not values or len(values) != len(set(values)) or set(values) - allowed:
+        raise argparse.ArgumentTypeError(
+            "Use distinct estimators from kalman,kalman-gated,imm,imm-gated,model"
+        )
     return values
 
 
@@ -110,6 +121,15 @@ def main() -> None:
             help="Service time in fixed mode, not a measured benchmark",
         )
         p.add_argument("--queue-capacity", type=int, default=4096)
+        p.add_argument(
+            "--voi-horizon", type=float, default=0.8, help="Common VoI prediction horizon in seconds"
+        )
+        p.add_argument(
+            "--voi-tradeoff",
+            type=float,
+            default=0.4,
+            help="Position-risk m² charged per lost communication Mbit",
+        )
     args = parser.parse_args()
     if not 1 <= args.threads <= 1024:
         parser.error("--threads must be between 1 and 1024")
@@ -140,6 +160,7 @@ def main() -> None:
             )
         elif args.command in {"evaluate", "calibrate", "stress"}:
             runtime = RuntimeConfig(args.latency_mode, args.compute_ms, args.queue_capacity)
+            voi_config = VoIConfig(args.voi_horizon, args.voi_tradeoff)
             model, scene, device = load_model(args.checkpoint, args.device)
             if args.command == "calibrate":
                 artifact = calibrate(
@@ -152,6 +173,7 @@ def main() -> None:
                     args.alpha,
                     args.policies,
                     runtime=runtime,
+                    voi_config=voi_config,
                 )
                 result = {
                     "path": str(args.out),
@@ -175,6 +197,7 @@ def main() -> None:
                     estimators=args.estimators,
                     baseline_process_noise=args.kf_process_noise,
                     imm_config=IMMConfig(switch_rate_hz=args.imm_switch_rate),
+                    voi_config=voi_config,
                     monitor=MonitorConfig(
                         max_information_age_s=args.max_age, compute_deadline_ms=args.deadline_ms
                     ),
@@ -204,6 +227,7 @@ def main() -> None:
                             estimators=args.estimators,
                             runtime=runtime,
                             monitor=MonitorConfig(compute_deadline_ms=args.deadline_ms),
+                            voi_config=voi_config,
                         )
                         write_viewer(report, args.out / name / "replay.html")
                         result["scenarios"][name] = {"status": "completed", "summary": report["summary"]}
