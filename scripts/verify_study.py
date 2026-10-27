@@ -14,8 +14,8 @@ import math
 from pathlib import Path
 
 import torch
-from compare_estimators import run_estimator, sha, sources
 
+from compare_estimators import run_estimator, sha, sources
 from isac_wm.artifacts import write_json
 from isac_wm.scenarios import scenario_config
 from isac_wm.simulator import SceneConfig
@@ -67,30 +67,17 @@ def verify(input_path: Path, out_path: Path) -> dict:
         for row in old["scores"]:
             scene = scenario_config(row["scenario"], SceneConfig(steps=48))
             for method, recorded in row["per_episode"].items():
-                model = (
-                    models[(row["training_seed"], method)]
-                    if method in {"structured", "structured-attention"}
-                    else None
-                )
+                model = models[(row["training_seed"], method)] if method in {
+                    "structured", "structured-attention"
+                } else None
                 for item in recorded:
                     fresh = run_estimator(
-                        method,
-                        seed=item["seed"],
-                        scene=scene,
-                        compute_ms=row["compute_ms"],
-                        model=model,
-                        kf_process_noise=tuning["kalman"]["chosen"],
+                        method, seed=item["seed"], scene=scene, compute_ms=row["compute_ms"],
+                        model=model, kf_process_noise=tuning["kalman"]["chosen"],
                         imm_switch_rate=tuning["imm"]["chosen"],
                     )
-                    for key in (
-                        "rmse_m",
-                        "p95_error_m",
-                        "maximum_error_m",
-                        "sensing_airtime",
-                        "communication_bits_proxy",
-                        "rejected",
-                        "no_output_fraction",
-                    ):
+                    for key in ("rmse_m", "p95_error_m", "maximum_error_m", "sensing_airtime", "communication_bits_proxy",
+                                "rejected", "no_output_fraction"):
                         if not math.isclose(fresh[key], item[key], abs_tol=1e-7, rel_tol=1e-7):
                             raise AssertionError(
                                 f"Mismatch {row['scenario']}/{row['compute_ms']}ms, "
@@ -98,8 +85,7 @@ def verify(input_path: Path, out_path: Path) -> dict:
                                 f"{fresh[key]} vs {item[key]}"
                             )
                     report["maximum_abs_position_rmse_difference_m"] = max(
-                        report["maximum_abs_position_rmse_difference_m"],
-                        abs(fresh["rmse_m"] - item["rmse_m"]),
+                        report["maximum_abs_position_rmse_difference_m"], abs(fresh["rmse_m"] - item["rmse_m"])
                     )
                     report["verified_episodes"] += 1
             report["recomputed_rows"] += 1
@@ -119,9 +105,7 @@ def main():
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args()
     result = verify(args.input, args.out)
-    print(
-        json.dumps({"status": result["status"], "verified_episodes": result["verified_episodes"]}, indent=2)
-    )
+    print(json.dumps({"status": result["status"], "verified_episodes": result["verified_episodes"]}, indent=2))
 
 
 if __name__ == "__main__":

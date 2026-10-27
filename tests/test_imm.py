@@ -92,22 +92,19 @@ def test_invalid_batch_atomic_and_budget():
     assert not tracker.observations
     tracker.ingest([one], 0.3)
     with pytest.raises(OverflowError, match="budget"):
-        tracker.ingest([radio(2, 0.1, 0.2), radio(3, 0.2, 0.3)], 0.4)
+        tracker.ingest([radio(2, .1, .2), radio(3, .2, .3)], 0.4)
     assert len(tracker.observations) == 1
     with pytest.raises(ValueError, match="monotonic"):
         tracker.ingest([], 0.1)
 
 
-@pytest.mark.parametrize(
-    "settings",
-    [
-        {"process_noises": (0.2,)},
-        {"process_noises": (0.2, -1)},
-        {"switch_rate_hz": -0.2},
-        {"gate_threshold": float("nan")},
-        {"max_observations": 0},
-    ],
-)
+@pytest.mark.parametrize("settings", [
+    {"process_noises": (0.2,)},
+    {"process_noises": (0.2, -1)},
+    {"switch_rate_hz": -0.2},
+    {"gate_threshold": float("nan")},
+    {"max_observations": 0},
+])
 def test_config_validation(settings):
     with pytest.raises(ValueError):
         IMMConfig(**settings)
@@ -116,13 +113,7 @@ def test_config_validation(settings):
 @pytest.mark.parametrize("estimator", ["imm", "imm-gated", "kalman-gated"])
 @pytest.mark.parametrize("mode", ["reference", "fixed"])
 def test_rollout_integrated(estimator, mode):
-    r = rollout(
-        80,
-        SceneConfig(steps=12),
-        estimator,
-        "fixed",
-        runtime=RuntimeConfig(mode, 150 if mode == "fixed" else 0),
-    )
+    r = rollout(80, SceneConfig(steps=12), estimator, "fixed", runtime=RuntimeConfig(mode, 150 if mode == "fixed" else 0))
     assert r["estimator"] == estimator
     assert np.isfinite(r["metrics"]["position_rmse_m"])
     assert r["metrics"]["replayed_filter_updates"] > 0
@@ -141,22 +132,12 @@ def test_opt_in_extra_estimators_leave_default_unchanged(tmp_path):
     model = EventBeliefModel()
     c = SceneConfig(steps=10)
     report = evaluate(
-        tmp_path / "extra",
-        model,
-        c,
-        torch.device("cpu"),
-        episodes=1,
-        seed=75_000_000,
-        policies=("fixed",),
-        estimators=("kalman", "kalman-gated", "imm", "imm-gated", "model"),
+        tmp_path / "extra", model, c, torch.device("cpu"), episodes=1, seed=75_000_000,
+        policies=("fixed",), estimators=("kalman", "kalman-gated", "imm", "imm-gated", "model"),
         runtime=RuntimeConfig("fixed", 150),
     )
     assert set(report["summary"]) == {
-        "kalman+fixed",
-        "kalman-gated+fixed",
-        "imm+fixed",
-        "imm-gated+fixed",
-        "model+fixed",
+        "kalman+fixed", "kalman-gated+fixed", "imm+fixed", "imm-gated+fixed", "model+fixed"
     }
     with pytest.raises(ValueError, match="Invalid estimators"):
         evaluate(tmp_path / "bad", model, c, torch.device("cpu"), estimators=("kalman", "kalman"))

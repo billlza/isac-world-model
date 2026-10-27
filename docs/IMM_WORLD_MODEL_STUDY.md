@@ -37,10 +37,6 @@ bash scripts/env.sh python scripts/compare_estimators.py \
 
 The script selects KF acceleration spectral density and IMM switching rate using **validation-only** trajectories. Held-out test trajectory IDs are disjoint between training-seed groups; the scenario variants share each trajectory **within** a group for paired comparisons. Attention and no-attention structured models use identical training seeds and backbone dimensions but **not** identical parameter counts or execution costs. The comparison script reports exploratory episode-bootstrap intervals; use `scripts/study_statistics.py` on an independently verified finished run for a group-aware bootstrap over training seeds and trajectories. Neither interval is a risk certificate. The script preserves per-episode RMSE, p95 error, resource usage, CPU latency, model checkpoints, training time, source fingerprints and failures.
 
-Schema version 2 also retains the complete evaluator `metrics`, `status_counts`, and `runtime` for every estimator and episode, even without `--keep-trace`. This includes late snapshot discards, queue overflow, observations still undelivered at termination, unfinished inference jobs, and measured-compute versus imposed-service deadline outcomes. The original short metric names remain for compatibility; a missing diagnostic in a version 1 record is unknown, not zero.
-
-Existing calibration artifacts were fitted with KF process noise 0.8. Calibrated KF evaluation rejects a different `--kf-process-noise`; tuned KF comparisons remain available without calibration. IMM and gated variants require their own calibration support before calibrated claims can be made.
-
 To evaluate a trusted, locally trained checkpoint with all classical alternatives:
 
 ```bash

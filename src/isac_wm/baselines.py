@@ -104,12 +104,7 @@ class ReplayKalman:
     """
 
     def __init__(
-        self,
-        room_m: float,
-        *,
-        gate_threshold: float | None = None,
-        max_observations: int = 100_000,
-        process_noise: float = 0.8,
+        self, room_m: float, *, gate_threshold: float | None = None, max_observations: int = 100_000, process_noise: float = 0.8
     ):
         self.room_m = finite(room_m, "room_m", positive=True)
         self.process_noise = finite(process_noise, "process_noise", positive=True)

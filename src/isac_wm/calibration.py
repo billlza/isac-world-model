@@ -20,6 +20,7 @@ from .model import EventBeliefModel
 from .runtime import RuntimeConfig
 from .simulator import SceneConfig
 from .validation import integer
+from .voi import VoIConfig
 
 
 def fit_episode_quantile(runs: list[dict], alpha: float = 0.1, scored_from: int = 5) -> dict:
@@ -73,6 +74,7 @@ def calibrate(
     policies: tuple[str, ...] = ("fixed", "guarded"),
     *,
     runtime: RuntimeConfig | None = None,
+    voi_config: VoIConfig | None = None,
 ) -> dict:
     from .evaluation import rollout
 
@@ -82,7 +84,7 @@ def calibrate(
     if (
         not policies
         or len(policies) != len(set(policies))
-        or set(policies) - {"fixed", "predictive", "risk", "guarded"}
+        or set(policies) - {"fixed", "skip", "predictive", "risk", "guarded", "voi"}
     ):
         raise ValueError("Invalid calibration policies")
     integer(episodes, "episodes", 1, 10000)
@@ -97,12 +99,13 @@ def calibrate(
     for estimator in ("kalman", "model"):
         for policy in policies:
             runs = [
-                rollout(i, scene, estimator, policy, model, device, runtime=runtime) for i in sorted(seeds)
+                rollout(i, scene, estimator, policy, model, device, runtime=runtime, voi_config=voi_config) for i in sorted(seeds)
             ]
             variants[f"{estimator}+{policy}"] = fit_episode_quantile(runs, alpha)
     artifact = {
         "schema_version": 2,
         "runtime": runtime.to_dict(),
+        "voi_configuration": (voi_config or VoIConfig()).__dict__,
         "model_fingerprint": fingerprint,
         "scene": scene.to_dict(),
         "variants": variants,
@@ -142,7 +145,7 @@ def load_calibration(path: Path) -> dict:
     SceneConfig(**data["scene"])
     for key, value in data["variants"].items():
         if key not in {
-            f"{e}+{p}" for e in ("kalman", "model") for p in ("fixed", "predictive", "risk", "guarded")
+            f"{e}+{p}" for e in ("kalman", "model") for p in ("fixed", "skip", "predictive", "risk", "guarded", "voi")
         } or not isinstance(value, dict):
             raise ValueError("Invalid calibration variant")
         if value.get("scored_from_step") != 5:
@@ -168,6 +171,7 @@ def validate_calibration(
     test_seeds: list[int],
     *,
     runtime: RuntimeConfig | None = None,
+    voi_config: VoIConfig | None = None,
 ) -> None:
     runtime = runtime or RuntimeConfig()
     expected_runtime = data.get("runtime", RuntimeConfig().to_dict())
@@ -175,6 +179,8 @@ def validate_calibration(
         raise ValueError("Calibration runtime mismatch; recalibrate for the new execution timing")
     if runtime.mode == "measured":
         raise ValueError("Measured timing cannot use fixed-profile calibration")
+    if data.get("voi_configuration", VoIConfig().__dict__) != (voi_config or VoIConfig()).__dict__:
+        raise ValueError("Calibration VoI configuration mismatch")
     if data["scene"] != scene.to_dict() or data["model_fingerprint"] != model_fingerprint(model):
         raise ValueError("Calibration model/scene mismatch; recalibrate instead of reusing a certificate")
     for value in data["variants"].values():
