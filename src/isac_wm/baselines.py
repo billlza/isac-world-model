@@ -104,9 +104,10 @@ class ReplayKalman:
     """
 
     def __init__(
-        self, room_m: float, *, gate_threshold: float | None = None, max_observations: int = 100_000
+        self, room_m: float, *, gate_threshold: float | None = None, max_observations: int = 100_000, process_noise: float = 0.8
     ):
         self.room_m = finite(room_m, "room_m", positive=True)
+        self.process_noise = finite(process_noise, "process_noise", positive=True)
         self.max_observations = integer(max_observations, "max_observations", 1)
         self.gate_threshold = (
             None if gate_threshold is None else finite(gate_threshold, "gate_threshold", positive=True)
@@ -153,7 +154,7 @@ class ReplayKalman:
             p = np.diag([self.room_m**2 / 12, self.room_m**2 / 12, 1.0, 1.0])
             time, rejected = 0.0, 0
         for obs in self._ordered[len(self._cache) :]:
-            f, q = transition(obs.capture_s - time)
+            f, q = transition(obs.capture_s - time, self.process_noise)
             x, p = f @ x, f @ p @ f.T + q
             time = obs.capture_s
             measurement = measurement_xy(obs, self.room_m)
@@ -173,7 +174,7 @@ class ReplayKalman:
             self.replayed_updates += 1
             self._cache.append((x.copy(), p.copy(), time, rejected))
         self.rejected_measurements = rejected
-        f, q = transition(now - time)
+        f, q = transition(now - time, self.process_noise)
         return f @ x, f @ p @ f.T + q
 
 

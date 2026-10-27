@@ -13,6 +13,7 @@ import torch
 from .artifacts import read_checkpoint, save_checkpoint, write_json
 from .model import EventBeliefModel, ModelConfig, training_loss
 from .simulator import SceneConfig, recorded_episode
+from .structured import StructuredConfig, build_model, model_config_from_dict
 from .validation import finite, integer
 
 INPUT_KEYS = ("image", "radio", "age", "valid", "new", "dt")
@@ -61,7 +62,7 @@ def train(
     device_name: str = "auto",
     seed: int = 7,
     scene: SceneConfig | None = None,
-    model_config: ModelConfig | None = None,
+    model_config: ModelConfig | StructuredConfig | None = None,
     *,
     resume: Path | None = None,
     learning_rate: float = 1e-3,
@@ -98,7 +99,9 @@ def train(
     val_seeds = [10_000_000 + seed * 100000 + i for i in range(max(8, episodes // 8))]
     data = [recorded_episode(s, scene) for s in train_seeds]
     val = [recorded_episode(s, scene) for s in val_seeds]
-    model = EventBeliefModel(model_config).to(device)
+    if isinstance(model_config, StructuredConfig) and model_config.room_m != scene.room_m:
+        raise ValueError("Structured model geometry must match scene room_m")
+    model = build_model(model_config).to(device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=1e-4)
     rng = np.random.default_rng(seed)
     manifest = {
@@ -246,7 +249,12 @@ def load_model(path: Path, device_name: str = "auto") -> tuple[EventBeliefModel,
         for v in checkpoint["state_dict"].values()
     ):
         raise ValueError("Checkpoint contains invalid/non-finite parameters")
-    model = EventBeliefModel(ModelConfig(**checkpoint["model_config"]))
+    model = build_model(model_config_from_dict(checkpoint["model_config"]))
+    if (
+        isinstance(model.config, StructuredConfig)
+        and model.config.room_m != checkpoint["scene_config"]["room_m"]
+    ):
+        raise ValueError("Checkpoint model and scene geometry do not match")
     model.load_state_dict(checkpoint["state_dict"], strict=True)
     model.to(device).eval()
     model.provenance_seeds = set(checkpoint.get("train_episode_seeds", [])) | set(

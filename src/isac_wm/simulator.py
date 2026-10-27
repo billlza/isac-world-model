@@ -52,6 +52,8 @@ class SceneConfig:
     radio_outlier_scale_m: float = 4.0
     occlusion_fraction: float = 1 / 6
     radio_delay_extra_s: float = 0.0
+    radio_range_bias_m: float = 0.0
+    radio_angle_bias_rad: float = 0.0
 
     def __post_init__(self) -> None:
         integer(self.steps, "steps", 8, 100_000)
@@ -63,6 +65,8 @@ class SceneConfig:
                 raise ValueError(f"{name} must be in [0,1]")
         finite(self.radio_outlier_scale_m, "radio_outlier_scale_m")
         finite(self.radio_delay_extra_s, "radio_delay_extra_s")
+        finite(self.radio_range_bias_m, "radio_range_bias_m")
+        finite(self.radio_angle_bias_rad, "radio_angle_bias_rad")
         if self.steps < 8 or self.image_size < 16 or self.camera_period < 1:
             raise ValueError("Invalid sequence, image size or sensor period")
         for name in ("dt", "room_m", "bandwidth_hz"):
@@ -178,8 +182,8 @@ class ToyScene:
         s = self._truth[step]
         r = max(np.linalg.norm(s[:2]), 1e-6)
         angle = math.atan2(float(s[1]), float(s[0]))
-        noisy_r = max(0.0, r + rng.normal(0, spec.range_sigma_m))
-        noisy_a = angle + rng.normal(0, spec.angle_sigma_rad)
+        noisy_r = max(0.0, r + c.radio_range_bias_m + rng.normal(0, spec.range_sigma_m))
+        noisy_a = angle + c.radio_angle_bias_rad + rng.normal(0, spec.angle_sigma_rad)
         vr = float(np.dot(s[:2], s[2:]) / r) + rng.normal(0, spec.velocity_sigma_mps)
         # Fault stream is separate: toggling outliers does not change scene/camera/noise.
         fault_rng = self._rng(step, 99, action)
