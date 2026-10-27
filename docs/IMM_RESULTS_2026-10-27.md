@@ -18,6 +18,8 @@
 
 The integration branch also includes the remote `a3394f7` history, including the browser replay fix and isolated toolchain setup, plus formatting required by the pinned Ruff version. These changes alter source fingerprints. The numerical results below remain evidence for the original study revision, not a rerun under the repository's locked runtime. Preserve the original reports and checkpoints; use the original commit when checking their source hashes, or generate a new study for the integrated revision.
 
+The original schema version 1 per-episode records omit several packet-loss and deadline diagnostics. Their absence does not establish zero losses or zero deadline misses. New schema version 2 studies retain the complete evaluator metrics and status counts; the original results have not been retroactively filled with those outcomes.
+
 ## Mean per-trajectory RMSE (m; lower is better)
 
 | Scenario | KF | IMM | Gated KF | Gated IMM | Structured | Structured + attention |

@@ -297,6 +297,10 @@ def evaluate(
         from .calibration import validate_calibration
 
         validate_calibration(calibration, model, scene, list(range(seed, seed + episodes)), runtime=runtime)
+        if "kalman" in estimators and baseline_process_noise != 0.8:
+            raise ValueError(
+                "Calibration was collected with Kalman process noise 0.8; changed process noise is unsupported"
+            )
         if sensor_budget != 0.1:
             raise ValueError(
                 "Calibration was collected at default budget; changed budget needs new calibration"

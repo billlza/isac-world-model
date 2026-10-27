@@ -210,6 +210,34 @@ def test_measured_timing_cannot_reuse_calibration(tmp_path, small_model):
         rollout(2, SceneConfig(steps=8), "kalman", "fixed", quantile=1, runtime=RuntimeConfig("measured"))
 
 
+@pytest.mark.parametrize("runtime", [RuntimeConfig(), RuntimeConfig("fixed", 150)])
+def test_calibrated_kalman_rejects_process_noise_change(tmp_path, small_model, runtime):
+    scene = SceneConfig(steps=8)
+    device = torch.device("cpu")
+    calibration = calibrate(
+        tmp_path / "calibration.json", small_model, scene, device, 9, 2000, 0.2, ("fixed",), runtime=runtime
+    )
+    options = dict(episodes=1, seed=3000, policies=("fixed",), estimators=("kalman",), runtime=runtime)
+    rejected = tmp_path / "mismatched"
+    with pytest.raises(ValueError, match="process noise"):
+        evaluate(
+            rejected,
+            small_model,
+            scene,
+            device,
+            calibration=calibration,
+            baseline_process_noise=3.0,
+            **options,
+        )
+    assert not rejected.exists()
+    matched = evaluate(tmp_path / "matched", small_model, scene, device, calibration=calibration, **options)
+    assert matched["runs"][0]["metrics"]["calibrated_episode_covered"] is not None
+    tuned = evaluate(
+        tmp_path / "uncalibrated", small_model, scene, device, baseline_process_noise=3.0, **options
+    )
+    assert tuned["runs"][0]["metrics"]["calibrated_episode_covered"] is None
+
+
 @pytest.mark.parametrize("field", ["capture_s", "available_s"])
 def test_timestamp_bool_rejected(field):
     kw = dict(uid=3, modality="radio", capture_s=0.0, available_s=1.0, payload=np.ones(4), action=1)

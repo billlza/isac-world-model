@@ -93,6 +93,9 @@ def run_estimator(
         "measured_cpu_p95_ms": m["compute_p95_ms"],
         "rejected": m["gated_radio_or_vision_measurements"],
         "no_output_fraction": m["no_output_fraction"],
+        "metrics": m,
+        "status_counts": result["status_counts"],
+        "runtime": result["runtime"],
     }
 
 
@@ -183,7 +186,7 @@ def compare(
     report = {
         "status": "running",
         "scope": "pipeline smoke; not for ranking" if quick else "paired synthetic research comparison",
-        "schema_version": 1,
+        "schema_version": 2,
         "runtime": runtime_info(torch.device("cpu")),
         "source_sha256": source_hashes,
         "protocol": {
