@@ -36,7 +36,9 @@ def _estimators(text: str) -> tuple[str, ...]:
     values = tuple(x.strip() for x in text.split(","))
     allowed = {"kalman", "kalman-gated", "imm", "imm-gated", "model"}
     if not values or len(values) != len(set(values)) or set(values) - allowed:
-        raise argparse.ArgumentTypeError("Use distinct estimators from kalman,kalman-gated,imm,imm-gated,model")
+        raise argparse.ArgumentTypeError(
+            "Use distinct estimators from kalman,kalman-gated,imm,imm-gated,model"
+        )
     return values
 
 
@@ -172,9 +174,7 @@ def main() -> None:
                     runtime=runtime,
                     estimators=args.estimators,
                     baseline_process_noise=args.kf_process_noise,
-                    imm_config=IMMConfig(
-                        switch_rate_hz=args.imm_switch_rate
-                    ),
+                    imm_config=IMMConfig(switch_rate_hz=args.imm_switch_rate),
                     monitor=MonitorConfig(
                         max_information_age_s=args.max_age, compute_deadline_ms=args.deadline_ms
                     ),

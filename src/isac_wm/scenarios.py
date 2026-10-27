@@ -6,7 +6,16 @@ from dataclasses import replace
 
 from .simulator import SceneConfig
 
-SCENARIOS = ("nominal", "delay", "camera_loss", "blackout", "radio_outliers", "radio_bias", "sparse_camera", "maneuver")
+SCENARIOS = (
+    "nominal",
+    "delay",
+    "camera_loss",
+    "blackout",
+    "radio_outliers",
+    "radio_bias",
+    "sparse_camera",
+    "maneuver",
+)
 
 
 def scenario_config(name: str, base: SceneConfig) -> SceneConfig:

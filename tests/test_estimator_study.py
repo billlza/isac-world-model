@@ -41,8 +41,9 @@ def test_study_fails_closed_and_preserves_evidence(tmp_path, monkeypatch):
     assert "intentional" in result["error"]
 
 
-@pytest.mark.parametrize("kwargs", [{"seeds": ()}, {"seeds": (7, 7)}, {"seeds": (100,)},
-                                       {"test_episodes": 10000}, {"episodes": 0}])
+@pytest.mark.parametrize(
+    "kwargs", [{"seeds": ()}, {"seeds": (7, 7)}, {"seeds": (100,)}, {"test_episodes": 10000}, {"episodes": 0}]
+)
 def test_bad_protocol_never_creates_output(tmp_path, kwargs):
     with pytest.raises(ValueError):
         module.compare(tmp_path / "invalid", **kwargs)

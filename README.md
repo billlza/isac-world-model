@@ -1,11 +1,24 @@
 # ISAC World Model — v0.4.1 release engineering
 
-## Publication status
+## GitHub and clean-clone demonstration
 
-A local commit, a Git bundle and a passed local CI report do **not** mean the project is on GitHub.
-This archive has no claim of a successful GitHub push or GitHub Actions run. A remote publication
-is accepted only with `validation/publication/.../receipt.json`, the exact remote commit and a
-successful workflow URL.
+The private repository is `billlza/isac-world-model`. Check GitHub Actions for the
+exact commit being demonstrated; historical archive CI reports are not current-run proof.
+**Checkpoints are not committed to Git.** A fresh clone must train one or use a
+trusted local checkpoint. No external pretrained weights are downloaded.
+
+```bash
+# After setup, create results before the meeting:
+bash scripts/env.sh python scripts/group_demo.py --out runs/meeting-20261027
+# Pipeline-only smoke (one epoch, not an accuracy benchmark):
+bash scripts/env.sh python scripts/group_demo.py --quick --out runs/meeting-smoke
+```
+
+Open `runs/meeting-20261027/index.html` in a browser. The three offline replays compare
+nominal/zero service time, nominal/150ms service time, and camera loss/150ms service time.
+All use one checkpoint and the same held-out seeds. Outputs are never overwritten.
+See [the meeting runbook](docs/GROUP_MEETING.zh-CN.md) for setup, compilation, demonstration
+order, interpretation and failure recovery.
 
 ## First setup and verification
 
@@ -20,7 +33,7 @@ The default is the pinned Linux CPU / macOS Apple Silicon Python stack. CUDA is 
 silently; an accelerator backend needs its own pinned dependency profile and hardware validation.
 Do not interpret successful CPU CI as a CUDA or MPS benchmark.
 
-The archive includes `history.bundle`; the publisher can restore Git metadata without modifying
+A release archive may include `history.bundle`; the publisher can restore Git metadata without modifying
 source or generating a replacement commit. It will not push the bundle, checkpoints or local data.
 
 ```bash
@@ -31,7 +44,7 @@ gh auth login --hostname github.com --git-protocol https --web
 python3 scripts/publish_private.py --execute
 ```
 
-Publication creates a **private** repository only, refuses existing different history, never
+For first publication only: the publisher creates a **private** repository, refuses existing different history, never
 force-pushes, checks the remote lock/runtime/workflow bytes and waits for exact-commit CI. It
 records upload status separately from CI status. Existing empty private repositories are allowed.
 Credentials stay in the user's GitHub CLI configuration, not this project or chat.
@@ -41,12 +54,12 @@ See `docs/RELEASE_v041.md` for scope and failure recovery.
 ## 延迟进入模型与决策
 
 ```bash
-isac-wm evaluate --checkpoint checkpoints/v020.pt \
+bash scripts/env.sh isac-wm evaluate --checkpoint runs/train-a/model.pt \
   --out runs/fixed-150ms --episodes 4 --device cpu --threads 2 \
   --latency-mode fixed --compute-ms 150
 ```
 
-附带 `v020.pt` 是上一版自主训练检查点，v0.3 用它做过配对延迟评测；本版只做工具链与集成训练验证，不把旧准确率当成新结果。运行输出 `evaluation.json` 和独立 HTML 回放。
+先按下节训练，或使用上面的 group_demo 入口。`v020.pt` 只存在于旧交付包，不在 GitHub 仓库中。运行输出 `evaluation.json` 和独立 HTML 回放；旧准确率不当成新结果。
 
 - `reference`：保留旧的逻辑瞬时推理模式，仅用于比较和旧校准兼容。
 - `fixed`：指定假设服务时延；计算完成前，输出和感知指令都不可用。
@@ -59,15 +72,15 @@ isac-wm evaluate --checkpoint checkpoints/v020.pt \
 ## 从零训练、恢复与校准
 
 ```bash
-isac-wm train --out runs/train-a --episodes 192 --epochs 24 \
+bash scripts/env.sh isac-wm train --out runs/train-a --episodes 192 --epochs 24 \
   --batch-size 8 --features 48 --hidden 96 --device cpu --threads 2
-isac-wm train --resume runs/train-a/resume.pt --out runs/train-b \
+bash scripts/env.sh isac-wm train --resume runs/train-a/resume.pt --out runs/train-b \
   --episodes 192 --epochs 40 --batch-size 8 --features 48 --hidden 96 \
   --device cpu --threads 2
-isac-wm calibrate --checkpoint runs/train-a/model.pt \
+bash scripts/env.sh isac-wm calibrate --checkpoint runs/train-a/model.pt \
   --out runs/calibration-150ms.json --episodes 32 \
   --latency-mode fixed --compute-ms 150 --device cpu --threads 2
-isac-wm evaluate --checkpoint runs/train-a/model.pt \
+bash scripts/env.sh isac-wm evaluate --checkpoint runs/train-a/model.pt \
   --calibration runs/calibration-150ms.json --out runs/test-150ms --episodes 8 \
   --latency-mode fixed --compute-ms 150 --device cpu --threads 2
 ```
@@ -79,10 +92,9 @@ isac-wm evaluate --checkpoint runs/train-a/model.pt \
 ## 故障测试与硬件
 
 ```bash
-isac-wm stress --checkpoint checkpoints/v020.pt --out runs/stress-150ms \
+bash scripts/env.sh isac-wm stress --checkpoint runs/train-a/model.pt --out runs/stress-150ms \
   --episodes 4 --latency-mode fixed --compute-ms 150 --device cpu --threads 2
-python scripts/latency_sweep.py --checkpoint checkpoints/v020.pt --out runs/timing-sweep
+bash scripts/env.sh python scripts/latency_sweep.py --checkpoint runs/train-a/model.pt --out runs/timing-sweep
 ```
 
 故障扫描中的任一场景失败都会写记录并返回非零状态。明确选择不可用的 CUDA/MPS 会报错，不会冒充 GPU。本版实际测试 CPU；GitHub macOS job 也是 CPU，不等于 MPS 已经验证。
-

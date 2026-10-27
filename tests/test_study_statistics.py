@@ -19,14 +19,17 @@ def _study(path: Path, *, status: str = "passed", fingerprint: dict | None = Non
         "status": status,
         "source_sha256": fingerprint or {"toy": "expected"},
         "protocol": {"train_seeds": [7], "scenarios": [["nominal", 0]]},
-        "scores": [{
-            "scenario": "nominal", "compute_ms": 0,
-            "per_episode": {
-                "structured": [{"seed": 7, "rmse_m": 0.5}],
-                "structured-attention": [{"seed": 7, "rmse_m": 0.3}],
-                "kalman": [{"seed": 7, "rmse_m": 0.2}],
-            },
-        }],
+        "scores": [
+            {
+                "scenario": "nominal",
+                "compute_ms": 0,
+                "per_episode": {
+                    "structured": [{"seed": 7, "rmse_m": 0.5}],
+                    "structured-attention": [{"seed": 7, "rmse_m": 0.3}],
+                    "kalman": [{"seed": 7, "rmse_m": 0.2}],
+                },
+            }
+        ],
         "training": [],
         "baseline_validation": {},
     }

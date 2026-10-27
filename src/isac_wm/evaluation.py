@@ -41,7 +41,12 @@ def _reference_rollout(
     baseline_process_noise: float = 0.8,
     imm_config: IMMConfig | None = None,
 ) -> dict:
-    if estimator not in {"kalman", "kalman-gated", "imm", "imm-gated", "model"} or policy not in {"fixed", "predictive", "risk", "guarded"}:
+    if estimator not in {"kalman", "kalman-gated", "imm", "imm-gated", "model"} or policy not in {
+        "fixed",
+        "predictive",
+        "risk",
+        "guarded",
+    }:
         raise ValueError("Unknown estimator/policy")
     if estimator == "model" and (model is None or device is None):
         raise ValueError("Neural estimator needs a loaded model/device")
@@ -49,6 +54,7 @@ def _reference_rollout(
     scene, queue, buffer = ToyScene(seed, config), EventQueue(), SnapshotBuffer(config.image_size)
     if estimator.startswith("imm"):
         from dataclasses import replace
+
         setup = imm_config or IMMConfig()
         threshold = 9.210340371976184 if estimator == "imm-gated" else None
         tracker = ReplayIMM(config.room_m, config=replace(setup, gate_threshold=threshold))
@@ -228,7 +234,12 @@ def rollout(
     imm_config: IMMConfig | None = None,
 ) -> dict:
     integer(seed, "seed", 0, 2**32 - 1)
-    if estimator not in {"kalman", "kalman-gated", "imm", "imm-gated", "model"} or policy not in {"fixed", "predictive", "risk", "guarded"}:
+    if estimator not in {"kalman", "kalman-gated", "imm", "imm-gated", "model"} or policy not in {
+        "fixed",
+        "predictive",
+        "risk",
+        "guarded",
+    }:
         raise ValueError("Unknown estimator/policy")
     if estimator == "model" and (model is None or device is None):
         raise ValueError("Neural estimator needs a loaded model/device")
@@ -236,8 +247,12 @@ def rollout(
     if runtime.mode == "measured" and quantile is not None:
         raise ValueError("Measured timing is diagnostic; use fixed timing for calibration")
     options = dict(
-        monitor=monitor, quantile=quantile, sensor_budget=sensor_budget, gate_threshold=gate_threshold,
-        baseline_process_noise=baseline_process_noise, imm_config=imm_config
+        monitor=monitor,
+        quantile=quantile,
+        sensor_budget=sensor_budget,
+        gate_threshold=gate_threshold,
+        baseline_process_noise=baseline_process_noise,
+        imm_config=imm_config,
     )
     if runtime.mode == "reference":
         return _reference_rollout(seed, config, estimator, policy, model, device, **options)
@@ -272,7 +287,11 @@ def evaluate(
         or set(policies) - {"fixed", "predictive", "risk", "guarded"}
     ):
         raise ValueError("Invalid policies")
-    if not estimators or len(estimators) != len(set(estimators)) or set(estimators) - {"kalman", "kalman-gated", "imm", "imm-gated", "model"}:
+    if (
+        not estimators
+        or len(estimators) != len(set(estimators))
+        or set(estimators) - {"kalman", "kalman-gated", "imm", "imm-gated", "model"}
+    ):
         raise ValueError("Invalid estimators")
     if calibration is not None:
         from .calibration import validate_calibration

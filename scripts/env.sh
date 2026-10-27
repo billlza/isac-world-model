@@ -7,6 +7,7 @@ export CARGO_HOME="$ROOT/.toolchains/cargo"
 export RUSTUP_HOME="$ROOT/.toolchains/rustup"
 export UV_PYTHON_INSTALL_DIR="$ROOT/.toolchains/python"
 export UV_CACHE_DIR="$ROOT/.toolchains/uv-cache"
+export PLAYWRIGHT_BROWSERS_PATH="$ROOT/.toolchains/playwright"
 export PATH="$ROOT/.venv/bin:$ROOT/.bootstrap/bin:$CARGO_HOME/bin:$PATH"
 [[ $# -gt 0 ]] || { echo 'Usage: bash scripts/env.sh <command> [args...]' >&2; exit 2; }
 exec "$@"

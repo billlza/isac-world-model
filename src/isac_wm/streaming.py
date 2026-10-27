@@ -77,6 +77,7 @@ def streaming_rollout(
     buffer = SnapshotBuffer(config.image_size)
     if estimator.startswith("imm"):
         from dataclasses import replace
+
         setup = imm_config or IMMConfig()
         gate = 9.210340371976184 if estimator == "imm-gated" else None
         tracker = ReplayIMM(config.room_m, config=replace(setup, gate_threshold=gate))
