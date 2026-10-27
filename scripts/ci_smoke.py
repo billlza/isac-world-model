@@ -8,6 +8,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from isac_wm.scenarios import SCENARIOS
+
 
 def run(out: Path):
     out.mkdir(parents=True, exist_ok=True)
@@ -78,11 +80,11 @@ def run(out: Path):
     if report["runtime"]["mode"] != "fixed":
         raise AssertionError("Missing runtime profile in evaluation")
     stress = json.loads((out / "stress/stress.json").read_text())
-    if len(stress.get("scenarios", {})) != 6 or any(
+    if set(stress.get("scenarios", {})) != set(SCENARIOS) or any(
         value.get("status") != "completed" for value in stress["scenarios"].values()
     ):
-        raise AssertionError("Stress smoke reported failures")
-    print("Train -> resume -> calibrate -> delayed evaluation -> six-scenario stress: PASS")
+        raise AssertionError("Stress smoke reported missing, unexpected, or failed scenarios")
+    print(f"Train -> resume -> calibrate -> delayed evaluation -> {len(SCENARIOS)}-scenario stress: PASS")
 
 
 if __name__ == "__main__":

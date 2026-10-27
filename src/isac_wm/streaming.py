@@ -15,6 +15,7 @@ import torch
 
 from .baselines import AirtimeBudget, ReplayKalman, guarded_risk_action, predictive_action, risk_budget_action
 from .events import EventQueue, SnapshotBuffer
+from .imm import IMMConfig, ReplayIMM
 from .safety import MonitorConfig, assess
 from .simulator import ToyScene, communication_bits
 from .training import INPUT_KEYS
@@ -34,7 +35,7 @@ class _Result:
 
 
 def propagate(state: np.ndarray, covariance: np.ndarray, dt: float, noise: float):
-    """Constant velocity, full covariance; neural starts with diagonal covariance."""
+    """Constant velocity; preserve structured neural cross-covariance when supplied."""
     if dt < -1e-10:
         raise ValueError("Cannot publish an estimate before its state time")
     dt = max(0.0, dt)
@@ -65,6 +66,8 @@ def streaming_rollout(
     quantile=None,
     sensor_budget=0.1,
     gate_threshold=None,
+    baseline_process_noise=0.8,
+    imm_config: IMMConfig | None = None,
 ):
     from .evaluation import summarize_trace, synchronize
 
@@ -72,7 +75,15 @@ def streaming_rollout(
     scene = ToyScene(seed, config)
     queue = EventQueue(capacity=runtime.queue_capacity)
     buffer = SnapshotBuffer(config.image_size)
-    tracker = ReplayKalman(config.room_m, gate_threshold=gate_threshold)
+    if estimator.startswith("imm"):
+        from dataclasses import replace
+
+        setup = imm_config or IMMConfig()
+        gate = 9.210340371976184 if estimator == "imm-gated" else None
+        tracker = ReplayIMM(config.room_m, config=replace(setup, gate_threshold=gate))
+    else:
+        gate = 9.210340371976184 if estimator == "kalman-gated" else gate_threshold
+        tracker = ReplayKalman(config.room_m, gate_threshold=gate, process_noise=baseline_process_noise)
     budget = AirtimeBudget(sensor_budget, max(0.6, sensor_budget))
     memory = model.initial(1, device) if estimator == "model" else None
     truth = scene.truth_for_evaluation()
@@ -102,7 +113,7 @@ def streaming_rollout(
             if estimator == "model":
                 synchronize(device)
             started = time.perf_counter()
-            if estimator == "kalman":
+            if estimator != "model":
                 tracker.ingest(ready, now)
                 state, covariance = tracker.estimate(now)
                 var = np.diag(covariance)
@@ -114,7 +125,11 @@ def streaming_rollout(
                     future = model.forecast(pred["hidden"], 3 * config.dt)
                     state = pred["mean"][0].cpu().numpy() * config.state_scale
                     var = pred["logvar"][0].exp().cpu().numpy() * config.state_scale**2
-                    covariance = np.diag(var)
+                    covariance = (
+                        pred["covariance"][0].cpu().numpy() * np.outer(config.state_scale, config.state_scale)
+                        if "covariance" in pred
+                        else np.diag(var)
+                    )
                     decision_var = future["logvar"][0, :2].exp().cpu().numpy() * config.room_m**2
                 synchronize(device)
             if policy == "fixed":

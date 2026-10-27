@@ -10,6 +10,7 @@ import torch
 from .artifacts import write_json
 from .baselines import AirtimeBudget, ReplayKalman, guarded_risk_action, predictive_action, risk_budget_action
 from .events import EventQueue, SnapshotBuffer
+from .imm import IMMConfig, ReplayIMM
 from .model import EventBeliefModel
 from .runtime import RuntimeConfig
 from .safety import MonitorConfig, assess
@@ -37,17 +38,30 @@ def _reference_rollout(
     quantile: float | None = None,
     sensor_budget: float = 0.1,
     gate_threshold: float | None = None,
+    baseline_process_noise: float = 0.8,
+    imm_config: IMMConfig | None = None,
 ) -> dict:
-    if estimator not in {"kalman", "model"} or policy not in {"fixed", "predictive", "risk", "guarded"}:
+    if estimator not in {"kalman", "kalman-gated", "imm", "imm-gated", "model"} or policy not in {
+        "fixed",
+        "predictive",
+        "risk",
+        "guarded",
+    }:
         raise ValueError("Unknown estimator/policy")
     if estimator == "model" and (model is None or device is None):
         raise ValueError("Neural estimator needs a loaded model/device")
     monitor = monitor or MonitorConfig()
     scene, queue, buffer = ToyScene(seed, config), EventQueue(), SnapshotBuffer(config.image_size)
-    tracker, budget = (
-        ReplayKalman(config.room_m, gate_threshold=gate_threshold),
-        AirtimeBudget(sensor_budget, max(0.6, sensor_budget)),
-    )
+    if estimator.startswith("imm"):
+        from dataclasses import replace
+
+        setup = imm_config or IMMConfig()
+        threshold = 9.210340371976184 if estimator == "imm-gated" else None
+        tracker = ReplayIMM(config.room_m, config=replace(setup, gate_threshold=threshold))
+    else:
+        threshold = 9.210340371976184 if estimator == "kalman-gated" else gate_threshold
+        tracker = ReplayKalman(config.room_m, gate_threshold=threshold, process_noise=baseline_process_noise)
+    budget = AirtimeBudget(sensor_budget, max(0.6, sensor_budget))
     memory = model.initial(1, device) if estimator == "model" else None
     rows, timings = [], []
     truth = scene.truth_for_evaluation()  # confined to evaluator; not supplied to model/policy
@@ -56,7 +70,7 @@ def _reference_rollout(
         ready = queue.release(now)
         snap = buffer.update(ready, now, config.dt)
         tick = time.perf_counter()
-        if estimator == "kalman":
+        if estimator != "model":
             tracker.ingest(ready, now)
             state, cov = tracker.estimate(now)
             var = np.diag(cov)
@@ -135,7 +149,7 @@ def _reference_rollout(
     metrics, statuses = summarize_trace(
         rows, timings, monitor, quantile, budget, config, tracker, buffer, queue
     )
-    if estimator != "kalman":
+    if estimator == "model":
         metrics["replayed_filter_updates"] = 0
         metrics["gated_radio_or_vision_measurements"] = 0
     return {
@@ -216,9 +230,16 @@ def rollout(
     sensor_budget: float = 0.1,
     gate_threshold: float | None = None,
     runtime: RuntimeConfig | None = None,
+    baseline_process_noise: float = 0.8,
+    imm_config: IMMConfig | None = None,
 ) -> dict:
     integer(seed, "seed", 0, 2**32 - 1)
-    if estimator not in {"kalman", "model"} or policy not in {"fixed", "predictive", "risk", "guarded"}:
+    if estimator not in {"kalman", "kalman-gated", "imm", "imm-gated", "model"} or policy not in {
+        "fixed",
+        "predictive",
+        "risk",
+        "guarded",
+    }:
         raise ValueError("Unknown estimator/policy")
     if estimator == "model" and (model is None or device is None):
         raise ValueError("Neural estimator needs a loaded model/device")
@@ -226,7 +247,12 @@ def rollout(
     if runtime.mode == "measured" and quantile is not None:
         raise ValueError("Measured timing is diagnostic; use fixed timing for calibration")
     options = dict(
-        monitor=monitor, quantile=quantile, sensor_budget=sensor_budget, gate_threshold=gate_threshold
+        monitor=monitor,
+        quantile=quantile,
+        sensor_budget=sensor_budget,
+        gate_threshold=gate_threshold,
+        baseline_process_noise=baseline_process_noise,
+        imm_config=imm_config,
     )
     if runtime.mode == "reference":
         return _reference_rollout(seed, config, estimator, policy, model, device, **options)
@@ -248,6 +274,9 @@ def evaluate(
     monitor: MonitorConfig | None = None,
     sensor_budget: float = 0.1,
     runtime: RuntimeConfig | None = None,
+    estimators: tuple[str, ...] = ("kalman", "model"),
+    baseline_process_noise: float = 0.8,
+    imm_config: IMMConfig | None = None,
 ) -> dict:
     runtime = runtime or RuntimeConfig()
     integer(episodes, "episodes", 1, 10_000)
@@ -258,10 +287,20 @@ def evaluate(
         or set(policies) - {"fixed", "predictive", "risk", "guarded"}
     ):
         raise ValueError("Invalid policies")
+    if (
+        not estimators
+        or len(estimators) != len(set(estimators))
+        or set(estimators) - {"kalman", "kalman-gated", "imm", "imm-gated", "model"}
+    ):
+        raise ValueError("Invalid estimators")
     if calibration is not None:
         from .calibration import validate_calibration
 
         validate_calibration(calibration, model, scene, list(range(seed, seed + episodes)), runtime=runtime)
+        if "kalman" in estimators and baseline_process_noise != 0.8:
+            raise ValueError(
+                "Calibration was collected with Kalman process noise 0.8; changed process noise is unsupported"
+            )
         if sensor_budget != 0.1:
             raise ValueError(
                 "Calibration was collected at default budget; changed budget needs new calibration"
@@ -275,7 +314,7 @@ def evaluate(
         raise FileExistsError("Evaluation already exists; use another directory")
     runs = []
     model.eval()
-    for estimator in ("kalman", "model"):
+    for estimator in estimators:
         for policy in policies:
             for s in range(seed, seed + episodes):
                 quantile = None
@@ -296,10 +335,12 @@ def evaluate(
                         monitor=monitor,
                         sensor_budget=sensor_budget,
                         runtime=runtime,
+                        baseline_process_noise=baseline_process_noise,
+                        imm_config=imm_config,
                     )
                 )
     summary = {}
-    for estimator in ("kalman", "model"):
+    for estimator in estimators:
         for policy in policies:
             metrics = [r["metrics"] for r in runs if r["estimator"] == estimator and r["policy"] == policy]
             summary[f"{estimator}+{policy}"] = {
