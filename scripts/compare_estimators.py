@@ -93,6 +93,9 @@ def run_estimator(
         "measured_cpu_p95_ms": m["compute_p95_ms"],
         "rejected": m["gated_radio_or_vision_measurements"],
         "no_output_fraction": m["no_output_fraction"],
+        "metrics": m,
+        "status_counts": result["status_counts"],
+        "runtime": result["runtime"],
     }
 
 
@@ -112,11 +115,16 @@ def tune_baselines(base: SceneConfig, count: int = 8, quick: bool = False) -> di
             for scenario, latency in VALIDATION_CASES:
                 scene = scenario_config(scenario, base)
                 for i in range(count):
-                    name = "kalman-gated" if family == "kalman" and scenario == "radio_outliers" else (
-                        "imm-gated" if family == "imm" and scenario == "radio_outliers" else family
+                    name = (
+                        "kalman-gated"
+                        if family == "kalman" and scenario == "radio_outliers"
+                        else ("imm-gated" if family == "imm" and scenario == "radio_outliers" else family)
                     )
                     r = run_estimator(
-                        name, seed=50_000_000 + i, scene=scene, compute_ms=latency,
+                        name,
+                        seed=50_000_000 + i,
+                        scene=scene,
+                        compute_ms=latency,
                         kf_process_noise=value if family == "kalman" else 0.8,
                         imm_switch_rate=value if family == "imm" else 0.6,
                     )
@@ -136,8 +144,7 @@ def paired_bootstrap(differences: list[float], seed=899, draws=2000) -> dict:
     return {
         "mean_attention_minus_structured_m": float(data.mean()),
         "percentile95_interval_m": (
-            [float(x) for x in np.quantile(samples, [0.025, 0.975])]
-            if len(data) >= 2 else None
+            [float(x) for x in np.quantile(samples, [0.025, 0.975])] if len(data) >= 2 else None
         ),
         "pairs": len(differences),
         "note": "Exploratory percentile bootstrap over held-out trajectory seeds; no uniform/physical safety guarantee",
@@ -159,8 +166,12 @@ def compare(
         raise ValueError("Training seeds must be nonempty and unique")
     for seed in seeds:
         integer(seed, "training seed", 0, 99)
-    for v, name in ((episodes, "episodes"), (epochs, "epochs"), (test_episodes, "test episodes"),
-                    (validate_episodes, "validation episodes")):
+    for v, name in (
+        (episodes, "episodes"),
+        (epochs, "epochs"),
+        (test_episodes, "test episodes"),
+        (validate_episodes, "validation episodes"),
+    ):
         integer(v, name, 1, 10000)
     # 10k gap allows unique held-out trajectories for each training seed.
     if test_episodes > 9999:
@@ -175,12 +186,15 @@ def compare(
     report = {
         "status": "running",
         "scope": "pipeline smoke; not for ranking" if quick else "paired synthetic research comparison",
-        "schema_version": 1,
+        "schema_version": 2,
         "runtime": runtime_info(torch.device("cpu")),
         "source_sha256": source_hashes,
         "protocol": {
-            "train_seeds": seeds, "train_episodes": episodes, "train_epochs": epochs,
-            "validation_seed_start": 50_000_000, "baseline_validation_episodes": validate_episodes,
+            "train_seeds": seeds,
+            "train_episodes": episodes,
+            "train_epochs": epochs,
+            "validation_seed_start": 50_000_000,
+            "baseline_validation_episodes": validate_episodes,
             "test_seed_starts": [70_000_000 + i * 10_000 for i in range(len(seeds))],
             "test_episodes_per_training_seed": test_episodes,
             "scenarios": SCENARIOS,
@@ -216,18 +230,27 @@ def compare(
                 config = StructuredConfig(16 if quick else 32, 32 if quick else 64, architecture, 16, 4)
                 print(f"train {name}", flush=True)
                 manifest = train(
-                    out / name, episodes=episodes, epochs=epochs, batch_size=2 if quick else 8,
-                    device_name="cpu", seed=seed, scene=base, model_config=config
+                    out / name,
+                    episodes=episodes,
+                    epochs=epochs,
+                    batch_size=2 if quick else 8,
+                    device_name="cpu",
+                    seed=seed,
+                    scene=base,
+                    model_config=config,
                 )
                 model, _, _ = load_model(out / name / "model.pt", "cpu")
                 models[(seed, architecture)] = model
-                report["training"].append({
-                    "seed": seed, "architecture": architecture,
-                    "model_sha256": sha(out / name / "model.pt"),
-                    "parameter_count": manifest["parameters"],
-                    "training_seconds": manifest["training_seconds"],
-                    "best_validation_rmse_m": manifest["best_validation_rmse_m"],
-                })
+                report["training"].append(
+                    {
+                        "seed": seed,
+                        "architecture": architecture,
+                        "model_sha256": sha(out / name / "model.pt"),
+                        "parameter_count": manifest["parameters"],
+                        "training_seconds": manifest["training_seconds"],
+                        "best_validation_rmse_m": manifest["best_validation_rmse_m"],
+                    }
+                )
                 write_json(path, report)
         for i, seed in enumerate(seeds):
             offset = 70_000_000 + i * 10_000
@@ -240,8 +263,12 @@ def compare(
                     model = models[(seed, name)] if name in ("structured", "structured-attention") else None
                     records = [
                         run_estimator(
-                            name, seed=offset+j, scene=scene, compute_ms=latency,
-                            model=model, kf_process_noise=tuning["kalman"]["chosen"],
+                            name,
+                            seed=offset + j,
+                            scene=scene,
+                            compute_ms=latency,
+                            model=model,
+                            kf_process_noise=tuning["kalman"]["chosen"],
                             imm_switch_rate=tuning["imm"]["chosen"],
                         )
                         for j in range(test_episodes)
@@ -249,37 +276,48 @@ def compare(
                     results[name] = records
                     if keep_trace:
                         trace = run_estimator(
-                            name, seed=offset, scene=scene, compute_ms=latency, model=model,
+                            name,
+                            seed=offset,
+                            scene=scene,
+                            compute_ms=latency,
+                            model=model,
                             kf_process_noise=tuning["kalman"]["chosen"],
-                            imm_switch_rate=tuning["imm"]["chosen"], trace=True,
+                            imm_switch_rate=tuning["imm"]["chosen"],
+                            trace=True,
                         )
                         out_trace = out / "traces" / str(seed) / f"{scenario}-{latency}ms"
                         out_trace.mkdir(parents=True, exist_ok=True)
                         write_json(out_trace / f"{name}.json", trace)
-                report["scores"].append({
-                    "training_seed": seed,
-                    "scenario": scenario,
-                    "compute_ms": latency,
-                    "test_seed_start": offset,
-                    "per_episode": results,
-                    "means": {
-                        name: {
-                            "rmse_m": statistics.mean(item["rmse_m"] for item in values),
-                            "p95_m": statistics.mean(item["p95_error_m"] for item in values),
-                            "sensing_airtime": statistics.mean(item["sensing_airtime"] for item in values),
-                            "cpu_p95_ms": statistics.mean(item["measured_cpu_p95_ms"] for item in values),
-                        }
-                        for name, values in results.items()
-                    },
-                })
+                report["scores"].append(
+                    {
+                        "training_seed": seed,
+                        "scenario": scenario,
+                        "compute_ms": latency,
+                        "test_seed_start": offset,
+                        "per_episode": results,
+                        "means": {
+                            name: {
+                                "rmse_m": statistics.mean(item["rmse_m"] for item in values),
+                                "p95_m": statistics.mean(item["p95_error_m"] for item in values),
+                                "sensing_airtime": statistics.mean(
+                                    item["sensing_airtime"] for item in values
+                                ),
+                                "cpu_p95_ms": statistics.mean(item["measured_cpu_p95_ms"] for item in values),
+                            }
+                            for name, values in results.items()
+                        },
+                    }
+                )
                 write_json(path, report)
         ablations = {}
         for scene, latency in SCENARIOS:
-            rows = [r for r in report["scores"] if (r["scenario"],r["compute_ms"]) == (scene,latency)]
+            rows = [r for r in report["scores"] if (r["scenario"], r["compute_ms"]) == (scene, latency)]
             differences = [
                 a["rmse_m"] - b["rmse_m"]
                 for row in rows
-                for a,b in zip(row["per_episode"]["structured-attention"], row["per_episode"]["structured"], strict=True)
+                for a, b in zip(
+                    row["per_episode"]["structured-attention"], row["per_episode"]["structured"], strict=True
+                )
             ]
             ablations[f"{scene}-{latency}ms"] = paired_bootstrap(differences)
         report["attention_ablation"] = ablations
@@ -316,7 +354,9 @@ def main():
         quick=args.quick,
         keep_trace=args.keep_trace,
     )
-    print(json.dumps({"status": result["status"], "attention_ablation": result["attention_ablation"]}, indent=2))
+    print(
+        json.dumps({"status": result["status"], "attention_ablation": result["attention_ablation"]}, indent=2)
+    )
 
 
 if __name__ == "__main__":

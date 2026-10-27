@@ -9,12 +9,16 @@
 
 ## Reproducible study protocol
 
-- Source: 2026-10-27 frozen worktree; complete run **passed**, source fingerprints in `comparison.json`.
+- Original study source: `c37ae5a430a6b3017233b1998cbc0f264edaf4a7`; complete run **passed**, with all 21 recorded source fingerprints matching that commit. Runtime: Linux CPU, Python 3.13.5, PyTorch 2.10.0+cpu, NumPy 2.3.5.
 - 3 independently initialized training seeds [7, 11, 13]; 96 synthetic training episodes and 16 epochs each. Test groups use disjoint episode seeds.
 - 8 scenario/latency conditions × 3 groups × 24 trajectories × 6 estimators = **3,456 estimator–episode evaluations**.
 - Same scenario, seed, sensing budget and *imposed simulation service time* within a group; model parameter count, actual compute and training costs differ and must not be suppressed.
 - Validation-only baseline tuning; no hyperparameter changes based on test outcomes. Scene geometry is still the same synthetic 10 m room family.
 - Sources of model inputs are observations available by the decision time. Ground truth is accessible only to simulation/training and post-hoc evaluator.
+
+The integration branch also includes the remote `a3394f7` history, including the browser replay fix and isolated toolchain setup, plus formatting required by the pinned Ruff version. These changes alter source fingerprints. The numerical results below remain evidence for the original study revision, not a rerun under the repository's locked runtime. Preserve the original reports and checkpoints; use the original commit when checking their source hashes, or generate a new study for the integrated revision.
+
+The original schema version 1 per-episode records omit several packet-loss and deadline diagnostics. Their absence does not establish zero losses or zero deadline misses. New schema version 2 studies retain the complete evaluator metrics and status counts; the original results have not been retroactively filled with those outcomes.
 
 ## Mean per-trajectory RMSE (m; lower is better)
 

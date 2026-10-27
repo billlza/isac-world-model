@@ -9,9 +9,9 @@ import statistics
 from pathlib import Path
 
 import numpy as np
+from compare_estimators import sources
 
 from isac_wm.artifacts import write_json
-from compare_estimators import sources
 
 
 def summarize(original: Path, verified: Path | None, out: Path) -> dict:
@@ -32,7 +32,9 @@ def summarize(original: Path, verified: Path | None, out: Path) -> dict:
         verification_status = receipt["status"]
     else:
         raise ValueError("Only completed passed studies or independently verified failed runs accepted")
-    if not report["scores"] or len(report["scores"]) != len(report["protocol"]["train_seeds"]) * len(report["protocol"]["scenarios"]):
+    if not report["scores"] or len(report["scores"]) != len(report["protocol"]["train_seeds"]) * len(
+        report["protocol"]["scenarios"]
+    ):
         raise ValueError("Incomplete study")
     if out.exists():
         raise FileExistsError("Never overwrite research evidence")
@@ -61,21 +63,27 @@ def summarize(original: Path, verified: Path | None, out: Path) -> dict:
             groups = random.integers(0, count, size=count)
             samples.append(
                 statistics.mean(
-                    float(differences[g][random.integers(0, len(differences[g]), size=len(differences[g]))].mean())
+                    float(
+                        differences[g][
+                            random.integers(0, len(differences[g]), size=len(differences[g]))
+                        ].mean()
+                    )
                     for g in groups
                 )
             )
         pooled = np.concatenate(differences)
-        rows.append({
-            "scenario": scenario,
-            "assumed_compute_ms": delay,
-            "trajectory_pairs": len(pooled),
-            "train_seed_groups": count,
-            "rmse_m_per_episode_mean": {name: float(np.mean(vals)) for name, vals in all_errors.items()},
-            "attention_minus_structured_mean_m": float(pooled.mean()),
-            "hierarchical_bootstrap_95pct": [float(z) for z in np.quantile(samples, [.025, .975])],
-            "train_seed_group_differences_m": [float(d.mean()) for d in differences],
-        })
+        rows.append(
+            {
+                "scenario": scenario,
+                "assumed_compute_ms": delay,
+                "trajectory_pairs": len(pooled),
+                "train_seed_groups": count,
+                "rmse_m_per_episode_mean": {name: float(np.mean(vals)) for name, vals in all_errors.items()},
+                "attention_minus_structured_mean_m": float(pooled.mean()),
+                "hierarchical_bootstrap_95pct": [float(z) for z in np.quantile(samples, [0.025, 0.975])],
+                "train_seed_group_differences_m": [float(d.mean()) for d in differences],
+            }
+        )
     output = {
         "status": "descriptive_analysis_only",
         "original_study_status": report["status"],
@@ -98,7 +106,9 @@ def summarize(original: Path, verified: Path | None, out: Path) -> dict:
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--study", type=Path, required=True)
-    parser.add_argument("--verification", type=Path, help="Required only for independently rechecked failed studies")
+    parser.add_argument(
+        "--verification", type=Path, help="Required only for independently rechecked failed studies"
+    )
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args()
     result = summarize(args.study, args.verification, args.out)
