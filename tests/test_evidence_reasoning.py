@@ -137,6 +137,21 @@ def test_different_capture_times_do_not_produce_false_pair_evidence():
     assert mem.incomparable == 1
 
 
+def test_reasoner_simulates_hypothesis_discriminating_viewpoint_not_identity():
+    mem = CausalEvidenceMemory()
+    assert mem.counterfactual_parallax_test() is None
+    mem.ingest(rf(0), now_s=0.05)
+    baseline = mem.counterfactual_parallax_test(max_lateral_baseline_m=0)
+    shifted = mem.counterfactual_parallax_test(max_lateral_baseline_m=4)
+    assert baseline["separation_deg"] == pytest.approx(0)
+    assert shifted["separation_deg"] > 0
+    assert shifted["identity_confirmed"] is False
+    assert shifted["hypothesis_other"].startswith("distinct")
+    assert "not measured" in shifted["note"]
+    with pytest.raises(ValueError):
+        mem.counterfactual_parallax_test(alternative_depth_offset_m=-1)
+
+
 def test_old_agreement_expires_instead_of_remaining_live_identity_evidence():
     m = CausalEvidenceMemory(max_evidence_age_s=0.25)
     feed(m, 0)

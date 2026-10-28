@@ -365,6 +365,69 @@ class CausalEvidenceMemory:
             raise ValueError("Reasoning clock cannot run backwards")
         self.now_s = now
 
+    def counterfactual_parallax_test(
+        self,
+        *,
+        alternative_depth_offset_m: float = 7.5,
+        max_lateral_baseline_m: float = 4.0,
+        assumed_camera_sigma_deg: float = 5.0,
+    ) -> dict | None:
+        """Ask which *new camera viewpoint* could distinguish collinear worlds.
+
+        This is a geometry-only counterfactual: H_same places the visual object
+        at the measured radar range; H_other places an object on the same ray
+        at a user-declared *hypothetical* additional depth. It does NOT infer
+        that alternative's true depth or control a real camera/robot.
+        """
+        if self.last_rf is None:
+            return None
+        offset = _finite(alternative_depth_offset_m, "alternative_depth_offset_m")
+        baseline = _finite(max_lateral_baseline_m, "max_lateral_baseline_m")
+        sigma = _finite(assumed_camera_sigma_deg, "assumed_camera_sigma_deg")
+        if not 0 < offset <= 1000 or not 0 <= baseline <= 1000 or not 0 < sigma <= 60:
+            raise ValueError("Invalid hypothetical viewpoint comparison parameters")
+        rf = self.last_rf
+        direction = np.array([math.cos(rf.bearing_rad), math.sin(rf.bearing_rad)])
+        perp = np.array([-direction[1], direction[0]])
+        same = rf.range_m * direction
+        other = (rf.range_m + offset) * direction
+        proposals = []
+        for fraction in (0.0, 0.25, 0.5, 1.0):
+            displacement = baseline * fraction
+            camera = perp * displacement
+            same_bearing = math.atan2(*(same - camera)[::-1])
+            other_bearing = math.atan2(*(other - camera)[::-1])
+            if abs(same_bearing) > self.fov_half_rad or abs(other_bearing) > self.fov_half_rad:
+                continue
+            separation = abs(math.degrees(same_bearing - other_bearing))
+            proposals.append((separation, displacement, same_bearing, other_bearing))
+        if not proposals:
+            return {
+                "recommendation": "no_available_viewpoint_in_forward_fov",
+                "hypothetical_depth_offset_m": offset,
+                "identity_confirmed": False,
+            }
+        separation, displacement, sa, sb = max(proposals)
+        discriminability = separation / sigma
+        return {
+            "hypothesis_same": "camera object at the radar measured range",
+            "hypothesis_other": "distinct camera object at a hypothetical farther range",
+            "hypothetical_depth_offset_m": offset,
+            "candidate_lateral_shift_m": displacement,
+            "predicted_bearing_same_deg": math.degrees(sa),
+            "predicted_bearing_other_deg": math.degrees(sb),
+            "separation_deg": separation,
+            "assumed_new_camera_sigma_deg": sigma,
+            "separation_in_assumed_sigma": discriminability,
+            "recommendation": (
+                "hypothetical_viewpoint_could_help_disambiguate"
+                if discriminability >= 2.0
+                else "parallax_too_weak_use_more_depth_or_viewpoint_evidence"
+            ),
+            "identity_confirmed": False,
+            "note": "Counterfactual geometry under assumed alternative depth; not measured or calibrated.",
+        }
+
     def explanation(self) -> dict:
         values = list(self.pairs.values())
         total_log_ratio = float(sum(item.evidence_log_ratio for item in values))
@@ -405,6 +468,7 @@ class CausalEvidenceMemory:
             "association_status": status,
             "identity_confirmed": False,
             "independent_visual_depth_available": False,
+            "counterfactual_parallax_test": self.counterfactual_parallax_test(),
             "alternative_explanations": [
                 "same_physical_object",
                 "distinct_objects_aligned_in_bearing",
