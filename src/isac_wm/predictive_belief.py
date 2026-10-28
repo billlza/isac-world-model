@@ -92,6 +92,8 @@ class PredictiveBelief:
     def ingest(self, item: RFPoint | VisionBearing, *, now_s: float) -> dict:
         if not isinstance(item, (RFPoint, VisionBearing)):
             raise TypeError("Only validated RF/visual observations are allowed")
+        if not math.isfinite(now_s) or now_s < self.now_s:
+            raise ValueError("Invalid or non-monotone reasoning time")
         if item.available_s > now_s + 1e-10:
             raise ValueError("Future evidence is not available")
         if item.uid in self.seen:

@@ -93,3 +93,35 @@ def test_capture_time_then_propagate_and_stale_rejection():
     assert report["prediction"]["hypotheses"][1]["range_m"] >= 11.0
     stale = m.ingest(rf(3, 1.1, 11.1), now_s=1.6)
     assert stale["last_event"] == "late_rf_ignored"
+
+
+def test_invalid_now_has_no_partial_state_mutation():
+    m = PredictiveBelief()
+    o = rf(7, 0, 10)
+    for t in (float("nan"), float("inf"), -1):
+        with pytest.raises(ValueError):
+            m.ingest(o, now_s=t)
+        assert not m.seen
+        assert m.hypotheses is None
+
+
+def test_real_signal_level_phy_adapter_to_predictive_memory():
+    from isac_wm.evidence_reasoning import from_phy_result
+    from isac_wm.phy_ofdm import OFDMConfig, evaluate_frame
+
+    cfg = OFDMConfig()
+    tracker = PredictiveBelief()
+    for i in range(2):
+        result = evaluate_frame(cfg, probe_fraction=0.2, seed=2026 + i)
+        packet = from_phy_result(
+            result,
+            uid=900 + i,
+            frame=i,
+            capture_s=2.0 * i,
+            available_s=2.0 * i + 0.1,
+        )
+        tracker.ingest(packet, now_s=2.0 * i + 0.1)
+    predictions = tracker.forecast_actions(0.2)
+    assert len(predictions["hypotheses_by_action"]["precise"]["prediction"]["hypotheses"]) == 2
+    assert predictions["future_truth_used"] is False
+    assert tracker.explain()["object_material"] == "unknown"
