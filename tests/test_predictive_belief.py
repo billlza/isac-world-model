@@ -82,3 +82,14 @@ def test_action_conditioned_prediction_and_cost():
     assert precise["bearing_prediction"] == "unknown_without_angular_dynamics"
     with pytest.raises(ValueError):
         m.forecast_actions(0.1, actions=(1, 1))
+
+
+def test_capture_time_then_propagate_and_stale_rejection():
+    m = PredictiveBelief()
+    m.ingest(rf(1, 0.0, 10), now_s=0.05)
+    report = m.ingest(rf(2, 1.0, 11), now_s=1.5)
+    assert report["clock_s"] == pytest.approx(1.5)
+    # Posterior update happened at 1.0 and the motion hypothesis advances to 1.5.
+    assert report["prediction"]["hypotheses"][1]["range_m"] >= 11.0
+    stale = m.ingest(rf(3, 1.1, 11.1), now_s=1.6)
+    assert stale["last_event"] == "late_rf_ignored"

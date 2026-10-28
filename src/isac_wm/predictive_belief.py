@@ -98,9 +98,13 @@ class PredictiveBelief:
             raise ValueError("Duplicate observation id")
         if len(self.seen) >= self.max_ids:
             raise OverflowError("Evidence ID capacity reached; start new episode")
-        self._advance(now_s)
+        # Range/speed updates describe CAPTURE time, not delivery time.
+        # We do not pretend to implement a full out-of-sequence Bayesian smoother.
+        # A packet captured before our existing state time is recorded but not fused.
+        previous_clock = self.now_s
         self.seen.add(item.uid)
         if isinstance(item, VisionBearing):
+            self._advance(now_s)
             if self.last_rf is not None and abs(item.capture_s - self.last_rf.capture_s) <= 0.15:
                 sigma2 = item.bearing_sigma_rad**2 + self.last_rf.bearing_sigma_rad**2
                 if (item.bearing_rad - self.last_rf.bearing_rad) ** 2 > self.innovation_gate * sigma2:
@@ -112,11 +116,12 @@ class PredictiveBelief:
                 outcome = "unpaired_vision"
             self.history.append((item.uid, item.capture_s, now_s, outcome))
             return self.explain(last_event=outcome)
-        if item.capture_s < self.last_capture_s - 1e-10:
+        if item.capture_s < max(self.last_capture_s, previous_clock) - 1e-10:
+            self._advance(now_s)
             self.history.append((item.uid, item.capture_s, now_s, "late_rf_ignored"))
             return self.explain(last_event="late_rf_ignored")
         self.last_capture_s = item.capture_s
-        self.last_rf = item
+        self._advance(item.capture_s)
         if self.hypotheses is None:
             self.hypotheses = (
                 Hypothesis(
@@ -171,6 +176,9 @@ class PredictiveBelief:
                 Hypothesis(h.name, h.range_m, h.speed_mps, h.range_var, h.speed_var, h.log_weight - largest)
                 for h in candidates
             )  # type: ignore[assignment]
+        self._advance(now_s)
+        if outcome != "rf_outlier_both_hypotheses_rejected":
+            self.last_rf = item
         self.history.append((item.uid, item.capture_s, now_s, outcome))
         return self.explain(last_event=outcome)
 
