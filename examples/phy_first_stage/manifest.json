@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "config": {
+    "n_fft": 128,
+    "cp_samples": 24,
+    "guard_bins": 12,
+    "subcarrier_spacing_hz": 500000.0,
+    "carrier_hz": 24000000000.0,
+    "pulse_period_s": 0.0005,
+    "symbols": 64,
+    "tx_antennas": 2,
+    "user_rx_antennas": 4,
+    "radar_rx_antennas": 8,
+    "target_range_m": 18.75,
+    "target_bearing_deg": 18.0,
+    "target_radial_speed_mps": 1.25,
+    "user_distance_m": 40.0,
+    "beam_bearing_deg": 20.0,
+    "target_reflectivity": 0.32,
+    "clutter_reflectivity": 0.12,
+    "comm_snr_db": 18.0,
+    "radar_snr_db": -35.0
+  },
+  "probe_fractions": [
+    0.0,
+    0.2,
+    0.4
+  ],
+  "trial_count_per_setting": 16,
+  "trial_seed_start": 27000,
+  "environment": {
+    "python": "3.14.9",
+    "numpy": "2.5.4",
+    "platform": "Linux-6.18.49-x86_64-with-glibc2.43"
+  },
+  "source_sha256": "762ccb1bb9d15457cf654ff82ac56ebc5fd03c495a493a08964085d81bec2d53",
+  "summary": [
+    {
+      "requested_probe_fraction": 0.0,
+      "realized_probe_fraction": 0.0,
+      "trials": 16,
+      "ber_pooled": 0.016877668406072105,
+      "raw_payload_rate_bps": 790500.0,
+      "correct_bit_rate_proxy_bps": 777158.203125,
+      "range_mae_m": 6.44571785546875,
+      "bearing_mae_deg": 19.0,
+      "speed_mae_mps": 1.1228104176432292,
+      "target_cell_detection_rate": 0.5625
+    },
+    {
+      "requested_probe_fraction": 0.2,
+      "realized_probe_fraction": 0.1875,
+      "trials": 16,
+      "ber_pooled": 0.01654718137254902,
+      "raw_payload_rate_bps": 637500.0,
+      "correct_bit_rate_proxy_bps": 626951.171875,
+      "range_mae_m": 4.254836579101562,
+      "bearing_mae_deg": 8.75,
+      "speed_mae_mps": 0.7690514136555989,
+      "target_cell_detection_rate": 0.75
+    },
+    {
+      "requested_probe_fraction": 0.4,
+      "realized_probe_fraction": 0.390625,
+      "trials": 16,
+      "ber_pooled": 0.01661864069952305,
+      "raw_payload_rate_bps": 471750.0,
+      "correct_bit_rate_proxy_bps": 463910.15625,
+      "range_mae_m": 0.7448865556640618,
+      "bearing_mae_deg": 1.25,
+      "speed_mae_mps": 0.07893571093749996,
+      "target_cell_detection_rate": 0.9375
+    }
+  ],
+  "limitations": [
+    "One simple point target and simplified deterministic multipath, not physical hardware evidence",
+    "Target-cell rate is evaluated with truth; the online estimator never receives true target state",
+    "Paired seeds and normalized TX energy; no channel coding or reliable-transport goodput claim",
+    "The fixed sensing-beam angle is a configured sector, not a learned or oracle action",
+    "This baseline does not yet train the visual/RF world model or infer materials/shapes",
+    "No MATLAB parity run claimed: reference MATLAB implementation requires independent execution"
+  ]
+}
