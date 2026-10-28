@@ -1,5 +1,22 @@
 # ISAC World Model — v0.4.1 release engineering
 
+## Active observation loop and MATLAB replay
+
+`scripts/active_observation_study.py` executes candidate-view predictions, moves a
+synthetic perspective camera, and releases its newly extracted evidence only at
+the declared arrival time. It compares a geometric VoI baseline, small randomly
+initialized recurrent / memoryless observation learners, fixed/random sensing,
+and an always-unknown control across six scenarios, retaining failed outcomes.
+
+On a new Mac with base MATLAB, open **`START_MATLAB.m`** and click Run: the native
+OFDM checks run first, then the portable interactive replay opens. Viewing the
+included record needs no Python installation or additional MATLAB toolboxes.
+MATLAB execution is **pending verification on the new computer**.
+See [the macOS MATLAB guide and experimental limits](docs/MATLAB_ACTIVE_OBSERVATION.zh-CN.md).
+
+This is a small learned observation/residual-memory experiment, not joint training
+of the complete RGB/RF neural World Model or evidence of autonomous safety.
+
 ## Falsifiable RF–vision evidence memory (separate experimental reasoning stage)
 
 This is **not** material recognition or a deployed autonomous controller. `src/isac_wm/evidence_reasoning.py` records bounded, timestamped radar/vision evidence and compares *same-object* versus *unrelated-object* explanations without using ground-truth labels. It retains explicit counterevidence and returns **unknown identity**, including when angles agree but independent depth is missing. Vision here is an intentionally restricted synthetic perspective bearing cue; existing orthographic-image neural checkpoints are NOT drop-in compatible.
