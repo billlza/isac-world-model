@@ -1,5 +1,22 @@
 # ISAC World Model — v0.4.1 release engineering
 
+## Reproducible MIMO-OFDM PHY baseline (separate first-stage experiment)
+
+A **common-waveform**, CPU-only PHY baseline now lives in `src/isac_wm/phy_ofdm.py`:
+2-Tx / 4-Rx QPSK MIMO downlink with noisy pilot-estimated CSI, plus an 8-Rx monostatic radar array using the *same* OFDM transmissions to estimate target range, bearing and Doppler. It contains a common moving scatterer in the communication and sensing models. Dedicated sector-directed probe symbols consume payload REs; ordinary transmitted data also serve as radar illumination.
+
+```bash
+# After the normal project-local bootstrap, run reproducible paired simulations.
+bash scripts/env.sh python scripts/phy_sweep.py \\
+  --out runs/phy-baseline --trials 16 --fractions 0,0.2,0.4 --radar-snr-db -35
+
+# On a Mac with MATLAB, base-MATLAB FFT/CP/radar sanity checks plus CSV plot:
+# addpath('scripts'); matlab_phy_smoke('runs/phy-baseline/summary.csv');
+```
+
+See [the PHY derivation, assumptions and MATLAB instructions](docs/MIMO_OFDM_PHY.zh-CN.md) and [reproducible example results](examples/phy_first_stage/manifest.json). **This is a physics-facing benchmark, not yet the radio backend of the learned World Model, not real 5G NR or material classification.** MathWorks also provides a distinct bistatic [communication-centric MIMO-OFDM ISAC example](https://www.mathworks.com/help/phased/ug/integrated-sensing-and-communication-2-communication-centric-approach-using-mimo-ofdm.html).
+
+
 ## GitHub and clean-clone demonstration
 
 The private repository is `billlza/isac-world-model`. Check GitHub Actions for the
