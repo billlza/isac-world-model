@@ -1,5 +1,19 @@
 # ISAC World Model — v0.4.1 release engineering
 
+## Falsifiable RF–vision evidence memory (separate experimental reasoning stage)
+
+This is **not** material recognition or a deployed autonomous controller. `src/isac_wm/evidence_reasoning.py` records bounded, timestamped radar/vision evidence and compares *same-object* versus *unrelated-object* explanations without using ground-truth labels. It retains explicit counterevidence and returns **unknown identity**, including when angles agree but independent depth is missing. Vision here is an intentionally restricted synthetic perspective bearing cue; existing orthographic-image neural checkpoints are NOT drop-in compatible.
+
+```bash
+bash scripts/env.sh python scripts/phy_reasoning_demo.py --out runs/reason-agree --scenario compatible --frames 4
+bash scripts/env.sh python scripts/phy_reasoning_demo.py --out runs/reason-conflict --scenario conflicting_view --frames 4
+bash scripts/env.sh python scripts/phy_reasoning_demo.py --out runs/reason-occluded --scenario occluded --frames 4
+bash scripts/env.sh python scripts/phy_reasoning_demo.py --out runs/reason-collinear --scenario collinear_view --frames 4
+```
+
+See [the Chinese design, assumptions and failure-model document](docs/EVIDENCE_REASONING_WORLD_MODEL.zh-CN.md). This is a **model-based, interpretable baseline** preceding the planned learned, action-conditioned predictive world model; RF error floors and association score are *not calibrated probabilities*.
+
+
 ## Reproducible MIMO-OFDM PHY baseline (separate first-stage experiment)
 
 A **common-waveform**, CPU-only PHY baseline now lives in `src/isac_wm/phy_ofdm.py`:
