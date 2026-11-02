@@ -63,9 +63,7 @@ def summarize(records: list[dict], seeds: list[int]) -> tuple[list[dict], list[d
             )
         for seed in seeds:
             pair = {
-                r["planner"]: r["metrics"]
-                for r in records
-                if r["scenario"] == scenario and r["seed"] == seed
+                r["planner"]: r["metrics"] for r in records if r["scenario"] == scenario and r["seed"] == seed
             }
             paired.append(
                 {

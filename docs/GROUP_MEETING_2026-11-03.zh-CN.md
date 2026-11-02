@@ -82,15 +82,30 @@ flowchart TB
 
 **English:** *The current stopping rule can terminate before the confirmation protocol is complete. I am testing a verification-aware correction while retaining the original action rule as a control.*
 
-**当前状态：代码与专项测试已加入。** 不把尚未取得的物理实验或 GPU 结果写成已改善的数值。
+**当前状态：新增 CPU 成对仿真已经完成，Linux/Python 3.14.9 的 397 项测试通过，覆盖率 91.37%。** 首轮完整 CI 的格式检查发现一处布局问题，已按日志修正；最终整套 CI 状态以 [PR #6](https://github.com/billlza/isac-world-model/pull/6) 为准。尚未取得 H200 实测。
+
+### 本次新增结果，可直接替换为第 4 页的主表
+
+两种动作准则共享修正后的证据状态规则，都是几何基线；每场景 8 个种子，共 96 次 rollout。这不是旧版本整个算法的重跑，也不是神经记忆模型与无记忆模型的比较。[4]
+
+| 场景 | 原动作准则 | 新复核准则 | 必须同时讲出的成本 |
+| --- | --- | --- | --- |
+| same | 弃答 8/8 | 弃答 0/8 | 平均捕获 1.75→2.00 次；移动 4→12 m |
+| different | 弃答 3/8 | 弃答 0/8 | 平均捕获 2.50→2.125 次；移动 4→12 m |
+| late | 弃答 5/8 | 弃答 3/8 | 平均捕获 1.75→2.00 次；移动均为 4 m |
+| outside_candidates | 拒绝 8/8 | 拒绝 8/8 | 捕获均为 2 次，新准则移动 4→12 m，无拒绝率增益 |
+| unresolvable | 未知 8/8；0 次捕获 | 未知 8/8；0 次捕获 | 两者均未强行确认 |
+| camera_loss | 未知 8/8；4 次捕获 | 未知 8/8；4 次捕获 | 持续缺测时仍消耗资源，尚未解决 |
+
+本次两种准则均为零次**观测到的**错误确认；8 个种子不足以支持一般安全性或统计优越性结论。新准则在正常可辨识场景完成了更多判断，同时暴露出“拒绝检查过度移动”的低效率。这使下一步问题更具体：统一确认、拒绝和资源成本的决策价值，再做新的独立测试。
 
 | 汇报前更新项 | 当前记录 |
 | --- | --- |
 | 新源码提交或明确工作版本 | 本次 `research/verification-2026-11-02` 分支 |
 | 本地专项验证 | 求证状态 9 项、H200 预检逻辑 14 项通过；H200 测试使用硬件 mock |
-| 因果时间、神经门控及完整集成验证 | 已加入回归测试；由新提交的完整 CI 实跑 |
-| 相同种子、状态规则下的旧／新动作准则结果 | 预设 8 seed × 6 场景 × 2 准则；保留所有失败与实际资源开销 |
-| 新提交的远端 CI | 待验证；旧绿灯不替代新提交验证 |
+| 因果时间、神经门控及完整集成验证 | 首轮 Linux/Python 3.14.9 测试与集成通过；397 项测试、91.37% 覆盖率 |
+| 相同种子、状态规则下的旧／新动作准则结果 | 预设 8 seed × 6 场景 × 2 准则已完成；完整记录与全部失败保留 |
+| 新提交的远端 CI | 最终状态见 PR #6；首轮通过的 Python 结果不冒充整套绿灯 |
 
 ## 第 5 页｜下一阶段实验与 HPC 的具体用途（约 1–1.5 分钟）
 
@@ -136,5 +151,6 @@ flowchart TB
 - [1] [主动观测实验、训练规模及正负结果](https://github.com/billlza/isac-world-model/blob/9229f572325dff13377b58c8462cc006c0f0db97/examples/active_observation/README.md)
 - [2] [主动观测源码](https://github.com/billlza/isac-world-model/blob/9229f572325dff13377b58c8462cc006c0f0db97/src/isac_wm/active_observation.py)、[专项测试](https://github.com/billlza/isac-world-model/blob/9229f572325dff13377b58c8462cc006c0f0db97/tests/test_active_observation.py)
 - [3] [旧 IMM／结构化模型比较的条件与来源版本](https://github.com/billlza/isac-world-model/blob/9229f572325dff13377b58c8462cc006c0f0db97/docs/IMM_RESULTS_2026-10-27.md)
+- [4] [本次成对实验记录及范围说明](../examples/verification_planning/README.md)，源提交 `8d7dd73af01659e16d3a571e4b381bc7d94bbe80`；[运行制品](https://github.com/billlza/isac-world-model/actions/runs/41545039429/artifacts/13187702083)。
 
 文档准备于 2026-11-02；新结果的更新以实际源码、运行记录和对应 CI 为准。

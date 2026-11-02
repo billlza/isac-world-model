@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "status": "completed",
+  "config": {
+    "steps": 4,
+    "slot_s": 2.0,
+    "camera_speed_mps": 8.0,
+    "delivery_s": 0.25,
+    "exposure_s": 0.05,
+    "max_baseline_m": 4.0,
+    "travel_budget_m": 12.0,
+    "packet_bits": 1024,
+    "alternative_depth_m": 7.5,
+    "camera_sigma_deg": 0.45,
+    "confirmation_score": 0.95,
+    "rejection_sigma": 3.0
+  },
+  "episode_seeds": [
+    20261103,
+    20261104,
+    20261105,
+    20261106,
+    20261107,
+    20261108,
+    20261109,
+    20261110
+  ],
+  "planners": [
+    "verification-aware",
+    "legacy-voi"
+  ],
+  "method": "geometry_voi",
+  "comparison": "same corrected evidence protocol; only the action rule differs",
+  "runtime": {
+    "python": "3.14.9",
+    "numpy": "2.5.4",
+    "torch": "2.14.1+cpu",
+    "device": "cpu",
+    "threads": 2
+  },
+  "base_commit": "8d7dd73af01659e16d3a571e4b381bc7d94bbe80",
+  "source_sha256": {
+    "src/isac_wm/active_observation.py": "3c22a0b457fa2492cfcb09d5e7027618aad27a67a0c78380282177005350c324",
+    "src/isac_wm/observation_planning.py": "4789b5a3f9a735660ea07675dba5e4fdc9a08e020a1def60d983c17e879b9161",
+    "src/isac_wm/evidence_reasoning.py": "a514fe048ebe648a8c0b56541c131c77fe09fe951ccf5b044a508373247a5edb",
+    "src/isac_wm/phy_ofdm.py": "762ccb1bb9d15457cf654ff82ac56ebc5fd03c495a493a08964085d81bec2d53",
+    "src/isac_wm/artifacts.py": "b30594023f649cd5ef6b1a4780222a60ad2c6ad36164fd51163c7475517efd23",
+    "scripts/verification_study.py": "61ec09566359b0b2fe50ecd30d4d8e000c20b5648e58793cb96d9c8fbf76bc99",
+    "pyproject.toml": "8d6c8be0274f0ccd8a0aae4be01521fadd8b427f8e3d045af39e2ba667b4fc11",
+    "uv.lock": "630c371f4996e0eca24a6ae4a81f51f7a367a96fc467be9de8270eb3cfb29cf0"
+  },
+  "elapsed_s": 2.3454264800000004
+}
