@@ -96,6 +96,23 @@ def test_ambiguous_views_never_confirm_even_with_extreme_neural_confidence():
     assert memory.informative == 0
 
 
+@pytest.mark.parametrize("field", ["capture_s", "available_s", "lateral_m"])
+@pytest.mark.parametrize("missing", [False, True])
+@pytest.mark.parametrize("value", [float("nan"), float("inf"), -float("inf")])
+def test_nonfinite_packet_metadata_cannot_bypass_arrival_or_mutate_memory(field, missing, value):
+    memory = HypothesisMemory(Anchor(18, 12, 0, 0.1), ExperimentConfig())
+    event = packet(memory)
+    event[field] = value
+    if missing:
+        event["observation_deg"] = None
+    prior = memory.weights().copy()
+    with pytest.raises(ValueError, match="Non-finite"):
+        memory.release(event, 2)
+    assert memory.accepted == 0 and not memory.seen and memory.now_s == 0.1
+    assert not memory.predictive_nll
+    np.testing.assert_array_equal(memory.weights(), prior)
+
+
 def test_new_evidence_can_reject_all_candidates_and_missing_detection_is_unknown():
     memory = HypothesisMemory(Anchor(18, 12, 0, 0.1), ExperimentConfig())
     event = packet(memory)
@@ -120,6 +137,75 @@ def test_new_evidence_corrects_initial_wrong_preference():
         event["observation_deg"] = event["prediction_mean_deg"][1]
         memory.release(event, event["available_s"])
     assert memory.status() == "farther_object"
+
+
+def test_verification_closes_the_one_observation_stop_gap():
+    memory = HypothesisMemory(Anchor(18, 12, 0, 0.1), ExperimentConfig())
+    event = packet(memory)
+    memory.release(event, event["available_s"])
+    assert memory.status() == "unknown"
+    args = dict(decision_s=2, position_m=4, remaining_m=8, deadline_s=8, step=1, seed=1)
+    legacy, _ = choose_action(memory, "geometry_voi", planner="legacy-voi", **args)
+    verification, _ = choose_action(memory, "geometry_voi", planner="verification-aware", **args)
+    assert legacy is None
+    assert verification["selection_reason"] == "confirmation_verification"
+    assert verification["lateral_m"] == -4
+    assert verification["score"] <= 0
+    mean = verification["prediction_mean_deg"][0]
+    memory.release({**verification, "uid": 2, "observation_deg": mean}, verification["available_s"])
+    assert memory.status() == "same_depth"
+
+
+def test_all_candidates_wrong_packet_cannot_reinforce_weights_or_neural_memory():
+    torch.manual_seed(7)
+    memory = HypothesisMemory(Anchor(18, 12, 0, 0.1), ExperimentConfig(), ObservationNetwork())
+    for i in (1, 2):
+        event = packet(memory, uid=i, capture=float(i))
+        memory.release(event, event["available_s"])
+    weights, hidden = memory.weights().copy(), memory.hidden.clone()
+    event = packet(memory, uid=3, capture=3, observation=80)
+    memory.release(event, event["available_s"])
+    np.testing.assert_array_equal(memory.weights(), weights)
+    assert torch.equal(memory.hidden, hidden)
+    assert memory.evidence.supporting_informative == 0
+    assert memory.status() == "unknown"
+    assert memory.accepted == 3 and len(memory.predictive_nll) == 3
+
+
+def test_missing_detection_does_not_erase_pending_contradiction():
+    memory = HypothesisMemory(Anchor(18, 12, 0, 0.1), ExperimentConfig())
+    for i, observation in ((1, 80), (2, None), (3, 80)):
+        event = packet(memory, uid=i, capture=float(i))
+        event["observation_deg"] = observation
+        memory.release(event, event["available_s"])
+    assert memory.evidence.contradiction_streak == 2
+    assert memory.accepted == 2 and memory.status() == "candidate_set_rejected"
+
+
+def test_verification_never_overrides_arrival_budget_or_geometric_identifiability():
+    memory = HypothesisMemory(Anchor(18, 12, 0, 0.1), ExperimentConfig())
+    event = packet(memory)
+    memory.release(event, event["available_s"])
+    selected, _ = choose_action(
+        memory, "geometry_voi", decision_s=2, position_m=0, remaining_m=0, deadline_s=8, step=1, seed=1
+    )
+    assert selected is None  # Only the non-identifying origin view is feasible.
+    selected, proposals = choose_action(
+        memory, "geometry_voi", decision_s=2, position_m=4, remaining_m=8, deadline_s=2.1, step=1, seed=1
+    )
+    assert selected is None and not proposals
+    with pytest.raises(ValueError, match="planner"):
+        choose_action(
+            memory,
+            "geometry_voi",
+            decision_s=2,
+            position_m=4,
+            remaining_m=8,
+            deadline_s=8,
+            step=1,
+            seed=1,
+            planner="unregistered",
+        )
 
 
 @pytest.mark.parametrize("method", METHODS)
