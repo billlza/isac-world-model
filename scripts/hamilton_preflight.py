@@ -51,8 +51,19 @@ def _allocation(env, runner) -> dict[str, str]:
         raise PreflightError("The Hamilton single-H200 pilot requires the cuda partition")
     if not env.get("CUDA_VISIBLE_DEVICES", "").strip():
         raise PreflightError("Slurm has not provided CUDA_VISIBLE_DEVICES; do not set GPU IDs manually")
-    output = _command(runner, ["scontrol", "show", "job", "--oneliner", job_id])
+    query_id = job_id
+    if "SLURM_ARRAY_JOB_ID" in env or "SLURM_ARRAY_TASK_ID" in env:
+        array, task = env.get("SLURM_ARRAY_JOB_ID", ""), env.get("SLURM_ARRAY_TASK_ID", "")
+        if not array.isdecimal() or not task.isdecimal():
+            raise PreflightError("Incomplete Slurm array element identity")
+        query_id = f"{array}_{task}"
+    output = _command(runner, ["scontrol", "show", "job", "--oneliner", query_id])
+    if len(output.splitlines()) != 1:
+        raise PreflightError("scontrol must identify exactly one allocation")
+
     fields = dict(re.findall(r"(?:^|\s)([A-Za-z][A-Za-z0-9_]*)=(\S*)", output))
+    if query_id != job_id and (fields.get("ArrayJobId"), fields.get("ArrayTaskId")) != (array, task):
+        raise PreflightError("scontrol returned a different Slurm array element")
     if fields.get("JobState") != "RUNNING" or fields.get("Partition") != "cuda":
         raise PreflightError("scontrol did not confirm a RUNNING job in the cuda partition")
     allocated = fields.get("AllocTRES", "").split(",")
