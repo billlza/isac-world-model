@@ -62,6 +62,15 @@ jobs:
         run: uv sync --locked --extra dev --python 3.14.9
       - name: Train four matched development models
         run: STUDY_PYTHON=.venv/bin/python bash scripts/recovery_cpu_development.sh validation/scale-development
+      - name: Score paired recovery on disjoint development episodes
+        run: |
+          export PYTHONPATH="$PWD/src"
+          base=validation/scale-development
+          for h in 96 192; do
+            .venv/bin/python scripts/score_scale_recovery.py \
+              --structured "$base/structured-$h/model.pt" --attention "$base/structured-attention-$h/model.pt" \
+              --device cpu --episodes 2 --seed-base 83001200 --steps 64 --out "$base/recovery-$h.json"
+          done
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
@@ -107,9 +116,8 @@ jobs:
         if: failure()
         run: |
           if test -f validation/quality/ruff.log; then cat validation/quality/ruff.log; fi
-          if test -f validation/quality/ruff-format.log; then
-            .venv/bin/python -m ruff format --diff src tests scripts
-          fi
+          .venv/bin/python -m ruff check --diff src tests scripts || true
+          .venv/bin/python -m ruff format --diff src tests scripts || true
       - name: Required advisory audit
         run: .venv/bin/python scripts/ci.py --profile security --out validation/security
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

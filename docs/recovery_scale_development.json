@@ -1,0 +1,46 @@
+{
+  "scope": "CPU development, seed 19; validation current-position RMSE; not the H200 recovery test",
+  "train_episodes": 24,
+  "steps": 64,
+  "epochs": 2,
+  "scores": [
+    {
+      "architecture": "structured",
+      "hidden": 192,
+      "parameters": 290710,
+      "validation_rmse_m_per_epoch": [
+        0.6077314408461473,
+        0.6182729027874179
+      ]
+    },
+    {
+      "architecture": "structured",
+      "hidden": 96,
+      "parameters": 91990,
+      "validation_rmse_m_per_epoch": [
+        0.6311214039167695,
+        0.64266697373167
+      ]
+    },
+    {
+      "architecture": "structured-attention",
+      "hidden": 192,
+      "parameters": 598678,
+      "validation_rmse_m_per_epoch": [
+        1.883127839785652,
+        1.0774375056007546
+      ]
+    },
+    {
+      "architecture": "structured-attention",
+      "hidden": 96,
+      "parameters": 172246,
+      "validation_rmse_m_per_epoch": [
+        0.6615586012428704,
+        0.47070692814578907
+      ]
+    }
+  ],
+  "git_commit": "c9235896164c1c27a98aff2c7446c826f19a0663",
+  "job_url": "https://github.com/billlza/isac-world-model/actions/runs/41719977311/job/126209869648"
+}
