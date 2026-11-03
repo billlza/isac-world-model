@@ -10,7 +10,7 @@ from pathlib import Path
 import numpy as np
 import torch
 
-from .artifacts import read_checkpoint, save_checkpoint, write_json
+from .artifacts import model_fingerprint, read_checkpoint, save_checkpoint, write_json
 from .model import EventBeliefModel, ModelConfig, training_loss
 from .simulator import SceneConfig, recorded_episode
 from .structured import StructuredConfig, build_model, model_config_from_dict
@@ -68,6 +68,9 @@ def train(
     learning_rate: float = 1e-3,
     patience: int = 0,
     max_dataset_bytes: int = 4 * 1024**3,
+    train_seed_base: int | None = None,
+    validation_seed_base: int | None = None,
+    batch_order_seed: int | None = None,
 ) -> dict:
     integer(epochs, "epochs", 1, 100_000)
     integer(episodes, "episodes", 1, 100_000)
@@ -95,16 +98,42 @@ def train(
     if estimated > max_dataset_bytes:
         raise MemoryError(f"Dataset estimate {estimated} exceeds configured RAM budget {max_dataset_bytes}")
     # Disjoint episode seeds, never an adjacent-frame random split.
-    train_seeds = [seed * 100000 + i for i in range(episodes)]
-    val_seeds = [10_000_000 + seed * 100000 + i for i in range(max(8, episodes // 8))]
+    custom_seeds = any(x is not None for x in (train_seed_base, validation_seed_base, batch_order_seed))
+    n_val = max(8, episodes // 8)
+    data_base = (
+        seed * 100000
+        if train_seed_base is None
+        else integer(train_seed_base, "train_seed_base", 0, 2**32 - episodes)
+    )
+    val_base = (
+        10_000_000 + seed * 100000
+        if validation_seed_base is None
+        else integer(validation_seed_base, "validation_seed_base", 0, 2**32 - n_val)
+    )
+    order_seed = (
+        seed if batch_order_seed is None else integer(batch_order_seed, "batch_order_seed", 0, 2**32 - 1)
+    )
+    train_seeds = list(range(data_base, data_base + episodes))
+    val_seeds = list(range(val_base, val_base + n_val))
+    if set(train_seeds).intersection(val_seeds):
+        raise ValueError("Training and validation episode seeds overlap")
+    explicit = {}
+    if custom_seeds:
+        explicit["seed_plan"] = {
+            "initialization": seed,
+            "train_seed_base": data_base,
+            "validation_seed_base": val_base,
+            "batch_order_seed": order_seed,
+        }
     data = [recorded_episode(s, scene) for s in train_seeds]
     val = [recorded_episode(s, scene) for s in val_seeds]
     if isinstance(model_config, StructuredConfig) and model_config.room_m != scene.room_m:
         raise ValueError("Structured model geometry must match scene room_m")
     model = build_model(model_config).to(device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=1e-4)
-    rng = np.random.default_rng(seed)
+    rng = np.random.default_rng(order_seed)
     manifest = {
+        **explicit,
         "version": "0.4.0",
         "initialization": "random; no pretrained weights",
         "scene": scene.to_dict(),
@@ -119,6 +148,8 @@ def train(
         "runtime": runtime_info(device),
         "hardware_validated": [str(device)],
     }
+    if custom_seeds:
+        manifest["initial_parameters_sha256"] = model_fingerprint(model)
     manifest.update(
         {
             "learning_rate": learning_rate,
@@ -145,6 +176,8 @@ def train(
             "scene_config": scene.to_dict(),
             "model_config": model.config.to_dict(),
         }
+        if saved.get("seed_plan") != explicit.get("seed_plan"):
+            raise ValueError("Resume seed plan does not match saved run")
         if any(saved.get(k) != v for k, v in expected.items()):
             raise ValueError("Resume configuration does not match saved run")
         model.load_state_dict(saved["state_dict"], strict=True)
@@ -195,6 +228,7 @@ def train(
             stale = 0
             # CPU tensors + primitive metadata; loader uses weights_only=True.
             best_checkpoint = {
+                **explicit,
                 "schema_version": 2,
                 "state_dict": {k: v.detach().cpu().clone() for k, v in model.state_dict().items()},
                 "model_config": model.config.to_dict(),
@@ -210,6 +244,7 @@ def train(
         save_checkpoint(
             outdir / "resume.pt",
             {
+                **explicit,
                 "schema_version": 2,
                 "state_dict": {k: v.detach().cpu() for k, v in model.state_dict().items()},
                 "optimizer": optimizer.state_dict(),

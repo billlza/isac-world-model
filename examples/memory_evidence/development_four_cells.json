@@ -1,0 +1,53 @@
+{
+  "scope": "independent numerical development replay, CPU checkpoint, seed 19, original held-out development scenes only; not Hamilton 19341792",
+  "artifact_id": 13272976788,
+  "reference_source": "b2547848b09b8c8cb3e7a03ce0154595465006d6",
+  "checkpoint_sha256": "9a3deb50575ebb57a610593e8a0fd1132b643d3d86a38b34910ae3bba976b150",
+  "archive_sha256": "448925dc369a415d11eb8c479dd841eaba1df775e1ea60b02b9fc367eb022ed0",
+  "case_auc_m_s": [
+    {
+      "seed": 83001200,
+      "condition": "control",
+      "max_factual_curve_difference_m": 1.3403340711759526e-06,
+      "auc_m_s": {
+        "camera_on_oldkeys_on": 0.28193336146387593,
+        "camera_on_oldkeys_off": 0.2747480039295151,
+        "camera_off_oldkeys_on": 0.29060516865329294,
+        "camera_off_oldkeys_off": 0.2876368750656525
+      }
+    },
+    {
+      "seed": 83001200,
+      "condition": "maneuver",
+      "max_factual_curve_difference_m": 0.0,
+      "auc_m_s": {
+        "camera_on_oldkeys_on": 0.3393099835363915,
+        "camera_on_oldkeys_off": 0.3652136905740762,
+        "camera_off_oldkeys_on": 0.34130757283320595,
+        "camera_off_oldkeys_off": 0.37693124077503876
+      }
+    },
+    {
+      "seed": 83001201,
+      "condition": "control",
+      "max_factual_curve_difference_m": 4.740764916189022e-07,
+      "auc_m_s": {
+        "camera_on_oldkeys_on": 0.15642969499719211,
+        "camera_on_oldkeys_off": 0.1733311527676181,
+        "camera_off_oldkeys_on": 0.17158948146038153,
+        "camera_off_oldkeys_off": 0.18060647394672433
+      }
+    },
+    {
+      "seed": 83001201,
+      "condition": "maneuver",
+      "max_factual_curve_difference_m": 4.7598798930126307e-07,
+      "auc_m_s": {
+        "camera_on_oldkeys_on": 0.24873297916497067,
+        "camera_on_oldkeys_off": 0.27656973037843396,
+        "camera_off_oldkeys_on": 0.25974780933214153,
+        "camera_off_oldkeys_off": 0.2746758509892001
+      }
+    }
+  ]
+}
