@@ -54,9 +54,10 @@ def counterfactual_snapshots(cfg, deliveries, factual, anchor):
         muted.append(snap)
         if k < anchor and any(not np.array_equal(v, snap[key]) for key, v in factual[k].items()):
             raise ValueError("Camera intervention affected pre-delivery information")
-        if any(not np.array_equal(snap[key][idx], factual[k][key][idx]) for key, idx in (
-            ("radio", slice(None)), ("new", 1), ("valid", 1), ("age", 1)
-        )):
+        if any(
+            not np.array_equal(snap[key][idx], factual[k][key][idx])
+            for key, idx in (("radio", slice(None)), ("new", 1), ("valid", 1), ("age", 1))
+        ):
             raise ValueError("Camera intervention changed the RF information set")
     if not removed or removed[0][0] != anchor or anchor + WINDOW >= len(muted):
         raise ValueError("Incorrect paired intervention anchor/window")
@@ -100,7 +101,7 @@ def factual_replay_check(scored, ref):
     b = np.asarray(ref["post_errors_m"])
     if a.shape != (11,) or b.shape != (11,) or not np.isfinite(a).all() or not np.isfinite(b).all():
         raise ValueError("Invalid factual error series")
-    deltas = [float(np.max(np.abs(a-b)))]
+    deltas = [float(np.max(np.abs(a - b)))]
     for k in ("position_error_auc_m_s", "blackout_rmse_m", "three_step_forecast_rmse_m"):
         deltas.append(abs(scored[k] - ref[k]))
     if not np.isfinite(deltas).all() or max(deltas) > TOLERANCE_M:
@@ -127,20 +128,25 @@ def evaluate_case(model, cfg, device, seed, cond, ref):
         if intervene_keys and not prior_slots:
             raise ValueError("Empty preanchor A96 bank: the intended old-key treatment is unavailable")
         for camera, stream in (("on", snaps), ("off", muted)):
-            for keys in (("on", "off") if intervene_keys else ("on",)):
+            for keys in ("on", "off") if intervene_keys else ("on",):
                 memory = anchor_memory(pre, mask_old=keys == "off")
                 _, xy, forecast = forward_part(model, cfg, device, memory, stream[anchor:])
                 xy = torch.cat((pre_xy, xy)).cpu().numpy() * cfg.room_m
                 forecast = torch.cat((pre_future, forecast)).cpu().numpy() * cfg.room_m
                 result = score(xy, truth[:, :2], anchor)
-                result["prearrival_error_m"] = float(np.linalg.norm(xy[anchor-1] - truth[anchor-1, :2]))
+                result["prearrival_error_m"] = float(np.linalg.norm(xy[anchor - 1] - truth[anchor - 1, :2]))
                 e = forecast[5:-3] - truth[8:, :2]
                 result["three_step_forecast_rmse_m"] = float(np.sqrt(np.mean(np.sum(e**2, axis=1))))
                 cells[f"camera_{camera}_oldkeys_{keys}"] = result
     dev = factual_replay_check(cells["camera_on_oldkeys_on"], ref["scores"][arch])
     return {
-        "seed": seed, "condition": cond, "observations": meta, "camera_packets_withheld": removed_count,
-        "preanchor_occupied_event_slots": prior_slots, "factual_curve_max_abs_deviation_m": dev, "cells": cells,
+        "seed": seed,
+        "condition": cond,
+        "observations": meta,
+        "camera_packets_withheld": removed_count,
+        "preanchor_occupied_event_slots": prior_slots,
+        "factual_curve_max_abs_deviation_m": dev,
+        "cells": cells,
     }
 
 
@@ -161,7 +167,9 @@ def summarize(rows):
                 ("camera_off_oldkeys_off", off, "preanchor_key_benefit_camera_off"),
             ]
         gains = {
-            name: np.array([r[a]["position_error_auc_m_s"]-r[b]["position_error_auc_m_s"] for r in selected])
+            name: np.array(
+                [r[a]["position_error_auc_m_s"] - r[b]["position_error_auc_m_s"] for r in selected]
+            )
             for a, b, name in cuts
         }
         if len(cuts) > 1:
@@ -171,8 +179,10 @@ def summarize(rows):
         report[cond] = {
             "paired_auc_effects_m_s": {
                 name: {
-                    "mean": float(d.mean()), "positive": int((d>0).sum()),
-                    "negative": int((d<0).sum()), "ties": int((d==0).sum()),
+                    "mean": float(d.mean()),
+                    "positive": int((d > 0).sum()),
+                    "negative": int((d < 0).sum()),
+                    "ties": int((d == 0).sum()),
                 }
                 for name, d in gains.items()
             },
@@ -182,11 +192,15 @@ def summarize(rows):
                     "mean_auc_m_s": float(np.mean([r[cell]["position_error_auc_m_s"] for r in selected])),
                     "confirmed_by_1s": sum(not r[cell]["not_recovered_by_1s"] for r in selected),
                     "confirmed_then_outside_at_1s": sum(
-                        not r[cell]["not_recovered_by_1s"] and r[cell]["post_errors_m"][-1]>0.25
+                        not r[cell]["not_recovered_by_1s"] and r[cell]["post_errors_m"][-1] > 0.25
                         for r in selected
                     ),
-                    "mean_prearrival_error_m": float(np.mean([r[cell]["prearrival_error_m"] for r in selected])),
-                    "mean_post_errors_m": np.mean([r[cell]["post_errors_m"] for r in selected],axis=0).tolist(),
+                    "mean_prearrival_error_m": float(
+                        np.mean([r[cell]["prearrival_error_m"] for r in selected])
+                    ),
+                    "mean_post_errors_m": np.mean(
+                        [r[cell]["post_errors_m"] for r in selected], axis=0
+                    ).tolist(),
                 }
                 for cell in selected[0]
             },
@@ -200,78 +214,108 @@ def run(array_dir, out, device_name, seeds):
     from isac_wm.artifacts import model_fingerprint, sha256_file, write_json
     from isac_wm.training import load_model, runtime_info
 
-    if not seeds or len(set(seeds)) != len(seeds) or set(seeds)-{7,11,13} or device_name not in ("cpu","cuda"):
+    if (
+        not seeds
+        or len(set(seeds)) != len(seeds)
+        or set(seeds) - {7, 11, 13}
+        or device_name not in ("cpu", "cuda")
+    ):
         raise ValueError("Use distinct archived seeds and an explicit device")
     torch.set_num_threads(2)
     commit = subprocess.check_output(
-        ["git","rev-parse","HEAD"],cwd=Path(__file__).resolve().parents[1],text=True
+        ["git", "rev-parse", "HEAD"], cwd=Path(__file__).resolve().parents[1], text=True
     ).strip()
     report = {
-        "schema_version": 1, "status": "running", "source_commit": SOURCE, "analysis_commit": commit,
-        "original_array_id": "19341792", "requested_device": device_name, "selected_training_seeds": seeds,
-        "analysis_file_sha256": sha256_file(Path(__file__)), "python": platform.python_version(),
-        "numpy": np.__version__, "torch": str(torch.__version__), "tolerance_m": TOLERANCE_M,
+        "schema_version": 1,
+        "status": "running",
+        "source_commit": SOURCE,
+        "analysis_commit": commit,
+        "original_array_id": "19341792",
+        "requested_device": device_name,
+        "selected_training_seeds": seeds,
+        "analysis_file_sha256": sha256_file(Path(__file__)),
+        "python": platform.python_version(),
+        "numpy": np.__version__,
+        "torch": str(torch.__version__),
+        "tolerance_m": TOLERANCE_M,
         "scope": "Paired diagnostic on previously analyzed holdouts; no new training, no independent generalization claim.",
         "oldkeys_off": "Only A96: invalidate preanchor event-bank validity once immediately before first recovered frame delivery. Recurrent state and all postanchor writes remain intact.",
         "camera_off": "Withhold at delivery every vision packet captured on/after reopening. RF, actions, truth, and reference scoring anchor unchanged.",
         "models": [],
     }
     with out.open("x", encoding="utf-8") as handle:
-        json.dump(report,handle,allow_nan=False)
+        json.dump(report, handle, allow_nan=False)
     try:
         for s in seeds:
             directory = array_dir / f"seed-{s}"
             study = json.loads((directory / "study.json").read_bytes())
-            if (study["status"],study["git_commit"],study["training_seed"],study["slurm_array_id"]) != (
-                "completed", SOURCE,s,"19341792",
+            if (study["status"], study["git_commit"], study["training_seed"], study["slurm_array_id"]) != (
+                "completed",
+                SOURCE,
+                s,
+                "19341792",
             ):
                 raise ValueError("Incorrect training provenance")
-            expected_train = {s*100_000+i for i in range(96)}
-            expected_val = {10_000_000+s*100_000+i for i in range(12)}
-            for h in (96,192):
-                hashes, reference_rows = reference(directory,s,h)
-                for a in ("structured","structured-attention"):
+            expected_train = {s * 100_000 + i for i in range(96)}
+            expected_val = {10_000_000 + s * 100_000 + i for i in range(12)}
+            for h in (96, 192):
+                hashes, reference_rows = reference(directory, s, h)
+                for a in ("structured", "structured-attention"):
                     path = directory / f"{a}-{h}" / "model.pt"
                     if sha256_file(path) != hashes[a]:
                         raise ValueError(f"Original checkpoint hash mismatch: {path}")
-                    model, cfg, device = load_model(path,device_name)
-                    if (model.config.architecture != a or model.config.hidden_dim != h or cfg.steps != 64
-                            or model.provenance_seeds != expected_train|expected_val
-                            or model.provenance_seeds.intersection(TEST)):
+                    model, cfg, device = load_model(path, device_name)
+                    if (
+                        model.config.architecture != a
+                        or model.config.hidden_dim != h
+                        or cfg.steps != 64
+                        or model.provenance_seeds != expected_train | expected_val
+                        or model.provenance_seeds.intersection(TEST)
+                    ):
                         raise ValueError("Unexpected checkpoint architecture or training/evaluation split")
                     weights = model_fingerprint(model)
                     entry = {
-                        "training_seed": s, "architecture": a, "width": h, "status":"running",
-                        "checkpoint_sha256":hashes[a], "reference_sha256":REFERENCE_DIGEST[s,h],
-                        "loaded_parameter_sha256":weights, "runtime":runtime_info(device), "episodes":[],
+                        "training_seed": s,
+                        "architecture": a,
+                        "width": h,
+                        "status": "running",
+                        "checkpoint_sha256": hashes[a],
+                        "reference_sha256": REFERENCE_DIGEST[s, h],
+                        "loaded_parameter_sha256": weights,
+                        "runtime": runtime_info(device),
+                        "episodes": [],
                     }
                     report["models"].append(entry)
-                    write_json(out,report)
-                    start=time.monotonic()
-                    for (episode_seed,cond),row in reference_rows.items():
-                        entry["episodes"].append(evaluate_case(model,cfg,device,episode_seed,cond,row))
-                    if model_fingerprint(model)!=weights or sha256_file(path)!=hashes[a]:
+                    write_json(out, report)
+                    start = time.monotonic()
+                    for (episode_seed, cond), row in reference_rows.items():
+                        entry["episodes"].append(evaluate_case(model, cfg, device, episode_seed, cond, row))
+                    if model_fingerprint(model) != weights or sha256_file(path) != hashes[a]:
                         raise RuntimeError("Frozen model or original checkpoint changed")
-                    entry.update(status="completed",wall_seconds=time.monotonic()-start,summary=summarize(entry["episodes"]))
-                    write_json(out,report)
-                    print(f"completed frozen replay seed={s}, architecture={a}, width={h}",flush=True)
-        report["status"]="completed"
+                    entry.update(
+                        status="completed",
+                        wall_seconds=time.monotonic() - start,
+                        summary=summarize(entry["episodes"]),
+                    )
+                    write_json(out, report)
+                    print(f"completed frozen replay seed={s}, architecture={a}, width={h}", flush=True)
+        report["status"] = "completed"
     except BaseException as exc:
-        report.update(status="failed",error=f"{type(exc).__name__}: {exc}")
-        if report["models"] and report["models"][-1]["status"]=="running":
-            report["models"][-1]["status"]="failed"
+        report.update(status="failed", error=f"{type(exc).__name__}: {exc}")
+        if report["models"] and report["models"][-1]["status"] == "running":
+            report["models"][-1]["status"] = "failed"
         raise
     finally:
-        write_json(out,report)
+        write_json(out, report)
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--array-dir",required=True,type=Path)
-    parser.add_argument("--out",required=True,type=Path)
-    parser.add_argument("--device",required=True,choices=("cpu","cuda"))
-    parser.add_argument("--seeds",nargs="+",type=int,choices=(7,11,13),default=[7,11,13])
-    args=parser.parse_args()
+    parser.add_argument("--array-dir", required=True, type=Path)
+    parser.add_argument("--out", required=True, type=Path)
+    parser.add_argument("--device", required=True, choices=("cpu", "cuda"))
+    parser.add_argument("--seeds", nargs="+", type=int, choices=(7, 11, 13), default=[7, 11, 13])
+    args = parser.parse_args()
     run(args.array_dir, args.out, args.device, args.seeds)
 
 

@@ -100,13 +100,19 @@ def train(
     # Disjoint episode seeds, never an adjacent-frame random split.
     custom_seeds = any(x is not None for x in (train_seed_base, validation_seed_base, batch_order_seed))
     n_val = max(8, episodes // 8)
-    data_base = seed * 100000 if train_seed_base is None else integer(
-        train_seed_base, "train_seed_base", 0, 2**32 - episodes
+    data_base = (
+        seed * 100000
+        if train_seed_base is None
+        else integer(train_seed_base, "train_seed_base", 0, 2**32 - episodes)
     )
-    val_base = 10_000_000 + seed * 100000 if validation_seed_base is None else integer(
-        validation_seed_base, "validation_seed_base", 0, 2**32 - n_val
+    val_base = (
+        10_000_000 + seed * 100000
+        if validation_seed_base is None
+        else integer(validation_seed_base, "validation_seed_base", 0, 2**32 - n_val)
     )
-    order_seed = seed if batch_order_seed is None else integer(batch_order_seed, "batch_order_seed", 0, 2**32 - 1)
+    order_seed = (
+        seed if batch_order_seed is None else integer(batch_order_seed, "batch_order_seed", 0, 2**32 - 1)
+    )
     train_seeds = list(range(data_base, data_base + episodes))
     val_seeds = list(range(val_base, val_base + n_val))
     if set(train_seeds).intersection(val_seeds):
@@ -290,4 +296,3 @@ def load_model(path: Path, device_name: str = "auto") -> tuple[EventBeliefModel,
         checkpoint.get("validation_episode_seeds", [])
     )
     return model, SceneConfig(**checkpoint["scene_config"]), device
-

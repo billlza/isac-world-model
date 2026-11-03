@@ -207,8 +207,13 @@ def run(out, device_name, profile):
                 or m["train_episode_seeds"] != train_set
                 or m["validation_episode_seeds"] != val
                 or m["resume_source"] is not None
-                or m["seed_plan"] != dict(initialization=i, train_seed_base=base,
-                                          validation_seed_base=spec["validation_base"], batch_order_seed=ORDER_SEED)
+                or m["seed_plan"]
+                != dict(
+                    initialization=i,
+                    train_seed_base=base,
+                    validation_seed_base=spec["validation_base"],
+                    batch_order_seed=ORDER_SEED,
+                )
             ):
                 raise RuntimeError(f"Invalid cell training evidence: {name}")
             ck = folder / "model.pt"

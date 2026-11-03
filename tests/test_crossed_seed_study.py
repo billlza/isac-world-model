@@ -15,9 +15,7 @@ class CrossedSeedTests(unittest.TestCase):
         base = {9000: 0.3, 9001: 1.2, 9002: 0.9}
         cells = {}
         for i, d in CELLS:
-            cells[i, d] = {
-                k: v + 2 * (i == 11) + 3 * (d == 11) + 5 * (i == d == 11) for k, v in base.items()
-            }
+            cells[i, d] = {k: v + 2 * (i == 11) + 3 * (d == 11) + 5 * (i == d == 11) for k, v in base.items()}
         differences = factorial_auc(cells)
         self.assertAlmostEqual(differences["init_11_minus_7_average"]["mean_m_s"], 4.5)
         self.assertAlmostEqual(differences["data_11_minus_7_average"]["mean_m_s"], 5.5)
@@ -28,10 +26,15 @@ class CrossedSeedTests(unittest.TestCase):
 
     def test_development_never_scores_a_registered_test_trajectory(self):
         formal, smoke = design("formal"), design("smoke")
+
         def corpus(s):
             result = set()
             for b in (7, 11):
-                result.update(range(s["train_offset"] + b * 100_000, s["train_offset"] + b * 100_000 + s["train_episodes"]))
+                result.update(
+                    range(
+                        s["train_offset"] + b * 100_000, s["train_offset"] + b * 100_000 + s["train_episodes"]
+                    )
+                )
             ranges = [(s["validation_base"], max(8, s["train_episodes"] // 8))]
             ranges.extend((v, s["challenge_episodes"]) for v in s["splits"].values())
             for start, n in ranges:
@@ -39,6 +42,7 @@ class CrossedSeedTests(unittest.TestCase):
                 self.assertFalse(result.intersection(rows))
                 result.update(rows)
             return result
+
         self.assertFalse(corpus(formal).intersection(corpus(smoke)))
 
     def test_resume_must_preserve_seed_plan(self):
@@ -53,8 +57,15 @@ class CrossedSeedTests(unittest.TestCase):
         torch.set_num_threads(1)
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            args = dict(epochs=1, episodes=2, batch_size=2, seed=7, scene=SceneConfig(steps=16),
-                        device_name="cpu", model_config=ModelConfig(feature_dim=8, hidden_dim=8))
+            args = dict(
+                epochs=1,
+                episodes=2,
+                batch_size=2,
+                seed=7,
+                scene=SceneConfig(steps=16),
+                device_name="cpu",
+                model_config=ModelConfig(feature_dim=8, hidden_dim=8),
+            )
             plan = dict(train_seed_base=1000, validation_seed_base=2000, batch_order_seed=37)
             first = train(root / "train", **args, **plan)
             self.assertEqual(first["train_episode_seeds"], [1000, 1001])

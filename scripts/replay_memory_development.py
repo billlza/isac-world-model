@@ -16,7 +16,9 @@ def main():
     from isac_wm.training import load_model
 
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--artifact-dir", type=Path, required=True, help="Extracted recovery-scale-development artifact")
+    p.add_argument(
+        "--artifact-dir", type=Path, required=True, help="Extracted recovery-scale-development artifact"
+    )
     p.add_argument("--out", type=Path, required=True)
     args = p.parse_args()
     torch.set_num_threads(2)
