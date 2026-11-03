@@ -78,6 +78,13 @@ jobs:
         run: uv sync --locked --extra dev --python 3.14.9
       - name: Required static checks
         run: .venv/bin/python scripts/ci.py --profile quality --out validation/quality
+      - name: Show actionable diagnostics if static checks fail
+        if: failure()
+        run: |
+          if test -f validation/quality/ruff.log; then cat validation/quality/ruff.log; fi
+          if test -f validation/quality/ruff-format.log; then
+            .venv/bin/python -m ruff format --diff src tests scripts
+          fi
       - name: Required advisory audit
         run: .venv/bin/python scripts/ci.py --profile security --out validation/security
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
