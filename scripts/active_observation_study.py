@@ -31,10 +31,12 @@ from isac_wm.active_observation import (
     run_episode,
 )
 from isac_wm.artifacts import save_checkpoint, sha256_file, write_json
+from isac_wm.observation_planning import PLANNERS
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE_FILES = (
     "src/isac_wm/active_observation.py",
+    "src/isac_wm/observation_planning.py",
     "src/isac_wm/evidence_reasoning.py",
     "src/isac_wm/phy_ofdm.py",
     "src/isac_wm/artifacts.py",
@@ -82,7 +84,12 @@ def dataset(seeds: list[int], cfg: ExperimentConfig):
     }
 
 
-def sequence_loss(model: ObservationNetwork, data: dict[str, torch.Tensor]):
+def sequence_loss(
+    model: ObservationNetwork,
+    data: dict[str, torch.Tensor],
+    *,
+    rejection_sigma: float = 3.0,
+):
     batch, steps = data["observations"].shape
     memory = torch.zeros(batch, 2, model.hidden_size)
     losses = []
@@ -93,11 +100,18 @@ def sequence_loss(model: ObservationNetwork, data: dict[str, torch.Tensor]):
         nll = 0.5 * ((observation - prediction) / scale) ** 2 + torch.log(scale * (2 * torch.pi) ** 0.5)
         # Labels select the supervised candidate only here, never at inference.
         losses.append(nll.gather(1, data["labels"][:, None]).mean())
-        memory = model.observe(features, base, observation, memory)
+        # Match HypothesisMemory.release: candidate-set compatibility gates only
+        # the next recurrent state. All current-step supervised NLLs remain,
+        # including observations incompatible with every candidate.
+        compatible = (((observation - prediction).abs() / scale) <= rejection_sigma).any(dim=-1)
+        updated_memory = model.observe(features, base, observation, memory)
+        memory = torch.where(compatible[:, None, None], updated_memory, memory)
     return torch.stack(losses).mean()
 
 
-def train_observer(train, validation, *, use_memory: bool, epochs: int, seed: int):
+def train_observer(
+    train, validation, *, use_memory: bool, epochs: int, seed: int, rejection_sigma: float = 3.0
+):
     torch.manual_seed(seed)
     model = ObservationNetwork(use_memory)
     optimizer = torch.optim.AdamW(model.parameters(), lr=0.003)
@@ -108,7 +122,9 @@ def train_observer(train, validation, *, use_memory: bool, epochs: int, seed: in
         train_values = []
         for indices in order.split(16):
             optimizer.zero_grad()
-            loss = sequence_loss(model, {k: v[indices] for k, v in train.items()})
+            loss = sequence_loss(
+                model, {k: v[indices] for k, v in train.items()}, rejection_sigma=rejection_sigma
+            )
             if not bool(torch.isfinite(loss)):
                 raise FloatingPointError("Non-finite observation learning loss")
             loss.backward()
@@ -117,7 +133,7 @@ def train_observer(train, validation, *, use_memory: bool, epochs: int, seed: in
             train_values.append(float(loss.detach()))
         model.eval()
         with torch.no_grad():
-            value = float(sequence_loss(model, validation))
+            value = float(sequence_loss(model, validation, rejection_sigma=rejection_sigma))
         if not np.isfinite(value):
             raise FloatingPointError("Non-finite held-out validation loss")
         history.append(
@@ -169,12 +185,15 @@ def run_study(
     test_episodes: int = 4,
     epochs: int = 12,
     seed: int = 20261028,
+    planner: str = "verification-aware",
 ):
     counts = (train_episodes, validation_episodes, test_episodes, epochs)
     if any(type(n) is not int or not 1 <= n <= 512 for n in counts):
         raise ValueError("Study dimensions must be integers in [1,512]")
     if type(seed) is not int or not 0 <= seed < 2**32 - 20512:
         raise ValueError("Invalid seed")
+    if planner not in PLANNERS:
+        raise ValueError("Unknown planner")
     out = Path(out)
     if out.exists():
         raise FileExistsError("Study output already exists; evidence must not be overwritten")
@@ -193,6 +212,12 @@ def run_study(
         "config": asdict(cfg),
         "splits": splits,
         "epochs": epochs,
+        "planner": planner,
+        "evidence_protocol": (
+            "two candidate-set-compatible (any candidate), geometrically informative detections "
+            "after any contradiction; consecutive rejection; historical candidate weights retained; "
+            "all-candidates-incompatible observations retain NLL but do not update weights or recurrent state"
+        ),
         "base_commit": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(),
         "source_sha256": {name: sha256_file(ROOT / name) for name in SOURCE_FILES},
         "runtime": {
@@ -217,7 +242,12 @@ def run_study(
         models, learning = {}, {}
         for method, use_memory in (("learned_memory", True), ("learned_no_memory", False)):
             model, history = train_observer(
-                train, validation, use_memory=use_memory, epochs=epochs, seed=seed + 77
+                train,
+                validation,
+                use_memory=use_memory,
+                epochs=epochs,
+                seed=seed + 77,
+                rejection_sigma=cfg.rejection_sigma,
             )
             models[method], learning[method] = model, history
             save_checkpoint(
@@ -239,7 +269,13 @@ def run_study(
                 anchor, phy = world.initial_rf()
                 for method in METHODS:
                     record = run_episode(
-                        world, method, cfg, anchor=anchor, phy_report=phy, network=models.get(method)
+                        world,
+                        method,
+                        cfg,
+                        anchor=anchor,
+                        phy_report=phy,
+                        network=models.get(method),
+                        planner=planner,
                     )
                     record["initial_phy"] = phy
                     records.append(record)
@@ -259,6 +295,8 @@ def run_study(
                 "Learning is a residual observation distribution with recurrent bearing memory, not the full RGB/RF world model",
                 "Two proposed depths; all-candidates-wrong rejection uses an uncalibrated innovation gate",
                 "Classical repeated likelihoods approximate independence despite shared RF anchor errors",
+                "Verification uses explicit evidence-count rules and view diversity; not optimal VoI or independent evidence",
+                "legacy-voi retains the old action objective but shares the corrected evidence protocol",
                 "One outstanding camera request; delays are declared simulation inputs, not measured execution latency",
                 "Communication proxy repeats initial OFDM raw payload capacity and reserves 1024 bits per camera message; not delivered goodput",
                 "All methods share time/travel caps but may spend different resources; inspect achieved costs alongside error",
@@ -288,6 +326,7 @@ def main():
     parser.add_argument("--test-episodes", type=int, default=4)
     parser.add_argument("--epochs", type=int, default=12)
     parser.add_argument("--seed", type=int, default=20261028)
+    parser.add_argument("--planner", choices=PLANNERS, default="verification-aware")
     args = parser.parse_args()
     torch.set_num_threads(2)
     report = run_study(**vars(args))

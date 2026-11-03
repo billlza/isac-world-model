@@ -16,6 +16,7 @@ import torch
 from torch import nn
 
 from .evidence_reasoning import detect_visual_bearing, from_phy_result, render_synthetic_camera
+from .observation_planning import PLANNERS, EvidenceState, verification_action
 from .phy_ofdm import OFDMConfig, evaluate_frame
 
 SCENARIOS = ("same", "different", "unresolvable", "outside_candidates", "camera_loss", "late")
@@ -131,10 +132,20 @@ class HypothesisMemory:
         self.hidden = torch.zeros(2, 12)
         self.now_s = anchor.available_s
         self.seen: set[int] = set()
-        self.informative = 0
-        self.contradictions = 0
-        self.accepted = 0
+        self.evidence = EvidenceState()
         self.predictive_nll: list[float] = []
+
+    @property
+    def accepted(self):
+        return self.evidence.accepted
+
+    @property
+    def informative(self):
+        return self.evidence.informative
+
+    @property
+    def contradictions(self):
+        return self.evidence.contradictions
 
     def weights(self):
         p = np.exp(self.log_weights - self.log_weights.max())
@@ -164,7 +175,9 @@ class HypothesisMemory:
         scored against that prediction, not against a hindsight reconstruction.
         A single outstanding packet is enforced by the experiment scheduler.
         """
-        if not math.isfinite(now_s) or now_s < self.now_s or now_s < event["available_s"]:
+        if not np.isfinite([now_s, event["capture_s"], event["available_s"], event["lateral_m"]]).all():
+            raise ValueError("Non-finite packet time or viewpoint")
+        if now_s < self.now_s or now_s < event["available_s"]:
             raise ValueError("Future packet or backward clock")
         if event["capture_s"] < self.anchor.available_s or event["available_s"] < event["capture_s"]:
             raise ValueError("Invalid packet timing")
@@ -188,12 +201,19 @@ class HypothesisMemory:
         log_likelihood = -0.5 * ((obs - mean) / sigma) ** 2 - np.log(sigma * math.sqrt(2 * math.pi))
         terms = np.log(self.weights().clip(1e-30)) + log_likelihood
         self.predictive_nll.append(float(-(terms.max() + np.log(np.exp(terms - terms.max()).sum()))))
-        self.accepted += 1
-        self.contradictions += int(np.min(np.abs(obs - mean) / sigma) > self.cfg.rejection_sigma)
+        compatible = bool(np.min(np.abs(obs - mean) / sigma) <= self.cfg.rejection_sigma)
         # A learned residual must not manufacture physical identifiability.
         # The proposed views must distinguish candidates under the declared
         # geometric error floors, independently of neural confidence.
-        self.informative += int(abs(base[0] - base[1]) > 2 * max(base_sigma))
+        self.evidence = self.evidence.observe(
+            compatible=compatible,
+            informative=bool(abs(base[0] - base[1]) > 2 * max(base_sigma)),
+            lateral_m=event["lateral_m"],
+        )
+        # An all-candidates-incompatible packet remains in the audit/NLL stream,
+        # but must not strengthen the least-wrong candidate or its neural state.
+        if not compatible:
+            return
         self.log_weights += log_likelihood
         # Normalize immediately, keeping finite values across long evidence sequences.
         self.log_weights -= self.log_weights.max()
@@ -207,9 +227,9 @@ class HypothesisMemory:
                 )
 
     def status(self):
-        if self.contradictions >= 2:
+        if self.evidence.rejected:
             return "candidate_set_rejected"
-        if self.accepted < 2 or self.informative < 2:
+        if not self.evidence.ready_to_confirm:
             return "unknown"
         p = self.weights()
         return HYPOTHESES[int(p.argmax())] if p.max() >= self.cfg.confirmation_score else "unknown"
@@ -237,10 +257,13 @@ def choose_action(
     deadline_s: float,
     step: int,
     seed: int,
+    planner: str = "verification-aware",
 ):
     """Plan from released evidence and public costs; no world/scenario argument."""
     if method not in METHODS:
         raise ValueError("Unknown method")
+    if planner not in PLANNERS:
+        raise ValueError("Unknown planner")
     if not np.isfinite([decision_s, position_m, remaining_m, deadline_s]).all():
         raise ValueError("Non-finite planning inputs")
     if decision_s < memory.now_s or remaining_m < 0 or deadline_s <= decision_s:
@@ -254,6 +277,7 @@ def choose_action(
         if travel > remaining_m + 1e-9 or available > deadline_s:
             continue
         mean, sigma = memory.predict(lateral, capture)
+        base, base_sigma, _ = observation_geometry(memory.anchor, lateral, capture, cfg)
         gain = expected_error_reduction(memory.weights(), mean, sigma)
         # Arrival-time usefulness over the remaining common evaluation horizon.
         gain *= max(0, deadline_s - available) / max(1e-9, deadline_s - decision_s)
@@ -267,6 +291,7 @@ def choose_action(
                 "prediction_sigma_deg": sigma.tolist(),
                 "expected_error_reduction_proxy": gain,
                 "score": gain - 0.002 - 0.001 * travel,
+                "geometrically_informative": bool(abs(base[0] - base[1]) > 2 * max(base_sigma)),
             }
         )
     if method == "always_unknown" or not proposals:
@@ -280,10 +305,17 @@ def choose_action(
     else:
         if memory.status() == "candidate_set_rejected":
             return None, proposals
+        if planner == "verification-aware" and memory.evidence.pending_verification is not None:
+            return verification_action(memory.evidence, proposals), proposals
         chosen = max(proposals, key=lambda p: p["score"])
         if chosen["score"] <= 0:
             return None, proposals
-    return dict(chosen), proposals
+    return {
+        **chosen,
+        "selection_reason": method if method in {"fixed", "random"} else "positive_voi",
+        "verification_view_separation_m": None,
+        "verification_same_view": None,
+    }, proposals
 
 
 @dataclass(frozen=True)
@@ -346,9 +378,12 @@ def run_episode(
     anchor: Anchor,
     phy_report: dict,
     network: ObservationNetwork | None = None,
+    planner: str = "verification-aware",
 ):
     if method not in METHODS:
         raise ValueError("Unknown method")
+    if planner not in PLANNERS:
+        raise ValueError("Unknown planner")
     if method.startswith("learned") and network is None:
         raise ValueError("Learned method requires an explicitly trained model")
     effective = replace(cfg, max_baseline_m=0.1) if world.scenario == "unresolvable" else cfg
@@ -372,6 +407,9 @@ def run_episode(
                 "status": memory.status(),
                 "accepted_observations": memory.accepted,
                 "contradictions": memory.contradictions,
+                "contradiction_streak": memory.evidence.contradiction_streak,
+                "supporting_informative": memory.evidence.supporting_informative,
+                "pending_verification": memory.evidence.pending_verification,
                 "lateral_m": position,
                 "travelled_m": travelled,
                 "observation_deg": None if phase != "arrival" or event is None else event["observation_deg"],
@@ -397,6 +435,7 @@ def run_episode(
             deadline_s=deadline,
             step=step,
             seed=world.seed,
+            planner=planner,
         )
         if chosen is None:
             snapshot(now, "skip")
@@ -452,6 +491,7 @@ def run_episode(
     return {
         "scenario": world.scenario,
         "method": method,
+        "planner": planner,
         "seed": world.seed,
         "config": asdict(effective),
         "anchor": asdict(anchor),
