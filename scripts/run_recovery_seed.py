@@ -23,15 +23,26 @@ def main():
     out = args.dir.resolve()
     evidence = json.loads((out / "preflight.json").read_text())
     head = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
-    if (evidence["status"] != "passed" or evidence["slurm"]["job_id"] != os.environ["SLURM_JOB_ID"]
-            or evidence["git_commit"] != head or not torch.cuda.is_available() or torch.cuda.device_count() != 1):
+    if (
+        evidence["status"] != "passed"
+        or evidence["slurm"]["job_id"] != os.environ["SLURM_JOB_ID"]
+        or evidence["git_commit"] != head
+        or not torch.cuda.is_available()
+        or torch.cuda.device_count() != 1
+    ):
         raise RuntimeError("Study requires current-job, current-revision H200 preflight evidence")
     versions = [platform.python_version(), np.__version__, str(torch.__version__), torch.version.cuda]
     if versions != ["3.13.9", "2.3.4", "2.9.0+cu128", "12.8"]:
         raise RuntimeError(f"Unverified school stack: {versions}")
     manifest = out / "study.json"
-    record = {"status": "running", "git_commit": head, "training_seed": args.seed, "runtime": versions,
-              "slurm_array_id": os.environ["SLURM_ARRAY_JOB_ID"], "stages": []}
+    record = {
+        "status": "running",
+        "git_commit": head,
+        "training_seed": args.seed,
+        "runtime": versions,
+        "slurm_array_id": os.environ["SLURM_ARRAY_JOB_ID"],
+        "stages": [],
+    }
     with manifest.open("x") as handle:
         json.dump(record, handle)
 
@@ -60,21 +71,76 @@ def main():
             for arch in ("structured", "structured-attention"):
                 label = f"{arch}-{h}"
                 dest = out / label
-                run(label, ["-m", "isac_wm.cli", "train", "--device", "cuda", "--threads", "2",
-                    "--features", "48", "--hidden", str(h), "--memory-size", "16", "--heads", "4",
-                    "--architecture", arch, "--steps", "64", "--episodes", "96", "--batch-size", "8",
-                    "--epochs", "16", "--patience", "0", "--seed", str(args.seed), "--out", str(dest)])
+                run(
+                    label,
+                    [
+                        "-m",
+                        "isac_wm.cli",
+                        "train",
+                        "--device",
+                        "cuda",
+                        "--threads",
+                        "2",
+                        "--features",
+                        "48",
+                        "--hidden",
+                        str(h),
+                        "--memory-size",
+                        "16",
+                        "--heads",
+                        "4",
+                        "--architecture",
+                        arch,
+                        "--steps",
+                        "64",
+                        "--episodes",
+                        "96",
+                        "--batch-size",
+                        "8",
+                        "--epochs",
+                        "16",
+                        "--patience",
+                        "0",
+                        "--seed",
+                        str(args.seed),
+                        "--out",
+                        str(dest),
+                    ],
+                )
                 m = json.loads((dest / "manifest.json").read_text())
-                if (m["runtime"]["device"] != "cuda" or m["completed_epochs"] != 16 or
-                        m["train_episode_seeds"] != expected or m["validation_episode_seeds"] != val or
-                        m["model"]["hidden_dim"] != h or m["model"]["architecture"] != arch or m["resume_source"] is not None):
+                if (
+                    m["runtime"]["device"] != "cuda"
+                    or m["completed_epochs"] != 16
+                    or m["train_episode_seeds"] != expected
+                    or m["validation_episode_seeds"] != val
+                    or m["model"]["hidden_dim"] != h
+                    or m["model"]["architecture"] != arch
+                    or m["resume_source"] is not None
+                ):
                     raise RuntimeError(f"Training output does not match registered design: {label}")
-                record["stages"][-1].update(parameters=m["parameters"], best_validation_rmse_m=m["best_validation_rmse_m"])
-            run(f"evaluate-{h}", ["scripts/score_scale_recovery.py",
-                "--structured", str(out / f"structured-{h}" / "model.pt"),
-                "--attention", str(out / f"structured-attention-{h}" / "model.pt"),
-                "--device", "cuda", "--episodes", "24", "--seed-base", "93621000", "--steps", "64",
-                "--out", str(out / f"recovery-{h}.json")])
+                record["stages"][-1].update(
+                    parameters=m["parameters"], best_validation_rmse_m=m["best_validation_rmse_m"]
+                )
+            run(
+                f"evaluate-{h}",
+                [
+                    "scripts/score_scale_recovery.py",
+                    "--structured",
+                    str(out / f"structured-{h}" / "model.pt"),
+                    "--attention",
+                    str(out / f"structured-attention-{h}" / "model.pt"),
+                    "--device",
+                    "cuda",
+                    "--episodes",
+                    "24",
+                    "--seed-base",
+                    "93621000",
+                    "--steps",
+                    "64",
+                    "--out",
+                    str(out / f"recovery-{h}.json"),
+                ],
+            )
         record["status"] = "completed"
     except BaseException as exc:
         record.update(status="failed", error=f"{type(exc).__name__}: {exc}")

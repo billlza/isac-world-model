@@ -8,10 +8,10 @@ import time
 from pathlib import Path
 
 import numpy as np
+from recovery_challenge_core import observed_trace, score
 
 from isac_wm.baselines import ReplayKalman
 from isac_wm.imm import IMMConfig, ReplayIMM
-from recovery_challenge_core import observed_trace, score
 
 
 def apply_network(model, cfg, device, snapshots):
@@ -79,9 +79,14 @@ def evaluate(structured, attention, *, device_name, seed_base, episodes, steps):
                 scores[name]["inference_wall_s"] = time.perf_counter() - then
                 scores[name]["gated_measurements"] = estimator.rejected_measurements
             rows.append({"seed": seed, "condition": cond, "scores": scores, "observations": meta})
-    return {"status": "completed", "width": widths[0], "checkpoints_sha256": hashes,
-            "device": str(device), "episodes": rows,
-            "protocol": "blackout ticks 16:32; optional 90-degree turn at tick 24; recovery starts at actual delivery; trapezoidal XY-error AUC over 1s; confirmation requires 3 ticks <=0.25m"}
+    return {
+        "status": "completed",
+        "width": widths[0],
+        "checkpoints_sha256": hashes,
+        "device": str(device),
+        "episodes": rows,
+        "protocol": "blackout ticks 16:32; optional 90-degree turn at tick 24; recovery starts at actual delivery; trapezoidal XY-error AUC over 1s; confirmation requires 3 ticks <=0.25m",
+    }
 
 
 def main():
@@ -96,8 +101,14 @@ def main():
     args = parser.parse_args()
     if args.out.exists():
         raise FileExistsError(args.out)
-    report = evaluate(args.structured, args.attention, device_name=args.device, seed_base=args.seed_base,
-                      episodes=args.episodes, steps=args.steps)
+    report = evaluate(
+        args.structured,
+        args.attention,
+        device_name=args.device,
+        seed_base=args.seed_base,
+        episodes=args.episodes,
+        steps=args.steps,
+    )
     with args.out.open("x") as handle:
         json.dump(report, handle, indent=2, allow_nan=False)
 

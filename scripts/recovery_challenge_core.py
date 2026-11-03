@@ -21,7 +21,8 @@ class ChallengeScene(ToyScene):
         if config.steps != 64 or config.dt != DT or config.room_m != 10:
             raise ValueError("Protocol requires 64 ticks, dt=0.1s and a 10m scene")
         super().__init__(
-            seed, replace(config, occlusion_fraction=0, camera_dropout=0, camera_delay_s=0.2, delay_jitter_s=0)
+            seed,
+            replace(config, occlusion_fraction=0, camera_dropout=0, camera_delay_s=0.2, delay_jitter_s=0),
         )
         rng = np.random.default_rng(np.random.SeedSequence([seed, 204]))
         start = rng.uniform(4, 6, 2)
@@ -93,7 +94,9 @@ def score(estimated_xy, truth_xy, anchor):
     errors = np.linalg.norm(est - truth, axis=-1)
     post = errors[anchor : anchor + WINDOW + 1]
     # Recovery time is when the third consecutive in-tolerance estimate becomes OBSERVABLE.
-    confirmation = next((j for j in range(PERSIST - 1, len(post)) if max(post[j-2:j+1]) <= TOLERANCE), None)
+    confirmation = next(
+        (j for j in range(PERSIST - 1, len(post)) if max(post[j - 2 : j + 1]) <= TOLERANCE), None
+    )
     return {
         "position_error_auc_m_s": float(np.trapezoid(post, dx=DT)),
         "blackout_rmse_m": float(np.sqrt(np.mean(errors[START:END] ** 2))),

@@ -57,6 +57,17 @@ class PreflightTests(unittest.TestCase):
             self.fail(f"Unexpected command: {command}")
         return subprocess.CompletedProcess(command, 0, stdout=output, stderr="")
 
+    def test_array_queries_single_element_and_rejects_another_task(self):
+        self.env.update(SLURM_ARRAY_JOB_ID="120", SLURM_ARRAY_TASK_ID="1")
+        self.slurm += " ArrayJobId=120 ArrayTaskId=1"
+        runner = Mock(side_effect=self.runner)
+        data = preflight._allocation(self.env, runner)
+        self.assertEqual(data["job_id"], "123")
+        self.assertEqual(runner.call_args.args[0][-1], "120_1")
+        self.env["SLURM_ARRAY_TASK_ID"] = "2"
+        with self.assertRaisesRegex(preflight.PreflightError, "different Slurm array"):
+            preflight._allocation(self.env, runner)
+
     def run_check(self):
         return preflight.run_preflight(self.out, env=self.env, runner=self.runner, torch_loader=self.loader)
 

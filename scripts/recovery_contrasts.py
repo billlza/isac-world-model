@@ -69,6 +69,8 @@ def main():
     recovery_failures = {}
     initials = set()
     checkpoints = {}
+    reference_auc = {}
+    schedules = {}
     for s in (7, 11, 13):
         directory = args.array_dir / f"seed-{s}"
         run = json.loads((directory / "study.json").read_text())
@@ -86,8 +88,16 @@ def main():
                 if (e, cond) in seen or cond not in panels or not 93621000 <= e <= 93621023:
                     raise ValueError("Duplicate or unregistered held-out case")
                 seen.add((e, cond))
+                if set(row["scores"]) != {"structured", "structured-attention", "kalman", "gated-imm"}:
+                    raise ValueError("Missing or unexpected estimator in paired case")
+                if schedules.setdefault((e, cond), row["observations"]) != row["observations"]:
+                    raise ValueError("Mismatched observation schedule across model runs")
                 for arch, metrics in row["scores"].items():
                     if arch not in ("structured", "structured-attention"):
+                        value = float(metrics["position_error_auc_m_s"])
+                        prior = reference_auc.setdefault((cond, arch), {}).setdefault(e, value)
+                        if not np.isfinite(value) or not np.isclose(prior, value, rtol=1e-8, atol=1e-10):
+                            raise ValueError("Inconsistent classical reference across paired runs")
                         continue
                     panels[cond].setdefault((arch, h), {})[s, e] = metrics["position_error_auc_m_s"]
                     k = f"{s}/{arch}/{h}/{cond}"
@@ -96,9 +106,17 @@ def main():
                 raise ValueError("Incomplete grid of registered held-out cases")
     if len(initials) != 1:
         raise ValueError("Mixed revisions or array IDs")
-    result = {"revision_and_array": list(initials.pop()), "primary_unit": "m*s",
-              "per_condition": {c: contrasts(p) for c, p in panels.items()},
-              "unrecovered_counts_out_of_24": recovery_failures, "checkpoint_digests": checkpoints}
+    result = {
+        "revision_and_array": list(initials.pop()),
+        "primary_unit": "m*s",
+        "per_condition": {c: contrasts(p) for c, p in panels.items()},
+        "unrecovered_counts_out_of_24": recovery_failures,
+        "checkpoint_digests": checkpoints,
+        "classical_mean_auc_m_s_over_24": {
+            f"{cond}/{arch}": float(np.mean(list(trajectory.values())))
+            for (cond, arch), trajectory in reference_auc.items()
+        },
+    }
     with args.out.open("x") as f:
         json.dump(result, f, indent=2, allow_nan=False)
     for cond, report in result["per_condition"].items():
