@@ -1,0 +1,30 @@
+{
+  "job": "19341792",
+  "source_commit": "b2547848b09b8c8cb3e7a03ce0154595465006d6",
+  "original_analysis_archive_sha256": "028dbc8ee81f990095255acf718401b79ba46e68494544f1f4ae0a82f06c80b2",
+  "records": {
+    "seed-11/recovery-192.json": "5eb7137aee95921fb642541b87b1e0c76d92a49b17f88e1e593a2ce381ccf8d9",
+    "seed-11/recovery-96.json": "ca427c1361e56ed0ede9cd4fc5f58f7ccbd2cc305513282672d6727d43693baa",
+    "seed-11/study.json": "5e439bd2cc5d523212ce1c9b9255181f37a9d915e1dc5804c4d8169502760030",
+    "seed-13/recovery-192.json": "28c065626c97a8333009ff93cb4de73e2772a93e99478445c80c82947947b97c",
+    "seed-13/recovery-96.json": "58f0d3d44c5f320dfb0bffe68dd9c0acc514e6c51030fa9a227d225ee3d8b0e1",
+    "seed-13/study.json": "3568651b0efc99ceaba33ca5a8b5c51b586ac439057816717cb5bb8373c696a5",
+    "seed-7/recovery-192.json": "3a7d75dfdf3eb1588b6a66c820629dc879a06eeda114d96940bb86f5ee6ee774",
+    "seed-7/recovery-96.json": "5b9268a3d040f6565159d3585f95a63e12e24a63a30b64648d27ab9739bb62c6",
+    "seed-7/study.json": "b92548c5d10be826a98e2398bec5efc014e886030909ffd025bafb1d1f5bca19"
+  },
+  "checkpoints": {
+    "seed-11/structured-192/model.pt": "52a5a1a6b6cc0f5d965fb7979c48cdd8a7c9a2e3701b769fe12a2e1dc48e6d58",
+    "seed-11/structured-96/model.pt": "5dfa45884af59042a9c923ddfa47cf0e8868b69bd570969a8715c358fe514060",
+    "seed-11/structured-attention-192/model.pt": "196411eeaeedd5fb403eec098cd9688b2354d349a78378a1bfcfc04707852ab2",
+    "seed-11/structured-attention-96/model.pt": "953bd08bc57bb6caf20f6dccb195c8bd737cbe81a2681229eddae9482983a15e",
+    "seed-13/structured-192/model.pt": "d9ff722f2e2c10655413c451b317611eeea8bb121ea3efa2bbfa035b8bb8d761",
+    "seed-13/structured-96/model.pt": "485287cc12bf6d61bcdc2f2918e6a96b502698a92b7857edb57f4e360861957e",
+    "seed-13/structured-attention-192/model.pt": "a019a25bb531e017815172348ee8e6927c7163fcba5a593149caddfc45ea586f",
+    "seed-13/structured-attention-96/model.pt": "6be4af5e7aa951843f5344f8116b7bcd583b160381501282fc1a5b5abbfd644b",
+    "seed-7/structured-192/model.pt": "9c83626ebc1a56b90d86dd493e0a257e1c86e26c87b92f2bf6128509f998d46b",
+    "seed-7/structured-96/model.pt": "23e4c983486bbdb78e5827d32bc8c1e5a31aff475b3764373de94afab1995e87",
+    "seed-7/structured-attention-192/model.pt": "aab04de9fd611fa31ff566daff9803bc80d7cc267c7854cf878707cba0269e64",
+    "seed-7/structured-attention-96/model.pt": "d496ff915d3b042460851e6f8504b61fdb97fd30083a49678dedb93b20a06062"
+  }
+}
