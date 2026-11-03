@@ -93,11 +93,14 @@ class CheckpointTests(unittest.TestCase):
         model = StructuredEventModel(StructuredConfig(8, 8, "structured-attention", 4, 2)).eval()
         with tempfile.TemporaryDirectory() as d:
             path = Path(d) / "model.pt"
-            save_checkpoint(path, {
-                "state_dict": model.state_dict(),
-                "model_config": model.config.to_dict(),
-                "scene_config": cfg.to_dict(),
-            })
+            save_checkpoint(
+                path,
+                {
+                    "state_dict": model.state_dict(),
+                    "model_config": model.config.to_dict(),
+                    "scene_config": cfg.to_dict(),
+                },
+            )
             report = demo.run(path, prefix_steps=8, seed=55, radio_queries=True)
         self.assertEqual(report["runtime"]["device"], "cpu")
         with torch.inference_mode():
