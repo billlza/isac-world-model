@@ -131,6 +131,12 @@ jobs:
           if test -f validation/quality/ruff.log; then cat validation/quality/ruff.log; fi
           .venv/bin/python -m ruff check --diff src tests scripts || true
           .venv/bin/python -m ruff format --diff src tests scripts || true
+          # Provide a single patch, including import sorting, for local environments without Ruff.
+          if test -f validation/quality/ruff-format.log || test -f validation/quality/ruff.log; then
+            .venv/bin/python -m ruff check --fix src tests scripts || true
+            .venv/bin/python -m ruff format src tests scripts
+            git diff -- src tests scripts > validation/quality/suggested-style.patch
+          fi
       - name: Required advisory audit
         run: .venv/bin/python scripts/ci.py --profile security --out validation/security
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

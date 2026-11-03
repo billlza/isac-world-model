@@ -58,6 +58,7 @@ report_receipt() {
   [[ "$job" =~ ^[0-9]+$ ]] || { echo 'Invalid saved receipt. Inspect the claim and squeue --me.' >&2; return 1; }
   printf 'Slurm job: %s\nQuery on Hamilton: sacct -X -j %s --format=JobID,State,ExitCode,Elapsed\n' "$job" "$job"
   printf 'Log: %s/slurm-%s.out\nResults: %s/runs/followup-%s\n' "$root" "$job" "$root" "$job"
+  printf 'Once COMPLETED (0:0), run on the Mac: scp %s@hamilton8.dur.ac.uk:%s/runs/followup-%s/isac-memory-%s.tar.gz ~/Downloads/\n' "$(id -un)" "$root" "$job" "$job"
 }
 if [[ -d "$claim" ]]; then
   if [[ -s "$claim/receipt" ]]; then

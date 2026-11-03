@@ -171,7 +171,13 @@ echo '{"status":"completed"}' > "$dest" """,
         self.assertEqual(run.returncode, 0, run.stderr)
         self.assertEqual(
             (self.tmp / "history").read_text().splitlines(),
-            ["hamilton_preflight.py", "verify_round2_inputs.py", "frozen_recovery.py", "crossed_seed_study.py"],
+            [
+                "hamilton_preflight.py",
+                "verify_round2_inputs.py",
+                "frozen_recovery.py",
+                "crossed_seed_study.py",
+                "package_memory_followup.py",
+            ],
         )
         status = json.loads((self.root / "runs/followup-393/status.json").read_text())
         self.assertEqual((status["status"], status["stage"], status["exit_code"]), ("completed", "done", 0))

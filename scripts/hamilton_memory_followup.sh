@@ -72,6 +72,9 @@ stage=crossed
 write_status running null
 "$ISAC_PYTHON" scripts/crossed_seed_study.py --out "$out/crossed" --device cuda
 [[ -s "$out/prior-inputs.json" && -s "$out/frozen.json" && -s "$out/crossed/crossed.json" ]]
+stage=package
+write_status running null
+"$ISAC_PYTHON" scripts/package_memory_followup.py --run-dir "$out" --out "$out/isac-memory-$SLURM_JOB_ID.tar.gz"
 stage=done
 write_status completed 0
 printf 'Follow-up completed. Evidence: %s\n' "$out"
