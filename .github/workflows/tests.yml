@@ -51,6 +51,20 @@ jobs:
           assert r["status"] == "completed" and len(r["cells"]) == 4
           print("CROSSED_SMOKE", json.dumps(r["results"]["development_B"]["maneuver"]["methods"]))
           PYTHON
+      - name: Exercise capacity and data controls with real A96 and A512 training
+        if: matrix.os == 'ubuntu-latest' && matrix.python == '3.14.9' && (github.head_ref == 'research/capacity-data-h200' || github.ref == 'refs/heads/research/capacity-data-h200')
+        run: |
+          export PYTHONPATH="$PWD/src"
+          .venv/bin/python scripts/capacity_data_study.py --out validation/capacity-development --device cpu --profile smoke
+          .venv/bin/python - <<'PYTHON'
+          import json
+          from pathlib import Path
+          r = json.loads(Path("validation/capacity-development/study.json").read_text())
+          assert r["status"] == "completed" and len(r["cells"]) == 8
+          assert all(c["optimizer_updates"] == 8 and c["validation_updates"] == [2, 4, 6, 8] for c in r["cells"].values())
+          assert {c["parameters"] for c in r["cells"].values()} == {172246, 3883798}
+          print("CAPACITY_SMOKE", json.dumps(r["results"]["development"]["maneuver"]["methods"]))
+          PYTHON
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
@@ -59,6 +73,7 @@ jobs:
             validation/python
             validation/verification-planning
             validation/memory-development/*.json
+            validation/capacity-development/**/*.json
           if-no-files-found: error
           retention-days: 14
   recovery-development:

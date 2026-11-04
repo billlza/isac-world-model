@@ -158,7 +158,7 @@ class StructuredEventModel(EventBeliefModel):
         return out + self.feedforward(out), tokens, stamps, used
 
     @staticmethod
-    def _correct(mean, covariance, measurement, variance, age, active, ratio):
+    def _correct(mean, covariance, measurement, variance, age, active, ratio, *, diagnostics=None):
         # A delayed position measures [I, -age*scale*I] of current kinematic state.
         h = mean.new_zeros((mean.shape[0], 2, 4))
         h[:, 0, 0] = h[:, 1, 1] = 1
@@ -171,10 +171,28 @@ class StructuredEventModel(EventBeliefModel):
         ikh = torch.eye(4, device=mean.device, dtype=mean.dtype) - gain @ h
         updated_cov = ikh @ covariance @ ikh.transpose(-1, -2) + gain @ r @ gain.transpose(-1, -2)
         updated_cov = (updated_cov + updated_cov.transpose(-1, -2)) * 0.5
-        return (
+        result = (
             torch.where(active, updated_mean, mean),
             torch.where(active[:, :, None], updated_cov, covariance),
         )
+        if diagnostics is not None:
+            # The observer receives detached COPIES, never aliases of model state,
+            # inputs, or an autograd graph. No quantity here changes the correction.
+            values = {
+                "active": active,
+                "age_s": age,
+                "measurement_xy": measurement,
+                "predicted_measurement_xy": (h @ mean.unsqueeze(-1)).squeeze(-1),
+                "measurement_variance_xy": variance,
+                "innovation_xy": residual,
+                "innovation_covariance_xy": innovation,
+                "gain": gain,
+                "state_mean_before": mean,
+                "state_mean_after": result[0],
+                "applied_state_correction": result[0] - mean,
+            }
+            diagnostics.update({key: value.detach().clone() for key, value in values.items()})
+        return result
 
     def _pack(self, h, mean, covariance):
         return torch.cat([h, mean, covariance.flatten(1)], -1)
@@ -215,7 +233,16 @@ class StructuredEventModel(EventBeliefModel):
             "logvar": -9 + 9 * raw[:, 4:].sigmoid(),
         }
 
-    def step(self, x, memory, encoded=None):
+    def step(self, x, memory, encoded=None, *, diagnostics=None):
+        """Advance one snapshot; an optional observer records the unchanged calculation.
+
+        Diagnostic tensors use the model's normalized coordinates. ``active``
+        identifies a correction that was actually applied; an inactive row's
+        measurement/gain must not be treated as another observation. The caller
+        supplies absolute capture/availability/state times separately from age.
+        """
+        if diagnostics is not None and (not isinstance(diagnostics, dict) or diagnostics):
+            raise ValueError("diagnostics must be an empty caller-owned dict")
         h, pv, pr, mean, covariance, tokens, stamps, used, clock = memory
         for name in ("age", "dt", "valid", "new"):
             value = x[name]
@@ -248,13 +275,30 @@ class StructuredEventModel(EventBeliefModel):
         visual_variance = variance[:, :2] + 0.05 * pv[:, 2:3].clamp(0, 1).pow(4)
         safe_radio = torch.where(new[:, 1:], x["radio"], torch.zeros_like(x["radio"]))
         radio_xy = (2**0.5) * safe_radio[:, :1] * safe_radio[:, 1:3]
-        for measurement, r, a, active in (
-            (pv[:, :2], visual_variance, age[:, :1], new[:, :1]),
-            (radio_xy, variance[:, 2:], age[:, 1:], new[:, 1:]),
+        for index, modality, measurement, r, a, active in (
+            (0, "vision", pv[:, :2], visual_variance, age[:, :1], new[:, :1]),
+            (1, "radio", radio_xy, variance[:, 2:], age[:, 1:], new[:, 1:]),
         ):
+            observed = None if diagnostics is None else {}
             mean, covariance = self._correct(
-                mean, covariance, measurement, r, a, active, 2 / self.config.room_m
+                mean,
+                covariance,
+                measurement,
+                r,
+                a,
+                active,
+                2 / self.config.room_m,
+                diagnostics=observed,
             )
+            if diagnostics is not None:
+                observed["valid"] = x["valid"][:, index : index + 1].detach().clone()
+                observed["new"] = x["new"][:, index : index + 1].detach().clone()
+                if modality == "vision":
+                    observed["heatmap_entropy"] = pv[:, 2:3].detach().clone()
+                    observed["learned_measurement_variance_xy"] = variance[:, :2].detach().clone()
+                diagnostics[modality] = observed
+        if diagnostics is not None:
+            diagnostics["schema_version"] = 1
         packed = self._pack(h, mean, covariance)
         out = self.decode_state(packed)
         out["hidden"] = packed

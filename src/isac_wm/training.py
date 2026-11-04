@@ -54,6 +54,23 @@ def runtime_info(device: torch.device) -> dict:
     }
 
 
+def _validation_position_rmse(model, val, batch_size, device, scene) -> float:
+    """Evaluate a fixed corpus without adding any optimizer steps."""
+    model.eval()
+    sums, count = 0.0, 0
+    with torch.no_grad():
+        for i in range(0, len(val), batch_size):
+            batch = batchify(val[i : i + batch_size], device)
+            pred = model(batch, forecast_s=3 * scene.dt, batched_encoding=True)
+            mse = (pred["mean"][:, 5:, :2] - batch["state_target"][:, 5:, :2]).square().sum(-1)
+            sums += float(mse.sum()) * scene.room_m**2
+            count += mse.numel()
+    rmse = float(np.sqrt(sums / count))
+    if not math.isfinite(rmse):
+        raise FloatingPointError("Non-finite validation metric")
+    return rmse
+
+
 def train(
     outdir: Path,
     epochs: int = 10,
@@ -71,7 +88,18 @@ def train(
     train_seed_base: int | None = None,
     validation_seed_base: int | None = None,
     batch_order_seed: int | None = None,
+    validation_episodes: int | None = None,
+    validation_every_updates: int | None = None,
 ) -> dict:
+    """Train with epoch-end validation, or an explicit optimizer-update schedule.
+
+    ``epochs`` is the total target, including epochs restored from ``resume``.
+    An update schedule never adds an unscheduled final validation. Checkpoints
+    for continuation are saved at completed epoch boundaries. A short controlled
+    run may therefore have a resume checkpoint before any model is selected;
+    its manifest explicitly records ``no_validation_yet`` and a null best score.
+    Fixed-update studies disable early stopping so every cell gets its full budget.
+    """
     integer(epochs, "epochs", 1, 100_000)
     integer(episodes, "episodes", 1, 100_000)
     integer(batch_size, "batch_size", 1, 100_000)
@@ -79,6 +107,16 @@ def train(
     integer(patience, "patience", 0, 100_000)
     finite(learning_rate, "learning_rate", positive=True)
     integer(max_dataset_bytes, "max_dataset_bytes", 1)
+    n_val = (
+        max(8, episodes // 8)
+        if validation_episodes is None
+        else integer(validation_episodes, "validation_episodes", 1, 100_000)
+    )
+    if validation_every_updates is not None:
+        validation_every_updates = integer(validation_every_updates, "validation_every_updates", 1)
+        if patience:
+            raise ValueError("Fixed optimizer-update validation requires patience=0")
+    updates_per_epoch = math.ceil(episodes / batch_size)
     if min(epochs, episodes, batch_size) <= 0 or seed < 0:
         raise ValueError("Training counts must be positive; seed must be non-negative")
     if outdir.exists() and any(outdir.iterdir()):
@@ -90,7 +128,7 @@ def train(
     # Account for the transient second copy while stacking and staging batches.
     # This budgets dataset arrays, not model/optimizer memory or process RSS.
     estimated = int(
-        (2 * episodes + max(8, episodes // 8) + 2 * min(batch_size, episodes))
+        (2 * episodes + n_val + 2 * min(batch_size, episodes))
         * scene.steps
         * (3 * scene.image_size**2 + 32)
         * 4
@@ -99,7 +137,6 @@ def train(
         raise MemoryError(f"Dataset estimate {estimated} exceeds configured RAM budget {max_dataset_bytes}")
     # Disjoint episode seeds, never an adjacent-frame random split.
     custom_seeds = any(x is not None for x in (train_seed_base, validation_seed_base, batch_order_seed))
-    n_val = max(8, episodes // 8)
     data_base = (
         seed * 100000
         if train_seed_base is None
@@ -142,6 +179,17 @@ def train(
         "epochs": epochs,
         "episodes": episodes,
         "batch_size": batch_size,
+        "validation_episodes": n_val,
+        "validation_every_updates": validation_every_updates,
+        "validation_mode": "epoch_end" if validation_every_updates is None else "fixed_optimizer_updates",
+        "updates_per_epoch": updates_per_epoch,
+        "planned_optimizer_updates": epochs * updates_per_epoch,
+        "planned_validation_opportunities": (
+            epochs
+            if validation_every_updates is None
+            else epochs * updates_per_epoch // validation_every_updates
+        ),
+        "history_train_loss_scope": "optimizer steps since previous validation",
         "train_episode_seeds": train_seeds,
         "validation_episode_seeds": val_seeds,
         "parameters": sum(p.numel() for p in model.parameters()),
@@ -162,10 +210,12 @@ def train(
     # Cache stacking once; batches remain on CPU until transferred.
     train_tensors = batchify(data, torch.device("cpu"))
     del data
-    start = time.perf_counter()
     best = float("inf")
     history = []
+    epoch_history = []
     begin, stale = 0, 0
+    optimizer_updates = 0
+    pending_loss_sum, pending_loss_count = 0.0, 0
     if resume is not None:
         saved = read_checkpoint(resume)
         expected = {
@@ -180,23 +230,77 @@ def train(
             raise ValueError("Resume seed plan does not match saved run")
         if any(saved.get(k) != v for k, v in expected.items()):
             raise ValueError("Resume configuration does not match saved run")
+        if (
+            saved.get("validation_episodes", max(8, episodes // 8)) != n_val
+            or saved.get("validation_every_updates") != validation_every_updates
+        ):
+            raise ValueError("Resume validation protocol does not match saved run")
         model.load_state_dict(saved["state_dict"], strict=True)
         optimizer.load_state_dict(saved["optimizer"])
         rng.bit_generator.state = json.loads(saved["numpy_rng_json"])
         torch.set_rng_state(saved["torch_rng"])
+        if device.type == "cuda" and "torch_cuda_rng" in saved:
+            torch.cuda.set_rng_state_all(saved["torch_cuda_rng"])
         begin, best, history = saved["completed_epochs"], saved["best_rmse"], saved["history"]
+        integer(begin, "saved completed_epochs", 1, 100_000)
         if epochs <= begin:
             raise ValueError("--epochs is the total epoch target and must exceed completed epochs")
+        optimizer_updates = saved.get("optimizer_updates", begin * updates_per_epoch)
+        if optimizer_updates != begin * updates_per_epoch:
+            raise ValueError("Resume update count is not a completed epoch boundary")
+        if validation_every_updates is None:
+            valid_history = len(history) == begin and all(
+                row["epoch"] == i + 1 for i, row in enumerate(history)
+            )
+        else:
+            valid_history = len(history) == optimizer_updates // validation_every_updates and all(
+                row["optimizer_updates"] == (i + 1) * validation_every_updates
+                for i, row in enumerate(history)
+            )
+        if not valid_history:
+            raise ValueError("Resume validation history does not match the update schedule")
+        epoch_history = saved.get(
+            "epoch_history",
+            [
+                {
+                    "epoch": row["epoch"],
+                    "optimizer_updates": row["epoch"] * updates_per_epoch,
+                    "train_loss": row["train_loss"],
+                }
+                for row in history
+            ],
+        )
+        if len(epoch_history) != begin:
+            raise ValueError("Resume epoch history does not match completed epochs")
+        pending_loss_sum = saved.get("pending_validation_loss_sum", 0.0)
+        pending_loss_count = saved.get("pending_validation_loss_count", 0)
+        expected_pending = (
+            0 if validation_every_updates is None else optimizer_updates % validation_every_updates
+        )
+        if pending_loss_count != expected_pending or not math.isfinite(pending_loss_sum):
+            raise ValueError("Resume pending validation interval does not match the update schedule")
         stale = saved.get("stale_epochs", 0)
         # Preserve the true best checkpoint even if continuation never improves.
-        save_checkpoint(outdir / "model.pt", saved["best_checkpoint"])
+        if saved["best_checkpoint"] is not None:
+            save_checkpoint(outdir / "model.pt", saved["best_checkpoint"])
+        elif history:
+            raise ValueError("Resume has validation history but no selected checkpoint")
     else:
         saved = None
     best_checkpoint = None if saved is None else saved["best_checkpoint"]
+    if device.type == "cuda":
+        torch.cuda.synchronize(device)
+        # Release only unused cache from preceding cells; live model/optimizer
+        # tensors remain in the measured baseline. Do not claim process RSS.
+        torch.cuda.empty_cache()
+        torch.cuda.reset_peak_memory_stats(device)
+    start = time.perf_counter()
+    initial_updates = optimizer_updates
+    completed_epochs = begin
     for epoch in range(begin, epochs):
         model.train()
         losses = []
-        for indices in np.array_split(rng.permutation(episodes), int(np.ceil(episodes / batch_size))):
+        for batch_index, indices in enumerate(np.array_split(rng.permutation(episodes), updates_per_epoch)):
             selection = torch.as_tensor(indices, dtype=torch.long)
             batch = {k: v.index_select(0, selection).to(device) for k, v in train_tensors.items()}
             optimizer.zero_grad(set_to_none=True)
@@ -207,40 +311,64 @@ def train(
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0, error_if_nonfinite=True)
             optimizer.step()
-            losses.append(float(loss.detach()))
-        model.eval()
-        sums, count = 0.0, 0
-        with torch.no_grad():
-            for i in range(0, len(val), batch_size):
-                b = batchify(val[i : i + batch_size], device)
-                pred = model(b, forecast_s=3 * scene.dt, batched_encoding=True)
-                mse = (pred["mean"][:, 5:, :2] - b["state_target"][:, 5:, :2]).square().sum(-1)
-                sums += float(mse.sum()) * scene.room_m**2
-                count += mse.numel()
-        rmse = float(np.sqrt(sums / count))
-        row = {"epoch": epoch + 1, "train_loss": float(np.mean(losses)), "validation_position_rmse_m": rmse}
-        history.append(row)
-        print(json.dumps(row), flush=True)
-        if not math.isfinite(rmse):
-            raise FloatingPointError("Non-finite validation metric")
-        if rmse < best:
-            best = rmse
-            stale = 0
-            # CPU tensors + primitive metadata; loader uses weights_only=True.
-            best_checkpoint = {
-                **explicit,
-                "schema_version": 2,
-                "state_dict": {k: v.detach().cpu().clone() for k, v in model.state_dict().items()},
-                "model_config": model.config.to_dict(),
-                "scene_config": scene.to_dict(),
-                "best_epoch": epoch + 1,
-                "seed": seed,
-                "train_episode_seeds": train_seeds,
-                "validation_episode_seeds": val_seeds,
+            loss_value = float(loss.detach())
+            losses.append(loss_value)
+            optimizer_updates += 1
+            pending_loss_sum += loss_value
+            pending_loss_count += 1
+            epoch_end = batch_index + 1 == updates_per_epoch
+            should_validate = (
+                epoch_end
+                if validation_every_updates is None
+                else optimizer_updates % validation_every_updates == 0
+            )
+            if should_validate:
+                rmse = _validation_position_rmse(model, val, batch_size, device, scene)
+                row = {
+                    "epoch": epoch + 1,
+                    # Keep the legacy epoch history numerically unchanged.
+                    "train_loss": (
+                        float(np.mean(losses))
+                        if validation_every_updates is None
+                        else pending_loss_sum / pending_loss_count
+                    ),
+                    "validation_position_rmse_m": rmse,
+                }
+                if validation_every_updates is not None:
+                    row.update(optimizer_updates=optimizer_updates, completed_epochs=epoch + int(epoch_end))
+                history.append(row)
+                pending_loss_sum, pending_loss_count = 0.0, 0
+                print(json.dumps(row), flush=True)
+                if rmse < best:
+                    best = rmse
+                    stale = 0
+                    # CPU tensors + primitive metadata; loader uses weights_only=True.
+                    best_checkpoint = {
+                        **explicit,
+                        "schema_version": 2,
+                        "state_dict": {k: v.detach().cpu().clone() for k, v in model.state_dict().items()},
+                        "model_config": model.config.to_dict(),
+                        "scene_config": scene.to_dict(),
+                        "best_epoch": epoch + 1,
+                        "best_update": optimizer_updates,
+                        "seed": seed,
+                        "train_episode_seeds": train_seeds,
+                        "validation_episode_seeds": val_seeds,
+                        "validation_episodes": n_val,
+                        "validation_every_updates": validation_every_updates,
+                    }
+                    save_checkpoint(outdir / "model.pt", best_checkpoint)
+                else:
+                    stale += 1
+                model.train()
+        completed_epochs = epoch + 1
+        epoch_history.append(
+            {
+                "epoch": completed_epochs,
+                "optimizer_updates": optimizer_updates,
+                "train_loss": float(np.mean(losses)),
             }
-            save_checkpoint(outdir / "model.pt", best_checkpoint)
-        else:
-            stale += 1
+        )
         save_checkpoint(
             outdir / "resume.pt",
             {
@@ -250,25 +378,55 @@ def train(
                 "optimizer": optimizer.state_dict(),
                 "numpy_rng_json": json.dumps(rng.bit_generator.state),
                 "torch_rng": torch.get_rng_state(),
-                "completed_epochs": epoch + 1,
+                **({"torch_cuda_rng": torch.cuda.get_rng_state_all()} if device.type == "cuda" else {}),
+                "completed_epochs": completed_epochs,
+                "optimizer_updates": optimizer_updates,
                 "best_rmse": best,
                 "best_checkpoint": best_checkpoint,
                 "history": history,
+                "epoch_history": epoch_history,
+                "pending_validation_loss_sum": pending_loss_sum,
+                "pending_validation_loss_count": pending_loss_count,
                 "stale_epochs": stale,
                 "seed": seed,
                 "episodes": episodes,
                 "batch_size": batch_size,
+                "validation_episodes": n_val,
+                "validation_every_updates": validation_every_updates,
                 "learning_rate": learning_rate,
                 "scene_config": scene.to_dict(),
                 "model_config": model.config.to_dict(),
             },
         )
         write_json(outdir / "history.json", history)
+        write_json(outdir / "epoch_history.json", epoch_history)
         if patience and stale >= patience:
             break
-    manifest["completed_epochs"] = len(history)
+    if device.type == "cuda":
+        torch.cuda.synchronize(device)
+        manifest["cuda_peak_allocated_bytes"] = torch.cuda.max_memory_allocated(device)
+        manifest["cuda_peak_reserved_bytes"] = torch.cuda.max_memory_reserved(device)
+        manifest["cuda_memory_scope"] = (
+            "This call's training/validation/checkpoint loop, including live model/optimizer at start; "
+            "unused allocator cache released before resetting peaks"
+        )
+    manifest["completed_epochs"] = completed_epochs
+    manifest["completed_epochs_this_call"] = completed_epochs - begin
+    manifest["optimizer_updates"] = optimizer_updates
+    manifest["optimizer_updates_this_call"] = optimizer_updates - initial_updates
+    manifest["validation_updates"] = [
+        row.get("optimizer_updates", row["epoch"] * updates_per_epoch) for row in history
+    ]
+    manifest["validation_opportunities"] = len(history)
+    manifest["best_update"] = (
+        None
+        if best_checkpoint is None
+        else best_checkpoint.get("best_update", best_checkpoint["best_epoch"] * updates_per_epoch)
+    )
+    manifest["model_selection_status"] = "no_validation_yet" if best_checkpoint is None else "selected"
     manifest["training_seconds"] = time.perf_counter() - start
-    manifest["best_validation_rmse_m"] = best
+    manifest["training_timing_scope"] = "This call's training/validation/checkpoint loop; CUDA synchronized"
+    manifest["best_validation_rmse_m"] = None if best_checkpoint is None else best
     write_json(outdir / "history.json", history)
     write_json(outdir / "manifest.json", manifest)
     return manifest
