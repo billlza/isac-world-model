@@ -175,7 +175,7 @@ def run_profile(
     from isac_wm.model import training_loss
     from isac_wm.simulator import SceneConfig, recorded_episode
     from isac_wm.structured import StructuredConfig, build_model
-    from isac_wm.training import batchify, resolve_device, runtime_info, seed_all
+    from isac_wm.training import _batch_to_device, batchify, resolve_device, runtime_info, seed_all
 
     device = resolve_device(device_name)
     scene = scene or SceneConfig(steps=64, dt=0.1)
@@ -270,7 +270,7 @@ def run_profile(
 
             def update(index, model=model, optimizer=optimizer):
                 with torch.profiler.record_function("diagnostic.batch_transfer"):
-                    batch = {key: tensor.to(device) for key, tensor in batches[index].items()}
+                    batch = _batch_to_device(batches[index], device)
                 optimizer.zero_grad(set_to_none=True)
                 with torch.profiler.record_function("diagnostic.forward_and_loss"):
                     output = model(batch, forecast_s=3 * scene.dt, batched_encoding=True)
