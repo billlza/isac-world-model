@@ -28,6 +28,7 @@ from .visual_training_diagnostics import (
 )
 
 INPUT_KEYS = ("image", "radio", "age", "valid", "new", "dt")
+PROVENANCE_KEYS = ("vision_capture_s", "vision_event_uid")
 
 
 def resolve_device(name: str) -> torch.device:
@@ -50,8 +51,18 @@ def seed_all(seed: int) -> None:
     torch.manual_seed(seed)
 
 
+def _batch_to_device(batch: dict[str, torch.Tensor], device: torch.device) -> dict[str, torch.Tensor]:
+    """Stage a CPU batch while retaining exact provenance-only metadata on CPU.
+
+    Capture timestamps are float64 for provenance, which MPS cannot represent.
+    Neither timestamp nor event UID participates in model inputs or losses.
+    """
+    return {key: value if key in PROVENANCE_KEYS else value.to(device) for key, value in batch.items()}
+
+
 def batchify(episodes: list[dict[str, np.ndarray]], device: torch.device) -> dict[str, torch.Tensor]:
-    return {key: torch.from_numpy(np.stack([e[key] for e in episodes])).to(device) for key in episodes[0]}
+    cpu_batch = {key: torch.from_numpy(np.stack([e[key] for e in episodes])) for key in episodes[0]}
+    return _batch_to_device(cpu_batch, device)
 
 
 def runtime_info(device: torch.device) -> dict:
@@ -393,7 +404,7 @@ def train(
         for batch_index, indices in enumerate(np.array_split(rng.permutation(episodes), updates_per_epoch)):
             selection = torch.as_tensor(indices, dtype=torch.long)
             cpu_batch = {k: v.index_select(0, selection) for k, v in train_tensors.items()}
-            batch = {k: v.to(device) for k, v in cpu_batch.items()}
+            batch = _batch_to_device(cpu_batch, device)
             observed_step = diagnostic_updates is not None and optimizer_updates + 1 in diagnostic_updates
             optimizer.zero_grad(set_to_none=True)
             output = model(

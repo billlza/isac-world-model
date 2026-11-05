@@ -145,6 +145,73 @@ class VisualLossTests(unittest.TestCase):
     def tearDown(self):
         self.torch.set_num_threads(self.threads)
 
+    def test_provenance_is_never_passed_to_device_transfer_in_either_staging_path(self):
+        from isac_wm.training import _batch_to_device, batchify
+
+        requested_device = object()  # Deliberately unsupported by a real Tensor.to.
+        transferred = []
+
+        class Probe:
+            def __init__(self, key):
+                self.key = key
+
+            def to(self, device):
+                if self.key in ("vision_capture_s", "vision_event_uid"):
+                    raise AssertionError("Provenance metadata was passed to device transfer")
+                transferred.append((self.key, device))
+                return self
+
+        sample = {
+            "image": np.zeros((1, 3, 16, 16), np.float32),
+            "action_target": np.zeros(1, np.int64),
+            "vision_capture_s": np.array([0.123456789012345], np.float64),
+            "vision_event_uid": np.array([3], np.int64),
+        }
+        probes = {key: Probe(key) for key in sample}
+        with patch("isac_wm.training.torch.from_numpy", side_effect=list(probes.values())):
+            batched = batchify([sample], requested_device)
+        self.assertEqual(transferred, [("image", requested_device), ("action_target", requested_device)])
+        self.assertIs(batched["vision_capture_s"], probes["vision_capture_s"])
+        self.assertIs(batched["vision_event_uid"], probes["vision_event_uid"])
+        transferred.clear()
+        staged = _batch_to_device(probes, requested_device)
+        self.assertEqual(transferred, [("image", requested_device), ("action_target", requested_device)])
+        self.assertIs(staged["vision_capture_s"], probes["vision_capture_s"])
+        self.assertIs(staged["vision_event_uid"], probes["vision_event_uid"])
+
+    def test_cpu_staging_preserves_timestamp_precision_event_identity_and_tensor_values(self):
+        from isac_wm.training import _batch_to_device, batchify
+
+        torch = self.torch
+        episode = recorded_episode(100, SceneConfig(steps=8, image_size=16))
+        episode["vision_capture_s"][0] = 0.123456789012345
+        batch = batchify([episode], torch.device("cpu"))
+        staged = _batch_to_device(batch, torch.device("cpu"))
+        self.assertEqual(staged["vision_capture_s"].dtype, torch.float64)
+        self.assertEqual(staged["vision_event_uid"].dtype, torch.int64)
+        for key, tensor in staged.items():
+            self.assertEqual(tensor.device.type, "cpu")
+            np.testing.assert_array_equal(tensor.numpy(), episode[key][None])
+        for key in ("vision_capture_s", "vision_event_uid"):
+            self.assertIs(staged[key], batch[key])
+
+    def test_mps_staging_retains_provenance_on_cpu_when_mps_is_available(self):
+        from isac_wm.training import _batch_to_device, batchify
+
+        torch = self.torch
+        if not torch.backends.mps.is_available():
+            self.skipTest("An available MPS device is required for this hardware check")
+        episode = recorded_episode(100, SceneConfig(steps=8, image_size=16))
+        direct = batchify([episode], torch.device("mps"))
+        staged = _batch_to_device(batchify([episode], torch.device("cpu")), torch.device("mps"))
+        for batch in (direct, staged):
+            for key, tensor in batch.items():
+                expected_device = "cpu" if key in ("vision_capture_s", "vision_event_uid") else "mps"
+                self.assertEqual(tensor.device.type, expected_device)
+                np.testing.assert_array_equal(tensor.cpu().numpy(), episode[key][None])
+            self.assertEqual(batch["vision_capture_s"].dtype, torch.float64)
+            self.assertEqual(batch["vision_event_uid"].dtype, torch.int64)
+
     def test_auxiliary_outputs_preserve_model_values_and_ignore_all_truth_inputs(self):
         torch = self.torch
         ordinary = self.model(self.batch, batched_encoding=True)
