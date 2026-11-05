@@ -74,6 +74,8 @@ class StructuredEventModel(EventBeliefModel):
     The ring is bounded by event count, not silently by elapsed time.
     """
 
+    supports_visual_supervision = True
+
     def __init__(self, config: StructuredConfig):
         nn.Module.__init__(self)
         self.config = config
@@ -123,17 +125,22 @@ class StructuredEventModel(EventBeliefModel):
             zeros(batch_size, 1),
         )
 
-    def _predict(self, h: Tensor, mean: Tensor, covariance: Tensor, dt: Tensor):
+    def _predict(self, h: Tensor, mean: Tensor, covariance: Tensor, dt: Tensor, *, diagnostics=None):
         ratio = 2 / self.config.room_m
-        acc = 0.25 * self.acceleration(h).tanh()
+        acceleration_logits = self.acceleration(h)
+        acc = 0.25 * acceleration_logits.tanh()
         position = mean[:, :2] + ratio * (dt * mean[:, 2:] + 0.5 * dt.square() * acc)
         velocity = mean[:, 2:] + dt * acc
         predicted = torch.cat([position, velocity], -1)
         f = torch.eye(4, device=h.device, dtype=h.dtype).expand(h.shape[0], 4, 4).clone()
         f[:, 0, 2] = f[:, 1, 3] = dt[:, 0] * ratio
-        q = 1e-5 + 0.02 * self.noise(h)[:, :2].sigmoid()
+        noise_logits = self.noise(h)
+        q = 1e-5 + 0.02 * noise_logits[:, :2].sigmoid()
         q = torch.cat([q * ratio**2, q], -1) * dt
         predicted_cov = f @ covariance @ f.transpose(-1, -2) + torch.diag_embed(q)
+        if diagnostics is not None:
+            diagnostics["acceleration_logits"] = acceleration_logits.detach().clone()
+            diagnostics["noise_logits"] = noise_logits.detach().clone()
         return predicted, predicted_cov
 
     def _retrieve(self, h, encodings, new, age, clock, tokens, stamps, used):
@@ -263,12 +270,14 @@ class StructuredEventModel(EventBeliefModel):
         prior_h = h + dt * self.dynamics(h)
         features = torch.cat([pv, pr, age, x["valid"], new.to(h), dt], -1)
         updated_h = self.fusion(features, prior_h)
+        fusion_h = updated_h if diagnostics is not None else None
         if self.attentive:
             updated_h, tokens, stamps, used = self._retrieve(
                 updated_h, encodings, new, age, clock, tokens, stamps, used
             )
         h = torch.where(new.any(-1, keepdim=True), updated_h, prior_h)
-        mean, covariance = self._predict(h, mean, covariance, dt)
+        network = None if diagnostics is None else {}
+        mean, covariance = self._predict(h, mean, covariance, dt, diagnostics=network)
         noise = self.noise(h)
         variance = (-10 + 7 * noise[:, 2:].sigmoid()).exp()
         # Entropy downweights diffuse maps (occlusion); not a safety certificate.
@@ -299,6 +308,14 @@ class StructuredEventModel(EventBeliefModel):
                 diagnostics[modality] = observed
         if diagnostics is not None:
             diagnostics["schema_version"] = 1
+            network.update(
+                hidden=h.detach().clone(),
+                prior_hidden=prior_h.detach().clone(),
+                fusion_hidden=fusion_h.detach().clone(),
+                attention_residual=(updated_h - fusion_h).detach().clone(),
+                evidence_update=new.any(-1, keepdim=True).detach().clone(),
+            )
+            diagnostics["network"] = network
         packed = self._pack(h, mean, covariance)
         out = self.decode_state(packed)
         out["hidden"] = packed

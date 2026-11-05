@@ -199,21 +199,49 @@ class ToyScene:
 
 
 def recorded_episode(seed: int, config: SceneConfig) -> dict[str, np.ndarray]:
-    """Generate a randomized-policy training trace; labels are kept separately."""
+    """Generate a randomized-policy trace with separately named training labels.
+
+    A visual label belongs to the actual image event accepted by the snapshot
+    buffer. It describes that event's capture time, never the delivery-time
+    target. Cached frames and occluded captures have no localization target.
+    None of the ``vision_*`` label fields is an online model input.
+    """
     scene, queue = ToyScene(seed, config), EventQueue()
     buffer = SnapshotBuffer(config.image_size)
     policy_rng = np.random.default_rng(np.random.SeedSequence([seed, 33]))
     snapshots = []
     actions, radio_targets, radio_target_valid = [], [], []
+    truth = scene.truth_for_evaluation()
+    # Acquisition metadata is keyed by event identity, not reconstructed from a
+    # rounded delivery time. This also handles reordering and multiple arrivals.
+    camera_labels: dict[int, tuple[float, np.ndarray, bool]] = {}
+    visual_xy, visual_mask, visual_capture_s, visual_uid = [], [], [], []
     for k in range(config.steps):
         t = k * config.dt
         # Decisions use only previously delivered evidence. New samples are
         # acquired after the decision and cannot enter that decision's snapshot.
         snap = buffer.update(queue.release(t), t, config.dt)
         snapshots.append(snap)
+        target_xy, mask, captured, uid = np.zeros(2, np.float32), 0.0, -1.0, -1
+        if snap["new"][0] and snap["valid"][0]:
+            delivered = buffer.latest["vision"]
+            captured, capture_xy, visible = camera_labels[delivered.uid]
+            if captured != delivered.capture_s:
+                raise RuntimeError("Visual capture metadata does not match the delivered event")
+            uid = delivered.uid
+            mask = float(visible)
+            if visible:
+                target_xy = capture_xy.copy()
+        visual_xy.append(target_xy)
+        visual_mask.append(mask)
+        visual_capture_s.append(captured)
+        visual_uid.append(uid)
         a = int(policy_rng.choice([0, 1, 2], p=[0.30, 0.45, 0.25]))
         actions.append(a)
         camera, radio = scene.camera(k), scene.radio(k, a)
+        if camera is not None:
+            visible = not (scene.occlusion_start <= k < scene.occlusion_start + scene.occlusion_length)
+            camera_labels[camera.uid] = (camera.capture_s, truth[k, :2] / config.room_m, visible)
         for obs in (camera, radio):
             if obs is not None:
                 queue.push(obs)
@@ -221,8 +249,12 @@ def recorded_episode(seed: int, config: SceneConfig) -> dict[str, np.ndarray]:
         radio_targets.append(np.zeros(4, np.float32) if radio is None else radio.payload)
         radio_target_valid.append(float(radio is not None))
     out = {key: np.stack([s[key] for s in snapshots]) for key in snapshots[0]}
-    out["state_target"] = scene.truth_for_evaluation() / config.state_scale
+    out["state_target"] = truth / config.state_scale
     out["action_target"] = np.array(actions, np.int64)
     out["radio_target"] = np.stack(radio_targets)
     out["radio_target_valid"] = np.array(radio_target_valid, np.float32)
+    out["vision_capture_target_xy"] = np.stack(visual_xy).astype(np.float32)
+    out["vision_target_mask"] = np.array(visual_mask, np.float32)
+    out["vision_capture_s"] = np.array(visual_capture_s, np.float64)
+    out["vision_event_uid"] = np.array(visual_uid, np.int64)
     return out
