@@ -28,7 +28,11 @@ set -eo pipefail
 umask 077
 pin=$1
 leaf=$2
-[[ "$pin" =~ ^[0-9a-f]{40}$ && "$leaf" =~ ^isac-capacity-[0-9a-f]{40}-[0-9]+-[0-9]+\.bundle$ ]]
+# Bash 3.2 does not apply errexit to a standalone [[ ... ]] command.
+if [[ ! "$pin" =~ ^[0-9a-f]{40}$ || ! "$leaf" =~ ^isac-capacity-[0-9a-f]{40}-[0-9]+-[0-9]+\.bundle$ ]]; then
+  echo 'Invalid remote revision or bundle filename; stopping.' >&2
+  exit 2
+fi
 base=245a9dd56a49a72f942328d9c9cf9f27490b4d06
 ref=refs/remotes/origin/research/capacity-data-h200
 prior_root="$HOME/isac-memory-245a9dd56a49"
@@ -48,13 +52,29 @@ if [[ ! -d "$root" ]]; then
   fi
   git -C "$prior_root" bundle verify "$bundle"
   git -C "$prior_root" fetch "$bundle" "$ref"
-  [[ "$(git -C "$prior_root" rev-parse FETCH_HEAD)" == "$pin" ]]
+  if [[ "$(git -C "$prior_root" rev-parse FETCH_HEAD)" != "$pin" ]]; then
+    echo 'Fetched remote revision does not match the requested revision.' >&2
+    exit 1
+  fi
   git -C "$prior_root" worktree add --detach "$root" "$pin"
 fi
 cd -- "$root"
-[[ "$(git rev-parse HEAD)" == "$pin" ]]
-git diff --quiet HEAD --
-[[ -z "$(git ls-files --others --exclude-standard -- src scripts '*.py')" ]]
+if [[ "$(git rev-parse HEAD)" != "$pin" ]]; then
+  echo 'Remote checkout does not match the requested revision.' >&2
+  exit 1
+fi
+if ! git diff --quiet HEAD --; then
+  echo 'Remote checkout has tracked changes or could not be inspected; stopping.' >&2
+  exit 1
+fi
+if ! untracked=$(git ls-files --others --exclude-standard -- src scripts '*.py'); then
+  echo 'Could not inspect untracked remote source files; stopping.' >&2
+  exit 1
+fi
+if [[ -n "$untracked" ]]; then
+  echo 'Remote checkout contains untracked source files; stopping.' >&2
+  exit 1
+fi
 
 report_receipt() {
   local line job

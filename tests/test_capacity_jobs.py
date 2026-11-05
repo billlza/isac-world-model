@@ -25,6 +25,10 @@ def tool(path, body):
     path.chmod(0o700)
 
 
+def process_output(completed):
+    return f"stdout:\n{completed.stdout}\nstderr:\n{completed.stderr}"
+
+
 class TestCapacityJobs(unittest.TestCase):
     def setUp(self):
         temporary = tempfile.TemporaryDirectory()
@@ -136,13 +140,13 @@ echo '{"status":"completed"}' > "$dest" """,
 
     def test_submit_once_and_report_saved_receipt_without_prior_results(self):
         first = self.submit()
-        self.assertEqual(first.returncode, 0, first.stderr)
+        self.assertEqual(first.returncode, 0, process_output(first))
         self.assertIn("Slurm job: 391", first.stdout)
         self.assertIn('capacity_backup="$HOME/Downloads/isac-capacity-391"', first.stdout)
         self.assertIn("status.json", first.stdout)
         self.prior.rmdir()  # Existing receipt lookup does not require old checkpoint/result directories.
         second = self.submit()
-        self.assertEqual(second.returncode, 0, second.stderr)
+        self.assertEqual(second.returncode, 0, process_output(second))
         self.assertIn("Already submitted", second.stdout)
         self.assertEqual((self.tmp / "history").read_text().splitlines(), ["submit"])
         request = json.loads((self.root / ".capacity-submission/request.json").read_text())
@@ -150,50 +154,67 @@ echo '{"status":"completed"}' > "$dest" """,
 
     def test_unknown_receipt_and_scheduler_error_are_not_retried(self):
         failed = self.submit(MOCK_SBATCH_FAIL="1")
-        self.assertNotEqual(failed.returncode, 0)
+        self.assertNotEqual(failed.returncode, 0, process_output(failed))
         self.assertTrue((self.root / ".capacity-submission/receipt.pending").exists())
         retried = self.submit()
-        self.assertNotEqual(retried.returncode, 0)
+        self.assertNotEqual(retried.returncode, 0, process_output(retried))
         self.assertIn("claim exists without a confirmed receipt", retried.stderr)
         self.assertEqual((self.tmp / "history").read_text().splitlines(), ["submit"])
 
     def test_malformed_success_receipt_is_retained_and_not_retried(self):
         malformed = self.submit(MOCK_RECEIPT="warning\n391;ham")
-        self.assertNotEqual(malformed.returncode, 0)
+        self.assertNotEqual(malformed.returncode, 0, process_output(malformed))
         self.assertIn("Unexpected scheduler receipt", malformed.stderr)
-        self.assertNotEqual(self.submit().returncode, 0)
+        retried = self.submit()
+        self.assertNotEqual(retried.returncode, 0, process_output(retried))
         self.assertEqual((self.tmp / "history").read_text().splitlines(), ["submit"])
 
-    def test_wrong_host_pin_or_dirty_source_cannot_submit(self):
-        for case in (
-            {"MOCK_UNAME": "Linux"},
-            {"MOCK_REF_PIN": "e" * 40},
-            {"MOCK_HOST": "unexpected.example"},
-            {"MOCK_CHECKOUT_PIN": "e" * 40},
-            {"MOCK_DIRTY": "1"},
-            {"MOCK_UNTRACKED": "1"},
-            {"MOCK_RUNTIME_FAIL": "1"},
-        ):
-            with self.subTest(case=case):
-                self.assertNotEqual(self.submit(**case).returncode, 0)
-                self.assertFalse((self.tmp / "history").exists())
-                self.assertFalse((self.root / ".capacity-submission").exists())
+    def assert_submit_rejected(self, **overrides):
+        rejected = self.submit(**overrides)
+        diagnostic = process_output(rejected)
+        self.assertNotEqual(rejected.returncode, 0, diagnostic)
+        self.assertFalse((self.tmp / "history").exists(), diagnostic)
+        self.assertFalse((self.root / ".capacity-submission").exists(), diagnostic)
+
+    # Each rejection has its own setUp, so a faulty submission cannot leave a
+    # saved receipt that bypasses another case's guard.
+    def test_non_mac_host_cannot_submit(self):
+        self.assert_submit_rejected(MOCK_UNAME="Linux")
+
+    def test_wrong_local_ref_cannot_submit(self):
+        self.assert_submit_rejected(MOCK_REF_PIN="e" * 40)
+
+    def test_wrong_remote_host_cannot_submit(self):
+        self.assert_submit_rejected(MOCK_HOST="unexpected.example")
+
+    def test_wrong_checkout_pin_cannot_submit(self):
+        self.assert_submit_rejected(MOCK_CHECKOUT_PIN="e" * 40)
+
+    def test_dirty_source_cannot_submit(self):
+        self.assert_submit_rejected(MOCK_DIRTY="1")
+
+    def test_untracked_source_cannot_submit(self):
+        self.assert_submit_rejected(MOCK_UNTRACKED="1")
+
+    def test_invalid_runtime_cannot_submit(self):
+        self.assert_submit_rejected(MOCK_RUNTIME_FAIL="1")
 
     def test_study_failure_preserves_outputs_and_cannot_overwrite_them(self):
         run = self.compute("392", MOCK_FAIL_AT="capacity_data_study.py")
-        self.assertEqual(run.returncode, 17, run.stderr)
+        self.assertEqual(run.returncode, 17, process_output(run))
         out = self.root / "runs/capacity-392"
         before = (out / "status.json").read_bytes()
         status = json.loads(before)
         self.assertEqual((status["status"], status["stage"], status["exit_code"]), ("failed", "study", 17))
         self.assertTrue((out / "preflight.json").is_file())
         self.assertFalse((out / "isac-capacity-392.tar.gz").exists())
-        self.assertNotEqual(self.compute("392").returncode, 0)
+        retried = self.compute("392")
+        self.assertNotEqual(retried.returncode, 0, process_output(retried))
         self.assertEqual((out / "status.json").read_bytes(), before)
 
     def test_complete_job_and_packaging_failure_have_distinct_status(self):
         completed = self.compute("393")
-        self.assertEqual(completed.returncode, 0, completed.stderr)
+        self.assertEqual(completed.returncode, 0, process_output(completed))
         status = json.loads((self.root / "runs/capacity-393/status.json").read_text())
         self.assertEqual((status["status"], status["stage"], status["exit_code"]), ("completed", "done", 0))
         self.assertEqual(
@@ -201,7 +222,7 @@ echo '{"status":"completed"}' > "$dest" """,
             ["hamilton_preflight.py", "capacity_data_study.py", "package_capacity_study.py"],
         )
         failed = self.compute("394", MOCK_FAIL_AT="package_capacity_study.py")
-        self.assertEqual(failed.returncode, 17, failed.stderr)
+        self.assertEqual(failed.returncode, 17, process_output(failed))
         out = self.root / "runs/capacity-394"
         self.assertTrue((out / "study/study.json").is_file())
         status = json.loads((out / "status.json").read_text())
