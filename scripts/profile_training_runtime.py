@@ -132,9 +132,7 @@ def operator_statistics(profiler):
 
 def require_device_activity(statistics, device_name):
     """CUPTI/runtime failures can produce an empty CUDA trace despite API support."""
-    if device_name == "cuda" and not any(
-        row["self_device_us"] > 0 for row in statistics["top_self_device"]
-    ):
+    if device_name == "cuda" and not any(row["self_device_us"] > 0 for row in statistics["top_self_device"]):
         raise RuntimeError(
             "CUDA profiling produced no positive device time; refusing CPU-only profiler evidence"
         )
