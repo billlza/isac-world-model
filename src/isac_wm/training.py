@@ -15,6 +15,17 @@ from .model import EventBeliefModel, ModelConfig, training_loss
 from .simulator import SceneConfig, recorded_episode
 from .structured import StructuredConfig, build_model, model_config_from_dict
 from .validation import finite, integer
+from .visual_training_diagnostics import (
+    MAX_DIAGNOSTIC_EPISODES,
+    MAX_DIAGNOSTIC_STEPS,
+    VISION_SUPERVISION_PROTOCOL,
+    begin_parameter_update,
+    diagnostic_protocol,
+    event_counts,
+    finish_parameter_update,
+    validate_schedule,
+    validation_snapshot,
+)
 
 INPUT_KEYS = ("image", "radio", "age", "valid", "new", "dt")
 
@@ -90,6 +101,8 @@ def train(
     batch_order_seed: int | None = None,
     validation_episodes: int | None = None,
     validation_every_updates: int | None = None,
+    vision_loss_weight: float = 0.0,
+    diagnostic_updates: tuple[int, ...] | None = None,
 ) -> dict:
     """Train with epoch-end validation, or an explicit optimizer-update schedule.
 
@@ -106,6 +119,12 @@ def train(
     integer(seed, "seed", 0, 99)
     integer(patience, "patience", 0, 100_000)
     finite(learning_rate, "learning_rate", positive=True)
+    vision_loss_weight = finite(vision_loss_weight, "vision_loss_weight")
+    diagnostic_updates = validate_schedule(diagnostic_updates)
+    if (vision_loss_weight or diagnostic_updates is not None) and not isinstance(
+        model_config, StructuredConfig
+    ):
+        raise ValueError("Visual supervision and diagnostics require a structured spatial encoder")
     integer(max_dataset_bytes, "max_dataset_bytes", 1)
     n_val = (
         max(8, episodes // 8)
@@ -130,7 +149,7 @@ def train(
     estimated = int(
         (2 * episodes + n_val + 2 * min(batch_size, episodes))
         * scene.steps
-        * (3 * scene.image_size**2 + 32)
+        * (3 * scene.image_size**2 + 40)
         * 4
     )
     if estimated > max_dataset_bytes:
@@ -167,6 +186,7 @@ def train(
     if isinstance(model_config, StructuredConfig) and model_config.room_m != scene.room_m:
         raise ValueError("Structured model geometry must match scene room_m")
     model = build_model(model_config).to(device)
+    observed_protocol = diagnostic_protocol(diagnostic_updates, val_seeds, scene.steps)
     optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=1e-4)
     rng = np.random.default_rng(order_seed)
     manifest = {
@@ -195,6 +215,11 @@ def train(
         "parameters": sum(p.numel() for p in model.parameters()),
         "runtime": runtime_info(device),
         "hardware_validated": [str(device)],
+        "vision_loss_weight": vision_loss_weight,
+        "vision_supervision_protocol": dict(VISION_SUPERVISION_PROTOCOL),
+        "visual_encoder_parameters": sum(p.numel() for p in model.visual.parameters()),
+        "initial_visual_parameters_sha256": model_fingerprint(model.visual),
+        "diagnostic_protocol": observed_protocol,
     }
     if custom_seeds:
         manifest["initial_parameters_sha256"] = model_fingerprint(model)
@@ -210,6 +235,15 @@ def train(
     # Cache stacking once; batches remain on CPU until transferred.
     train_tensors = batchify(data, torch.device("cpu"))
     del data
+    counts_per_epoch = event_counts(train_tensors)
+    counts_seen = {key: 0 for key in counts_per_epoch}
+    manifest["training_event_counts_per_epoch"] = counts_per_epoch
+    diagnostic_batch = None
+    diagnostic_history = []
+    diagnostic_overhead_seconds = 0.0
+    if diagnostic_updates is not None:
+        diagnostic_batch = batchify(val[:MAX_DIAGNOSTIC_EPISODES], device)
+        diagnostic_batch = {key: value[:, :MAX_DIAGNOSTIC_STEPS] for key, value in diagnostic_batch.items()}
     best = float("inf")
     history = []
     epoch_history = []
@@ -235,6 +269,15 @@ def train(
             or saved.get("validation_every_updates") != validation_every_updates
         ):
             raise ValueError("Resume validation protocol does not match saved run")
+        if saved.get("vision_loss_weight", 0.0) != vision_loss_weight:
+            raise ValueError("Resume visual-supervision weight does not match saved run")
+        saved_visual_protocol = saved.get("vision_supervision_protocol")
+        if saved_visual_protocol is not None and saved_visual_protocol != VISION_SUPERVISION_PROTOCOL:
+            raise ValueError("Resume visual-supervision protocol does not match saved run")
+        if vision_loss_weight and saved_visual_protocol is None:
+            raise ValueError("Resume visual-supervision protocol is missing")
+        if saved.get("diagnostic_protocol") != observed_protocol:
+            raise ValueError("Resume diagnostic protocol does not match saved run")
         model.load_state_dict(saved["state_dict"], strict=True)
         optimizer.load_state_dict(saved["optimizer"])
         rng.bit_generator.state = json.loads(saved["numpy_rng_json"])
@@ -248,6 +291,17 @@ def train(
         optimizer_updates = saved.get("optimizer_updates", begin * updates_per_epoch)
         if optimizer_updates != begin * updates_per_epoch:
             raise ValueError("Resume update count is not a completed epoch boundary")
+        counts_seen = saved.get(
+            "event_counts_seen", {key: value * begin for key, value in counts_per_epoch.items()}
+        )
+        if counts_seen != {key: value * begin for key, value in counts_per_epoch.items()}:
+            raise ValueError("Resume delivered-evidence counts do not match completed epochs")
+        diagnostic_history = saved.get("visual_diagnostics_snapshots", [])
+        expected_observations = (
+            [] if diagnostic_updates is None else [u for u in diagnostic_updates if u <= optimizer_updates]
+        )
+        if [row.get("optimizer_updates") for row in diagnostic_history] != expected_observations:
+            raise ValueError("Resume diagnostic history does not match the requested schedule")
         if validation_every_updates is None:
             valid_history = len(history) == begin and all(
                 row["epoch"] == i + 1 for i, row in enumerate(history)
@@ -288,6 +342,42 @@ def train(
     else:
         saved = None
     best_checkpoint = None if saved is None else saved["best_checkpoint"]
+
+    def record_diagnostic(update, training_details=None):
+        nonlocal diagnostic_overhead_seconds
+        observed = validation_snapshot(
+            model, diagnostic_batch, room_m=scene.room_m, dt=scene.dt, vision_loss_weight=vision_loss_weight
+        )
+        diagnostic_overhead_seconds += observed["observer_seconds"]
+        diagnostic_history.append(
+            {
+                "optimizer_updates": update,
+                "validation": observed,
+                "training": training_details,
+                "event_counts_seen": dict(counts_seen),
+            }
+        )
+        write_json(
+            outdir / "visual_diagnostics.json",
+            {
+                "schema_version": 1,
+                "protocol": observed_protocol,
+                "snapshots": diagnostic_history,
+            },
+        )
+
+    if diagnostic_updates is not None:
+        if saved is None and 0 in diagnostic_updates:
+            record_diagnostic(0)
+        else:
+            write_json(
+                outdir / "visual_diagnostics.json",
+                {
+                    "schema_version": 1,
+                    "protocol": observed_protocol,
+                    "snapshots": diagnostic_history,
+                },
+            )
     if device.type == "cuda":
         torch.cuda.synchronize(device)
         # Release only unused cache from preceding cells; live model/optimizer
@@ -302,18 +392,44 @@ def train(
         losses = []
         for batch_index, indices in enumerate(np.array_split(rng.permutation(episodes), updates_per_epoch)):
             selection = torch.as_tensor(indices, dtype=torch.long)
-            batch = {k: v.index_select(0, selection).to(device) for k, v in train_tensors.items()}
+            cpu_batch = {k: v.index_select(0, selection) for k, v in train_tensors.items()}
+            batch = {k: v.to(device) for k, v in cpu_batch.items()}
+            observed_step = diagnostic_updates is not None and optimizer_updates + 1 in diagnostic_updates
             optimizer.zero_grad(set_to_none=True)
-            output = model(batch, forecast_s=3 * scene.dt, batched_encoding=True)
-            loss, _ = training_loss(output, batch)
+            output = model(
+                batch, forecast_s=3 * scene.dt, batched_encoding=True, return_visual=bool(vision_loss_weight)
+            )
+            loss, loss_details = training_loss(output, batch, vision_loss_weight=vision_loss_weight)
             if not torch.isfinite(loss):
                 raise FloatingPointError("Non-finite training loss")
             loss.backward()
+            parameter_before = None
+            if observed_step:
+                observer_started = time.perf_counter()
+                parameter_before = begin_parameter_update(model)
+                diagnostic_overhead_seconds += time.perf_counter() - observer_started
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0, error_if_nonfinite=True)
             optimizer.step()
+            parameter_updates = None
+            if observed_step:
+                observer_started = time.perf_counter()
+                parameter_updates = finish_parameter_update(model, parameter_before)
+                diagnostic_overhead_seconds += time.perf_counter() - observer_started
             loss_value = float(loss.detach())
             losses.append(loss_value)
             optimizer_updates += 1
+            batch_counts = event_counts(cpu_batch)
+            for key, value in batch_counts.items():
+                counts_seen[key] += value
+            if observed_step:
+                record_diagnostic(
+                    optimizer_updates,
+                    {
+                        "losses": loss_details,
+                        "branches": parameter_updates,
+                        "event_counts": batch_counts,
+                    },
+                )
             pending_loss_sum += loss_value
             pending_loss_count += 1
             epoch_end = batch_index + 1 == updates_per_epoch
@@ -356,6 +472,10 @@ def train(
                         "validation_episode_seeds": val_seeds,
                         "validation_episodes": n_val,
                         "validation_every_updates": validation_every_updates,
+                        "vision_loss_weight": vision_loss_weight,
+                        "vision_supervision_protocol": dict(VISION_SUPERVISION_PROTOCOL),
+                        "initial_visual_parameters_sha256": manifest["initial_visual_parameters_sha256"],
+                        "diagnostic_protocol": observed_protocol,
                     }
                     save_checkpoint(outdir / "model.pt", best_checkpoint)
                 else:
@@ -396,6 +516,12 @@ def train(
                 "learning_rate": learning_rate,
                 "scene_config": scene.to_dict(),
                 "model_config": model.config.to_dict(),
+                "vision_loss_weight": vision_loss_weight,
+                "vision_supervision_protocol": dict(VISION_SUPERVISION_PROTOCOL),
+                "initial_visual_parameters_sha256": manifest["initial_visual_parameters_sha256"],
+                "diagnostic_protocol": observed_protocol,
+                "visual_diagnostics_snapshots": diagnostic_history,
+                "event_counts_seen": counts_seen,
             },
         )
         write_json(outdir / "history.json", history)
@@ -426,6 +552,11 @@ def train(
     manifest["model_selection_status"] = "no_validation_yet" if best_checkpoint is None else "selected"
     manifest["training_seconds"] = time.perf_counter() - start
     manifest["training_timing_scope"] = "This call's training/validation/checkpoint loop; CUDA synchronized"
+    if diagnostic_updates is not None:
+        manifest["training_timing_scope"] += "; includes scheduled diagnostic work after update zero"
+    manifest["diagnostic_overhead_seconds"] = diagnostic_overhead_seconds
+    manifest["event_counts_seen"] = counts_seen
+    manifest["diagnostic_observed_updates"] = [row["optimizer_updates"] for row in diagnostic_history]
     manifest["best_validation_rmse_m"] = None if best_checkpoint is None else best
     write_json(outdir / "history.json", history)
     write_json(outdir / "manifest.json", manifest)

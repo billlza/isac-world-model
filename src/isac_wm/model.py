@@ -42,6 +42,8 @@ def radio_from_state(state: Tensor) -> Tensor:
 
 
 class EventBeliefModel(nn.Module):
+    supports_visual_supervision = False
+
     def __init__(self, config: ModelConfig | None = None):
         super().__init__()
         self.config = config or ModelConfig()
@@ -145,13 +147,22 @@ class EventBeliefModel(nn.Module):
         return out, (h, pv, pr)
 
     def forward(
-        self, batch: dict[str, Tensor], forecast_s: float = 0.3, *, batched_encoding: bool = False
+        self,
+        batch: dict[str, Tensor],
+        forecast_s: float = 0.3,
+        *,
+        batched_encoding: bool = False,
+        return_visual: bool = False,
     ) -> dict[str, Tensor]:
         # Streaming-safe is the default: a future frame cannot even change the
         # encoder batch shape used for a past frame. Explicit batched_encoding
         # is a training throughput optimisation, equivalent within FP tolerance.
         b, t = batch["image"].shape[:2]
         finite(forecast_s, "forecast_s")
+        if not isinstance(return_visual, bool):
+            raise ValueError("return_visual must be a boolean")
+        if return_visual and not self.supports_visual_supervision:
+            raise ValueError("Visual coordinate outputs require a structured spatial encoder")
         memory = self.initial(b, batch["image"].device)
         encoding = None
         if batched_encoding:
@@ -163,11 +174,19 @@ class EventBeliefModel(nn.Module):
         outputs: dict[str, list[Tensor]] = {
             k: [] for k in ("mean", "logvar", "future_mean", "future_logvar", "obs_mean", "obs_logvar")
         }
+        if return_visual:
+            outputs.update(visual_xy=[], visual_entropy=[])
         for k in range(t):
             inputs = {key: batch[key][:, k] for key in ("image", "radio", "age", "valid", "new", "dt")}
-            out, memory = self.step(
-                inputs, memory, None if encoding is None else (encoding[0][:, k], encoding[1][:, k])
-            )
+            encoded = None if encoding is None else (encoding[0][:, k], encoding[1][:, k])
+            if return_visual and encoded is None:
+                encoded = self.encode_new(inputs)
+            out, memory = self.step(inputs, memory, encoded)
+            if return_visual:
+                # Keep the differentiable encoder output. Stale/invalid rows are
+                # zero placeholders and are never localization-supervised.
+                outputs["visual_xy"].append(encoded[0][:, :2])
+                outputs["visual_entropy"].append(encoded[0][:, 2])
             future = self.forecast(out["hidden"], forecast_s)
             obs = self.predict_observation(out["hidden"], batch["action_target"][:, k])
             for key in ("mean", "logvar"):
@@ -177,9 +196,56 @@ class EventBeliefModel(nn.Module):
         return {key: torch.stack(values, dim=1) for key, values in outputs.items()}
 
 
+def visual_supervision_loss(output: dict[str, Tensor], batch: dict[str, Tensor]) -> tuple[Tensor, int]:
+    """Mean squared normalized x/y error of fresh, visible capture-time labels.
+
+    This is a training/evaluation-only score. The model never receives labels.
+    Coordinates are normalized by room size; the two coordinates are averaged
+    before averaging examples. Empty support gives a differentiable zero.
+    """
+    required = ("vision_capture_target_xy", "vision_target_mask", "new", "valid")
+    if "visual_xy" not in output or any(key not in batch for key in required):
+        raise ValueError("Visual supervision requires visual_xy and capture-time labels")
+    predicted, target, mask = (
+        output["visual_xy"],
+        batch["vision_capture_target_xy"],
+        batch["vision_target_mask"],
+    )
+    if (
+        predicted.ndim != 3
+        or predicted.shape[-1] != 2
+        or target.shape != predicted.shape
+        or mask.shape != predicted.shape[:-1]
+        or any(batch[key].shape != (*mask.shape, 2) for key in ("new", "valid"))
+    ):
+        raise ValueError("Visual supervision shapes must be [batch,time,2] and [batch,time]")
+    if any(not bool(torch.isfinite(value).all()) for value in (predicted, target, mask)):
+        raise ValueError("Visual supervision must be finite")
+    if not bool(((mask == 0) | (mask == 1)).all()):
+        raise ValueError("Visual target mask must be binary")
+    for name in ("new", "valid"):
+        if not bool(((batch[name] == 0) | (batch[name] == 1)).all()):
+            raise ValueError(f"Visual supervision {name} must be a binary mask")
+    active = mask.bool()
+    eligible = (batch["new"][..., 0] * batch["valid"][..., 0]).bool()
+    if bool((active & ~eligible).any()):
+        raise ValueError("Visual labels may supervise only newly delivered valid images")
+    if bool(((target[active] < 0) | (target[active] > 1)).any()):
+        raise ValueError("Visual capture targets must use normalized coordinates in [0,1]")
+    count = int(active.sum().item())
+    if not count:
+        return predicted.sum() * 0.0, 0
+    return (predicted[active] - target[active]).square().mean(), count
+
+
 def training_loss(
-    output: dict[str, Tensor], batch: dict[str, Tensor], horizon_steps: int = 3
+    output: dict[str, Tensor],
+    batch: dict[str, Tensor],
+    horizon_steps: int = 3,
+    *,
+    vision_loss_weight: float = 0.0,
 ) -> tuple[Tensor, dict[str, float]]:
+    vision_loss_weight = finite(vision_loss_weight, "vision_loss_weight")
     target = batch["state_target"]
     if not 0 < horizon_steps < target.shape[1]:
         raise ValueError("horizon_steps must be inside the sequence")
@@ -193,9 +259,21 @@ def training_loss(
     obs_losses = gaussian_nll(output["obs_mean"], output["obs_logvar"], batch["radio_target"])
     observation = (obs_losses * mask).sum() / mask.sum().clamp_min(1)
     loss = current + 0.5 * future + 0.15 * observation
-    return loss, {
+    details = {
         "loss": float(loss.detach()),
         "state_nll": float(current.detach()),
         "future_nll": float(future.detach()),
         "observation_nll": float(observation.detach()),
     }
+    # Deliberately do not add a zero tensor or evaluate auxiliary labels in the
+    # legacy objective: weight zero preserves the original value and graph.
+    if vision_loss_weight:
+        visual, count = visual_supervision_loss(output, batch)
+        loss = loss + vision_loss_weight * visual
+        details.update(
+            loss=float(loss.detach()),
+            vision_mse_normalized=float(visual.detach()),
+            vision_visible_capture_count=count,
+            weighted_vision_loss=float((vision_loss_weight * visual).detach()),
+        )
+    return loss, details

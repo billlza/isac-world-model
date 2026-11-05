@@ -76,6 +76,65 @@ jobs:
             validation/capacity-development/**/*.json
           if-no-files-found: error
           retention-days: 14
+  vision-development:
+    name: Visual learning / Hamilton PyTorch 2.9 CPU compatibility
+    if: github.head_ref == 'research/vision-supervision-h200' || github.ref == 'refs/heads/research/vision-supervision-h200'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: {persist-credentials: false}
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with: {version: '0.13.5', enable-cache: true}
+      - name: Install matching Python and PyTorch versions on the CPU runner
+        run: |
+          uv python install 3.13.9
+          uv venv --python 3.13.9 .vision-runtime
+          uv pip install --python .vision-runtime/bin/python --index-url https://download.pytorch.org/whl/cpu 'torch==2.9.0+cpu'
+          uv pip install --python .vision-runtime/bin/python numpy==2.3.4
+          .vision-runtime/bin/python - <<'PYTHON'
+          import sys
+          import numpy
+          import torch
+          assert sys.version_info[:3] == (3, 13, 9)
+          assert torch.__version__ == '2.9.0+cpu'
+          assert numpy.__version__ == '2.3.4'
+          print('CPU compatibility check; CUDA behavior remains a Hamilton check.')
+          PYTHON
+      - name: Verify capture labels, gradients, passive diagnostics, and launch contracts
+        run: |
+          export PYTHONPATH="$PWD/src"
+          .vision-runtime/bin/python -m unittest discover -s tests -p 'test_visual*.py' -v
+          .vision-runtime/bin/python -m unittest discover -s tests -p 'test_vision_learning*.py' -v
+          .vision-runtime/bin/python -m unittest discover -s tests -p 'test_training_runtime_profile.py' -v
+      - name: Train all eight controlled development cells
+        run: |
+          export PYTHONPATH="$PWD/src"
+          .vision-runtime/bin/python scripts/vision_learning_study.py --out validation/vision-development --device cpu --profile smoke
+          .vision-runtime/bin/python - <<'PYTHON'
+          import json
+          from pathlib import Path
+          r = json.loads(Path('validation/vision-development/study.json').read_text())
+          assert r['status'] == 'completed' and len(r['cells']) == 8
+          assert r['fresh_test_consumed'] is False and r['test_episode_seeds'] == []
+          assert r['design']['optimizer_updates'] == 8
+          assert {c['parameters'] for c in r['cells'].values()} == {3883798}
+          assert {c['visual_encoder_parameters'] for c in r['cells'].values()} == {1230}
+          print('VISION_SMOKE', json.dumps(r['summary']['contrasts']))
+          PYTHON
+      - name: Exercise the separate A96 and A512 runtime profiler
+        run: |
+          export PYTHONPATH="$PWD/src"
+          .vision-runtime/bin/python scripts/profile_training_runtime.py --device cpu --warmup-updates 1 --measured-updates 1 --profile-updates 1 --batch-size 1 --threads 1 --out validation/runtime-profile-development
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: vision-learning-pytorch-2.9-cpu
+          path: |
+            validation/vision-development/**/*.json
+            validation/runtime-profile-development/**/*.json
+          if-no-files-found: warn
+          retention-days: 14
   recovery-development:
     name: Recovery training development / CPU
     if: github.event_name == 'push' && github.ref == 'refs/heads/research/paired-recovery-h200'
@@ -199,7 +258,7 @@ jobs:
           retention-days: 14
   ci-gate:
     if: always()
-    needs: [python, native, quality, reproducibility, viewer]
+    needs: [python, native, quality, reproducibility, viewer, vision-development]
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
@@ -210,9 +269,16 @@ jobs:
           QUALITY_RESULT: ${{ needs.quality.result }}
           REPRODUCIBILITY_RESULT: ${{ needs.reproducibility.result }}
           VIEWER_RESULT: ${{ needs.viewer.result }}
+          VISION_RESULT: ${{ needs.vision-development.result }}
+          VISION_REQUIRED: ${{ github.head_ref == 'research/vision-supervision-h200' || github.ref == 'refs/heads/research/vision-supervision-h200' }}
         run: |
           test "$PYTHON_RESULT" = success
           test "$NATIVE_RESULT" = success
           test "$QUALITY_RESULT" = success
           test "$REPRODUCIBILITY_RESULT" = success
           test "$VIEWER_RESULT" = success
+          if test "$VISION_REQUIRED" = true; then
+            test "$VISION_RESULT" = success
+          else
+            test "$VISION_RESULT" = skipped
+          fi
