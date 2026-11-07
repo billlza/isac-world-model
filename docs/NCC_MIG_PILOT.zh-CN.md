@@ -66,8 +66,26 @@ CPU 节点的 Python、venv 支持和下载网络需由实际 setup 作业确认
 远程源码为 `$HOME/isac-ncc-mig-<SHA前12位>`，运行环境单独位于
 `$HOME/isac-ncc-runtime-<SHA前12位>`。既有目录和结果不覆盖。
 已取得的 job ID 保存在 `.ncc-mig-submission/setup.job-id` 和
-`.ncc-mig-submission/pilot.job-id`。重复运行只报告已有回执，不重复提交。
-若提交响应不完整，保留该次 claim/receipt，先查账而不盲目再提交。
+`.ncc-mig-submission/pilot.job-id`。两个原始回执完整时，重复运行只报告已有
+回执，不重复提交；部分提交会停止并保留记录，不会自动补交缺失的作业。
+
+## 回执文件缺失时
+
+`setup.job-id` 在 `sbatch` 返回并保存合法回执后立即写入，与作业是否开始
+执行无关。因此 `PENDING` 不能解释这个文件缺失。单独的 `cat: ... No such
+file or directory` 也不能证明 Slurm 没有接受提交。
+
+先检查实际检出的目录和 `.ncc-mig-submission` 中的 `git-commit`、`stage`、
+`setup.receipt`、`setup.receipt.pending`、`setup.submit.error`，以及对应的
+`pilot.*` 文件，再查询本人当前队列和近期 `sacct` 历史。两个作业名称分别是
+`isac-ncc-runtime` 和 `isac-ncc-mig`。诊断命令应先用 `test -f` 检查可选文件，
+避免 `set -e` 配合无条件 `cat` 导致队列和历史查询也被跳过。
+
+原始 `.receipt` 先保存，便利 `.job-id` 文件后写入；两步之间中断可能留下
+合法回执而没有 `.job-id`。`.receipt.pending` 也可能已经包含真实 JobID，
+需要与 Slurm 核对。`*.submit.error` 可能包含警告，应结合回执判断。
+不要凭文件缺失重复提交、删除提交记录或手工填写猜测的 JobID；重复运行
+提交入口不会补写缺失的 `.job-id`，也不会自动恢复部分提交。
 
 ## 怎样判断完成
 

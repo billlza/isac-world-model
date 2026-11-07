@@ -99,7 +99,10 @@ class RuntimeSetupTests(unittest.TestCase):
             elif "--version" in command:
                 output = "pip 24.0 (mocked for unit tests)"
         elif "-c" in command:
-            venv = self.runtime_root / "venv"
+            # Match the interpreter actually invoked, including canonical paths
+            # when the temporary directory has a symlinked parent on macOS.
+            interpreter = Path(command[0])
+            venv = interpreter.parent.parent
             output = json.dumps(
                 {
                     "python": "3.12.3",
@@ -107,7 +110,7 @@ class RuntimeSetupTests(unittest.TestCase):
                     "torch": self.import_version,
                     "torch_cuda": "12.8",
                     "cuda_build": True,
-                    "interpreter": str(venv / "bin" / "python"),
+                    "interpreter": str(interpreter),
                     "prefix": str(venv),
                     "base_prefix": "/usr",
                     "numpy_file": str(venv / "lib/numpy/__init__.py"),
@@ -160,6 +163,24 @@ class RuntimeSetupTests(unittest.TestCase):
         self.assertTrue((self.runtime_root / "torch-install.log").exists())
         self.assertNotIn("runtime", self.manifest())
         self.assertNotIn("ready", (self.runtime_root / "runtime.json").read_text())
+
+    def test_success_with_a_symlinked_parent_directory(self):
+        alias = self.root / "linked-root"
+        alias.symlink_to(self.root, target_is_directory=True)
+        self.project = alias / "checkout"
+        self.runtime_root = alias / "ncc-runtime"
+        self.env.update(
+            ISAC_PROJECT_ROOT=str(self.project),
+            ISAC_RUNS_DIR=str(self.project / "runs"),
+            ISAC_NCC_RUNTIME_ROOT=str(self.runtime_root),
+        )
+        self.assertNotEqual(self.runtime_root, self.runtime_root.resolve())
+        result = self.setup_runtime()
+        expected_venv = self.runtime_root.resolve() / "venv"
+        self.assertEqual(result["status"], "ready")
+        self.assertEqual(result["runtime"]["interpreter"], str(expected_venv / "bin" / "python"))
+        self.assertEqual(result["runtime"]["prefix"], str(expected_venv))
+        self.assertEqual(self.manifest(), result)
 
     def test_existing_directory_is_not_reused_even_without_manifest(self):
         self.runtime_root.mkdir()
