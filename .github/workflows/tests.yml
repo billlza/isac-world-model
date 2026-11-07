@@ -135,6 +135,57 @@ jobs:
             validation/runtime-profile-development/**/*.json
           if-no-files-found: warn
           retention-days: 14
+  ncc-development:
+    name: NCC A512 / Python 3.12.3 PyTorch 2.9 CPU compatibility
+    if: github.head_ref == 'research/ncc-mig-pilot' || github.ref == 'refs/heads/research/ncc-mig-pilot'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: {persist-credentials: false}
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with: {version: '0.13.5', enable-cache: true}
+      - name: Install matching Python and PyTorch CPU versions
+        run: |
+          uv python install 3.12.3
+          uv venv --python 3.12.3 .ncc-compatibility
+          uv pip install --python .ncc-compatibility/bin/python --index-url https://download.pytorch.org/whl/cpu 'torch==2.9.0+cpu'
+          uv pip install --python .ncc-compatibility/bin/python numpy==2.3.4
+      - name: Test allocation, environment, submission and failure handling
+        run: |
+          export PYTHONPATH="$PWD/src"
+          .ncc-compatibility/bin/python -m unittest discover -s tests -p 'test_ncc*.py' -v
+      - name: Train both real A512 development variants on CPU
+        run: |
+          export PYTHONPATH="$PWD/src:$PWD/scripts"
+          .ncc-compatibility/bin/python - <<'PYTHON'
+          import json
+          import sys
+          from pathlib import Path
+          import numpy
+          import torch
+          from ncc_mig_pilot import MODEL, SCENE, WEIGHTS, train_arguments, validate_cell
+          from isac_wm.simulator import SceneConfig
+          from isac_wm.structured import StructuredConfig
+          from isac_wm.training import train
+          assert sys.version_info[:3] == (3, 12, 3)
+          assert numpy.__version__ == '2.3.4' and torch.__version__ == '2.9.0+cpu'
+          torch.set_num_threads(2)
+          for weight in WEIGHTS:
+              path = Path('validation/ncc-compatibility') / f'vision-{int(weight)}'
+              manifest = train(path, device_name='cpu', scene=SceneConfig(**SCENE),
+                               model_config=StructuredConfig(**MODEL), **train_arguments(weight))
+              summary = validate_cell(path, manifest, weight, expected_device='cpu')
+              print('NCC_CPU_COMPATIBILITY', json.dumps(summary))
+          print('CPU compatibility only; actual MIG identity and CUDA execution are NCC checks.')
+          PYTHON
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: ncc-a512-cpu-compatibility
+          path: validation/ncc-compatibility/**/*.json
+          if-no-files-found: warn
+          retention-days: 14
   recovery-development:
     name: Recovery training development / CPU
     if: github.event_name == 'push' && github.ref == 'refs/heads/research/paired-recovery-h200'
@@ -258,7 +309,7 @@ jobs:
           retention-days: 14
   ci-gate:
     if: always()
-    needs: [python, native, quality, reproducibility, viewer, vision-development]
+    needs: [python, native, quality, reproducibility, viewer, vision-development, ncc-development]
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
@@ -271,6 +322,8 @@ jobs:
           VIEWER_RESULT: ${{ needs.viewer.result }}
           VISION_RESULT: ${{ needs.vision-development.result }}
           VISION_REQUIRED: ${{ github.head_ref == 'research/vision-supervision-h200' || github.ref == 'refs/heads/research/vision-supervision-h200' }}
+          NCC_RESULT: ${{ needs.ncc-development.result }}
+          NCC_REQUIRED: ${{ github.head_ref == 'research/ncc-mig-pilot' || github.ref == 'refs/heads/research/ncc-mig-pilot' }}
         run: |
           test "$PYTHON_RESULT" = success
           test "$NATIVE_RESULT" = success
@@ -282,3 +335,9 @@ jobs:
           else
             test "$VISION_RESULT" = skipped
           fi
+          if test "$NCC_REQUIRED" = true; then
+            test "$NCC_RESULT" = success
+          else
+            test "$NCC_RESULT" = skipped
+          fi
+
