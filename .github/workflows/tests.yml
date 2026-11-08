@@ -91,7 +91,7 @@ jobs:
           uv python install 3.13.9
           uv venv --python 3.13.9 .vision-runtime
           uv pip install --python .vision-runtime/bin/python --index-url https://download.pytorch.org/whl/cpu 'torch==2.9.0+cpu'
-          uv pip install --python .vision-runtime/bin/python numpy==2.3.4
+          uv pip install --python .vision-runtime/bin/python numpy==2.3.4 pytest==9.1.1
           .vision-runtime/bin/python - <<'PYTHON'
           import sys
           import numpy
@@ -135,7 +135,7 @@ jobs:
           test -f tests/test_latent_state_norm.py
           test -f tests/test_recurrent_state_study.py
           test -f tests/test_recurrent_state_jobs.py
-          .vision-runtime/bin/python -m unittest discover -s tests -p 'test_latent_state_norm.py' -v
+          .vision-runtime/bin/python -m pytest tests/test_latent_state_norm.py -q
           .vision-runtime/bin/python -m unittest discover -s tests -p 'test_recurrent_state*.py' -v
       - name: Train all four matched recurrent-state development cells
         if: github.head_ref == 'research/recurrent-state-stability' || github.ref == 'refs/heads/research/recurrent-state-stability'

@@ -172,7 +172,7 @@ bash -n scripts/hamilton_recurrent_state.sh scripts/submit_recurrent_state_from_
 有 PyTorch 的测试环境中，运行数值、兼容性与真实四组开发训练：
 
 ```bash
-PYTHONPATH=src python -m unittest discover -s tests -p 'test_latent_state_norm.py' -v
+PYTHONPATH=src python -m pytest tests/test_latent_state_norm.py -q
 PYTHONPATH=src python scripts/recurrent_state_study.py \
   --out runs/recurrent-state-development \
   --device cpu --profile development
