@@ -164,7 +164,9 @@ def finite_nonnegative(value):
     )
 
 
-def validate_training_manifest(manifest, spec, key, device_name, *, expected_model=None):
+def validate_training_manifest(
+    manifest, spec, key, device_name, *, expected_model=None, expected_parameters=PARAMETERS
+):
     lr, weight, initialization = key
     updates = validation_updates(spec)
     pools = registered_seeds(spec)
@@ -174,7 +176,7 @@ def validate_training_manifest(manifest, spec, key, device_name, *, expected_mod
         "epochs": epoch_budget(spec),
         "completed_epochs": epoch_budget(spec),
         "batch_size": spec["batch_size"],
-        "parameters": PARAMETERS,
+        "parameters": expected_parameters,
         "visual_encoder_parameters": VISUAL_PARAMETERS,
         "model": MODEL if expected_model is None else expected_model,
         "learning_rate": lr,
@@ -247,9 +249,25 @@ def validate_training_manifest(manifest, spec, key, device_name, *, expected_mod
 
 
 def validate_training_evidence(
-    manifest, history, epoch_history, diagnostics, spec, key, device_name, *, expected_model=None
+    manifest,
+    history,
+    epoch_history,
+    diagnostics,
+    spec,
+    key,
+    device_name,
+    *,
+    expected_model=None,
+    expected_parameters=PARAMETERS,
 ):
-    validate_training_manifest(manifest, spec, key, device_name, expected_model=expected_model)
+    validate_training_manifest(
+        manifest,
+        spec,
+        key,
+        device_name,
+        expected_model=expected_model,
+        expected_parameters=expected_parameters,
+    )
     expected = validation_updates(spec)
     require(
         isinstance(history, list) and [r.get("optimizer_updates") for r in history] == expected,
