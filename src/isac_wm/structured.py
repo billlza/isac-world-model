@@ -15,6 +15,8 @@ from torch import Tensor, nn
 from .model import EventBeliefModel, ModelConfig, radio_from_state
 from .validation import finite, integer
 
+LATENT_STATE_NORM_EPS = 1e-5
+
 
 @dataclass(frozen=True)
 class StructuredConfig:
@@ -24,6 +26,7 @@ class StructuredConfig:
     memory_size: int = 16
     heads: int = 4
     room_m: float = 10.0
+    latent_state_norm: str = "none"
 
     def __post_init__(self) -> None:
         ModelConfig(self.feature_dim, self.hidden_dim)
@@ -34,9 +37,18 @@ class StructuredConfig:
             raise ValueError("Unknown structured architecture")
         if self.hidden_dim % self.heads:
             raise ValueError("hidden_dim must be divisible by heads")
+        if not isinstance(self.latent_state_norm, str) or self.latent_state_norm not in {"none", "layernorm"}:
+            raise ValueError("latent_state_norm must be 'none' or 'layernorm'")
+        if self.latent_state_norm != "none" and self.architecture != "structured-attention":
+            raise ValueError("Latent state normalization requires structured-attention")
 
     def to_dict(self) -> dict:
-        return asdict(self)
+        values = asdict(self)
+        # Preserve the historical checkpoint/config representation of the control.
+        # Missing fields in older checkpoints therefore continue to mean "none".
+        if self.latent_state_norm == "none":
+            values.pop("latent_state_norm")
+        return values
 
 
 class SpatialEncoder(nn.Module):
@@ -74,6 +86,8 @@ class StructuredEventModel(EventBeliefModel):
     The ring is bounded by event count, not silently by elapsed time.
     """
 
+    supports_visual_supervision = True
+
     def __init__(self, config: StructuredConfig):
         nn.Module.__init__(self)
         self.config = config
@@ -97,6 +111,13 @@ class StructuredEventModel(EventBeliefModel):
             self.feedforward = nn.Sequential(
                 nn.LayerNorm(h), nn.Linear(h, 2 * h), nn.SiLU(), nn.Linear(2 * h, h)
             )
+        # This parameter-free boundary neither consumes RNG nor changes state_dict
+        # keys. The control skips the operation entirely, retaining its exact path.
+        self.latent_state_norm = (
+            nn.LayerNorm(h, eps=LATENT_STATE_NORM_EPS, elementwise_affine=False)
+            if config.latent_state_norm == "layernorm"
+            else None
+        )
 
     def initial(self, batch_size: int, device: torch.device | str) -> tuple[Tensor, ...]:
         integer(batch_size, "batch_size", 1)
@@ -123,17 +144,22 @@ class StructuredEventModel(EventBeliefModel):
             zeros(batch_size, 1),
         )
 
-    def _predict(self, h: Tensor, mean: Tensor, covariance: Tensor, dt: Tensor):
+    def _predict(self, h: Tensor, mean: Tensor, covariance: Tensor, dt: Tensor, *, diagnostics=None):
         ratio = 2 / self.config.room_m
-        acc = 0.25 * self.acceleration(h).tanh()
+        acceleration_logits = self.acceleration(h)
+        acc = 0.25 * acceleration_logits.tanh()
         position = mean[:, :2] + ratio * (dt * mean[:, 2:] + 0.5 * dt.square() * acc)
         velocity = mean[:, 2:] + dt * acc
         predicted = torch.cat([position, velocity], -1)
         f = torch.eye(4, device=h.device, dtype=h.dtype).expand(h.shape[0], 4, 4).clone()
         f[:, 0, 2] = f[:, 1, 3] = dt[:, 0] * ratio
-        q = 1e-5 + 0.02 * self.noise(h)[:, :2].sigmoid()
+        noise_logits = self.noise(h)
+        q = 1e-5 + 0.02 * noise_logits[:, :2].sigmoid()
         q = torch.cat([q * ratio**2, q], -1) * dt
         predicted_cov = f @ covariance @ f.transpose(-1, -2) + torch.diag_embed(q)
+        if diagnostics is not None:
+            diagnostics["acceleration_logits"] = acceleration_logits.detach().clone()
+            diagnostics["noise_logits"] = noise_logits.detach().clone()
         return predicted, predicted_cov
 
     def _retrieve(self, h, encodings, new, age, clock, tokens, stamps, used):
@@ -158,7 +184,7 @@ class StructuredEventModel(EventBeliefModel):
         return out + self.feedforward(out), tokens, stamps, used
 
     @staticmethod
-    def _correct(mean, covariance, measurement, variance, age, active, ratio):
+    def _correct(mean, covariance, measurement, variance, age, active, ratio, *, diagnostics=None):
         # A delayed position measures [I, -age*scale*I] of current kinematic state.
         h = mean.new_zeros((mean.shape[0], 2, 4))
         h[:, 0, 0] = h[:, 1, 1] = 1
@@ -171,10 +197,28 @@ class StructuredEventModel(EventBeliefModel):
         ikh = torch.eye(4, device=mean.device, dtype=mean.dtype) - gain @ h
         updated_cov = ikh @ covariance @ ikh.transpose(-1, -2) + gain @ r @ gain.transpose(-1, -2)
         updated_cov = (updated_cov + updated_cov.transpose(-1, -2)) * 0.5
-        return (
+        result = (
             torch.where(active, updated_mean, mean),
             torch.where(active[:, :, None], updated_cov, covariance),
         )
+        if diagnostics is not None:
+            # The observer receives detached COPIES, never aliases of model state,
+            # inputs, or an autograd graph. No quantity here changes the correction.
+            values = {
+                "active": active,
+                "age_s": age,
+                "measurement_xy": measurement,
+                "predicted_measurement_xy": (h @ mean.unsqueeze(-1)).squeeze(-1),
+                "measurement_variance_xy": variance,
+                "innovation_xy": residual,
+                "innovation_covariance_xy": innovation,
+                "gain": gain,
+                "state_mean_before": mean,
+                "state_mean_after": result[0],
+                "applied_state_correction": result[0] - mean,
+            }
+            diagnostics.update({key: value.detach().clone() for key, value in values.items()})
+        return result
 
     def _pack(self, h, mean, covariance):
         return torch.cat([h, mean, covariance.flatten(1)], -1)
@@ -192,6 +236,8 @@ class StructuredEventModel(EventBeliefModel):
         }
 
     def forecast(self, packed: Tensor, horizon: float | Tensor) -> dict[str, Tensor]:
+        # Forecast only the physical state: h is the already-normalized recurrent
+        # state from step(), with no additional latent transition or normalization.
         h, mean, covariance = self._unpack(packed)
         if isinstance(horizon, (int, float)):
             finite(horizon, "horizon")
@@ -215,7 +261,16 @@ class StructuredEventModel(EventBeliefModel):
             "logvar": -9 + 9 * raw[:, 4:].sigmoid(),
         }
 
-    def step(self, x, memory, encoded=None):
+    def step(self, x, memory, encoded=None, *, diagnostics=None):
+        """Advance one snapshot; an optional observer records the unchanged calculation.
+
+        Diagnostic tensors use the model's normalized coordinates. ``active``
+        identifies a correction that was actually applied; an inactive row's
+        measurement/gain must not be treated as another observation. The caller
+        supplies absolute capture/availability/state times separately from age.
+        """
+        if diagnostics is not None and (not isinstance(diagnostics, dict) or diagnostics):
+            raise ValueError("diagnostics must be an empty caller-owned dict")
         h, pv, pr, mean, covariance, tokens, stamps, used, clock = memory
         for name in ("age", "dt", "valid", "new"):
             value = x[name]
@@ -236,25 +291,56 @@ class StructuredEventModel(EventBeliefModel):
         prior_h = h + dt * self.dynamics(h)
         features = torch.cat([pv, pr, age, x["valid"], new.to(h), dt], -1)
         updated_h = self.fusion(features, prior_h)
+        fusion_h = updated_h if diagnostics is not None else None
         if self.attentive:
             updated_h, tokens, stamps, used = self._retrieve(
                 updated_h, encodings, new, age, clock, tokens, stamps, used
             )
         h = torch.where(new.any(-1, keepdim=True), updated_h, prior_h)
-        mean, covariance = self._predict(h, mean, covariance, dt)
+        hidden_pre_norm = h
+        if self.latent_state_norm is not None:
+            h = self.latent_state_norm(h)
+        network = None if diagnostics is None else {}
+        mean, covariance = self._predict(h, mean, covariance, dt, diagnostics=network)
         noise = self.noise(h)
         variance = (-10 + 7 * noise[:, 2:].sigmoid()).exp()
         # Entropy downweights diffuse maps (occlusion); not a safety certificate.
         visual_variance = variance[:, :2] + 0.05 * pv[:, 2:3].clamp(0, 1).pow(4)
         safe_radio = torch.where(new[:, 1:], x["radio"], torch.zeros_like(x["radio"]))
         radio_xy = (2**0.5) * safe_radio[:, :1] * safe_radio[:, 1:3]
-        for measurement, r, a, active in (
-            (pv[:, :2], visual_variance, age[:, :1], new[:, :1]),
-            (radio_xy, variance[:, 2:], age[:, 1:], new[:, 1:]),
+        for index, modality, measurement, r, a, active in (
+            (0, "vision", pv[:, :2], visual_variance, age[:, :1], new[:, :1]),
+            (1, "radio", radio_xy, variance[:, 2:], age[:, 1:], new[:, 1:]),
         ):
+            observed = None if diagnostics is None else {}
             mean, covariance = self._correct(
-                mean, covariance, measurement, r, a, active, 2 / self.config.room_m
+                mean,
+                covariance,
+                measurement,
+                r,
+                a,
+                active,
+                2 / self.config.room_m,
+                diagnostics=observed,
             )
+            if diagnostics is not None:
+                observed["valid"] = x["valid"][:, index : index + 1].detach().clone()
+                observed["new"] = x["new"][:, index : index + 1].detach().clone()
+                if modality == "vision":
+                    observed["heatmap_entropy"] = pv[:, 2:3].detach().clone()
+                    observed["learned_measurement_variance_xy"] = variance[:, :2].detach().clone()
+                diagnostics[modality] = observed
+        if diagnostics is not None:
+            diagnostics["schema_version"] = 1
+            network.update(
+                hidden=h.detach().clone(),
+                hidden_pre_norm=hidden_pre_norm.detach().clone(),
+                prior_hidden=prior_h.detach().clone(),
+                fusion_hidden=fusion_h.detach().clone(),
+                attention_residual=(updated_h - fusion_h).detach().clone(),
+                evidence_update=new.any(-1, keepdim=True).detach().clone(),
+            )
+            diagnostics["network"] = network
         packed = self._pack(h, mean, covariance)
         out = self.decode_state(packed)
         out["hidden"] = packed
@@ -262,6 +348,8 @@ class StructuredEventModel(EventBeliefModel):
 
 
 def model_config_from_dict(values: dict) -> ModelConfig | StructuredConfig:
+    if "latent_state_norm" in values and "architecture" not in values:
+        raise ValueError("latent_state_norm is only configured for structured architectures")
     return StructuredConfig(**values) if "architecture" in values else ModelConfig(**values)
 
 

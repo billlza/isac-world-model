@@ -1,5 +1,25 @@
 # ISAC World Model — v0.4.1 release engineering
 
+## Large-model optimization and trajectory error replay
+
+Phase C completed six Hamilton cells (job 19404810). At equal data and update
+budgets, mean best validation position RMSE was 0.331078 m for A512, 0.437621 m
+for A1024 and 0.443610 m for A2048. All four paired larger-width best-checkpoint
+contrasts were worse under that recipe. The 59.56M-parameter A2048 remains in
+the next registered experiment alongside an A512 reference.
+
+Phase D compares the original A2048 optimizer with half the learning rate for
+width-dependent modules while preserving the visual/RF encoder learning rate,
+initial weights, observation cadence and selection budget. It first replays
+retained Phase C checkpoints, then records both selected and final model errors
+per trajectory and tick, including P95/P99, maxima, fixed exceedance bins and
+matched streaming/batched execution. No fresh test is consumed.
+
+See [the Phase D protocol and Hamilton submission guide](docs/WIDTH_OPTIMIZATION_STUDY.zh-CN.md)
+and [the completed Phase C design](docs/NORMALIZED_CAPACITY_STUDY.zh-CN.md).
+Phase D is an implemented experiment awaiting formal results; its descriptive
+error thresholds are not validated physical operating limits.
+
 ## Active observation loop and MATLAB replay
 
 `scripts/active_observation_study.py` executes candidate-view predictions, moves a
