@@ -77,8 +77,8 @@ jobs:
           if-no-files-found: error
           retention-days: 14
   vision-development:
-    name: Visual learning / Hamilton PyTorch 2.9 CPU compatibility
-    if: github.head_ref == 'research/vision-supervision-h200' || github.ref == 'refs/heads/research/vision-supervision-h200'
+    name: Visual learning and recurrent state / Hamilton PyTorch 2.9 CPU compatibility
+    if: github.head_ref == 'research/vision-supervision-h200' || github.ref == 'refs/heads/research/vision-supervision-h200' || github.head_ref == 'research/recurrent-state-stability' || github.ref == 'refs/heads/research/recurrent-state-stability'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -108,6 +108,7 @@ jobs:
           .vision-runtime/bin/python -m unittest discover -s tests -p 'test_vision_learning*.py' -v
           .vision-runtime/bin/python -m unittest discover -s tests -p 'test_training_runtime_profile.py' -v
       - name: Train all eight controlled development cells
+        if: github.head_ref == 'research/vision-supervision-h200' || github.ref == 'refs/heads/research/vision-supervision-h200'
         run: |
           export PYTHONPATH="$PWD/src"
           .vision-runtime/bin/python scripts/vision_learning_study.py --out validation/vision-development --device cpu --profile smoke
@@ -123,17 +124,92 @@ jobs:
           print('VISION_SMOKE', json.dumps(r['summary']['contrasts']))
           PYTHON
       - name: Exercise the separate A96 and A512 runtime profiler
+        if: github.head_ref == 'research/vision-supervision-h200' || github.ref == 'refs/heads/research/vision-supervision-h200'
         run: |
           export PYTHONPATH="$PWD/src"
           .vision-runtime/bin/python scripts/profile_training_runtime.py --device cpu --warmup-updates 1 --measured-updates 1 --profile-updates 1 --batch-size 1 --threads 1 --out validation/runtime-profile-development
+      - name: Verify recurrent transitions, checkpoint compatibility and study contracts
+        if: github.head_ref == 'research/recurrent-state-stability' || github.ref == 'refs/heads/research/recurrent-state-stability'
+        run: |
+          export PYTHONPATH="$PWD/src"
+          test -f tests/test_latent_state_norm.py
+          test -f tests/test_recurrent_state_study.py
+          test -f tests/test_recurrent_state_jobs.py
+          .vision-runtime/bin/python -m unittest discover -s tests -p 'test_latent_state_norm.py' -v
+          .vision-runtime/bin/python -m unittest discover -s tests -p 'test_recurrent_state*.py' -v
+      - name: Train all four matched recurrent-state development cells
+        if: github.head_ref == 'research/recurrent-state-stability' || github.ref == 'refs/heads/research/recurrent-state-stability'
+        run: |
+          export PYTHONPATH="$PWD/src"
+          .vision-runtime/bin/python scripts/recurrent_state_study.py --out validation/recurrent-state-development --device cpu --profile development
+          .vision-runtime/bin/python - <<'PYTHON'
+          import hashlib
+          import json
+          from pathlib import Path
+          from isac_wm.training import load_model
+          root = Path('validation/recurrent-state-development')
+          r = json.loads((root / 'study.json').read_text())
+          expected = {f'a512-norm-{norm}-init-{seed}': (norm, seed)
+                      for norm in ('none', 'layernorm') for seed in (7, 11)}
+          assert r['status'] == 'completed' and set(r['cells']) == set(expected)
+          assert r['design']['phase'] == 'B' and r['profile'] == 'development'
+          assert r['fresh_test_consumed'] is False and r['test_episode_seeds'] == []
+          assert r['design']['optimizer_updates'] == 8
+          assert r['design']['latent_state_norms'] == ['none', 'layernorm']
+          assert r['design']['training_episodes'] == 16 and r['design']['batch_size'] == 8
+          assert r['design']['validation_episodes'] == 8
+          assert r['design']['train_seed_base'] == 89110000 and r['design']['validation_seed_base'] == 89120000
+          assert r['design']['diagnostic_updates'] == [0, 1, 2, 4, 6, 8]
+          assert {c['parameters'] for c in r['cells'].values()} == {3883798}
+          assert {c['visual_encoder_parameters'] for c in r['cells'].values()} == {1230}
+          starts, visual_starts, counts = {}, {}, []
+          for name, (norm, seed) in expected.items():
+              c = r['cells'][name]
+              folder = root / 'cells' / name
+              m = json.loads((folder / 'manifest.json').read_text())
+              assert c['status'] == 'completed'
+              assert c['checkpoint_metadata_validated'] is True
+              assert c['latent_state_norm'] == norm and c['initialization'] == seed
+              assert m['seed'] == seed
+              assert m['model'].get('latent_state_norm', 'none') == norm
+              assert m['learning_rate'] == 0.0003 and m['vision_loss_weight'] == 1.0
+              assert m['optimizer_updates'] == 8 and m['validation_updates'] == [2, 4, 6, 8]
+              assert m['validation_opportunities'] == 4
+              assert m['train_episode_seeds'] == list(range(89110000, 89110016))
+              assert m['validation_episode_seeds'] == list(range(89120000, 89120008))
+              assert m['resume_source'] is None
+              assert starts.setdefault(seed, m['initial_parameters_sha256']) == m['initial_parameters_sha256']
+              assert visual_starts.setdefault(seed, m['initial_visual_parameters_sha256']) == m['initial_visual_parameters_sha256']
+              counts.append(m['event_counts_seen'])
+              checkpoint = folder / 'model.pt'
+              digest = hashlib.sha256(checkpoint.read_bytes()).hexdigest()
+              assert digest == c['checkpoint_sha256'] == checkpoint.with_suffix('.pt.sha256').read_text().strip()
+              model, _, device = load_model(checkpoint, 'cpu')
+              assert model.config.to_dict().get('latent_state_norm', 'none') == norm
+              assert sum(p.numel() for p in model.parameters()) == 3883798
+              assert device.type == 'cpu'
+          assert starts[7] != starts[11] and visual_starts[7] != visual_starts[11]
+          assert all(v == counts[0] for v in counts)
+          print('RECURRENT_STATE_DEVELOPMENT', json.dumps(r['summary']['contrasts']))
+          print('CPU development execution verified; formal CUDA training remains a Hamilton experiment.')
+          PYTHON
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        if: always()
+        if: always() && (github.head_ref == 'research/vision-supervision-h200' || github.ref == 'refs/heads/research/vision-supervision-h200')
         with:
           name: vision-learning-pytorch-2.9-cpu
           path: |
             validation/vision-development/**/*.json
             validation/runtime-profile-development/**/*.json
           if-no-files-found: warn
+          retention-days: 14
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always() && (github.head_ref == 'research/recurrent-state-stability' || github.ref == 'refs/heads/research/recurrent-state-stability')
+        with:
+          name: recurrent-state-pytorch-2.9-cpu
+          path: |
+            validation/recurrent-state-development/**/*.json
+            validation/recurrent-state-development/**/*.sha256
+          if-no-files-found: error
           retention-days: 14
   ncc-development:
     name: NCC A512 / Python 3.12.3 PyTorch 2.9 CPU compatibility
@@ -321,7 +397,7 @@ jobs:
           REPRODUCIBILITY_RESULT: ${{ needs.reproducibility.result }}
           VIEWER_RESULT: ${{ needs.viewer.result }}
           VISION_RESULT: ${{ needs.vision-development.result }}
-          VISION_REQUIRED: ${{ github.head_ref == 'research/vision-supervision-h200' || github.ref == 'refs/heads/research/vision-supervision-h200' }}
+          VISION_REQUIRED: ${{ github.head_ref == 'research/vision-supervision-h200' || github.ref == 'refs/heads/research/vision-supervision-h200' || github.head_ref == 'research/recurrent-state-stability' || github.ref == 'refs/heads/research/recurrent-state-stability' }}
           NCC_RESULT: ${{ needs.ncc-development.result }}
           NCC_REQUIRED: ${{ github.head_ref == 'research/ncc-mig-pilot' || github.ref == 'refs/heads/research/ncc-mig-pilot' }}
         run: |

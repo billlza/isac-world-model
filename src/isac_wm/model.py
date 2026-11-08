@@ -47,6 +47,8 @@ class EventBeliefModel(nn.Module):
     def __init__(self, config: ModelConfig | None = None):
         super().__init__()
         self.config = config or ModelConfig()
+        if getattr(self.config, "latent_state_norm", "none") != "none":
+            raise ValueError("Latent state normalization requires a StructuredEventModel")
         f, h = self.config.feature_dim, self.config.hidden_dim
         self.visual = nn.Sequential(
             nn.Conv2d(3, 8, 3, stride=2, padding=1),
