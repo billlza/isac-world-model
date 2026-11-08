@@ -1,17 +1,24 @@
 # ISAC World Model — v0.4.1 release engineering
 
-## Normalized world-model capacity study
+## Large-model optimization and trajectory error replay
 
-Phase B completed four paired Hamilton runs. With the same 3,883,798 parameters,
-full recurrent-state LayerNorm reduced the final validation position RMSE from
-0.341885 to 0.259641 m for initialization 7 and from 0.411931 to 0.272337 m for
-initialization 11. The next registered study retrains six fresh cells at hidden
-widths 512, 1024 and 2048 (3.88M, 15.10M and 59.56M parameters), keeping the
-visual encoder, learning recipe, data exposure and validation budget fixed.
+Phase C completed six Hamilton cells (job 19404810). At equal data and update
+budgets, mean best validation position RMSE was 0.331078 m for A512, 0.437621 m
+for A1024 and 0.443610 m for A2048. All four paired larger-width best-checkpoint
+contrasts were worse under that recipe. The 59.56M-parameter A2048 remains in
+the next registered experiment alongside an A512 reference.
 
-See [the Phase C protocol, evidence scope and Hamilton submission guide](docs/NORMALIZED_CAPACITY_STUDY.zh-CN.md).
-The formal Phase C results are pending; CPU development execution checks the
-training, checkpoint and evidence pipeline.
+Phase D compares the original A2048 optimizer with half the learning rate for
+width-dependent modules while preserving the visual/RF encoder learning rate,
+initial weights, observation cadence and selection budget. It first replays
+retained Phase C checkpoints, then records both selected and final model errors
+per trajectory and tick, including P95/P99, maxima, fixed exceedance bins and
+matched streaming/batched execution. No fresh test is consumed.
+
+See [the Phase D protocol and Hamilton submission guide](docs/WIDTH_OPTIMIZATION_STUDY.zh-CN.md)
+and [the completed Phase C design](docs/NORMALIZED_CAPACITY_STUDY.zh-CN.md).
+Phase D is an implemented experiment awaiting formal results; its descriptive
+error thresholds are not validated physical operating limits.
 
 ## Active observation loop and MATLAB replay
 
