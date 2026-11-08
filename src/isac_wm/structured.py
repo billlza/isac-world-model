@@ -15,6 +15,8 @@ from torch import Tensor, nn
 from .model import EventBeliefModel, ModelConfig, radio_from_state
 from .validation import finite, integer
 
+LATENT_STATE_NORM_EPS = 1e-5
+
 
 @dataclass(frozen=True)
 class StructuredConfig:
@@ -24,6 +26,7 @@ class StructuredConfig:
     memory_size: int = 16
     heads: int = 4
     room_m: float = 10.0
+    latent_state_norm: str = "none"
 
     def __post_init__(self) -> None:
         ModelConfig(self.feature_dim, self.hidden_dim)
@@ -34,9 +37,18 @@ class StructuredConfig:
             raise ValueError("Unknown structured architecture")
         if self.hidden_dim % self.heads:
             raise ValueError("hidden_dim must be divisible by heads")
+        if not isinstance(self.latent_state_norm, str) or self.latent_state_norm not in {"none", "layernorm"}:
+            raise ValueError("latent_state_norm must be 'none' or 'layernorm'")
+        if self.latent_state_norm != "none" and self.architecture != "structured-attention":
+            raise ValueError("Latent state normalization requires structured-attention")
 
     def to_dict(self) -> dict:
-        return asdict(self)
+        values = asdict(self)
+        # Preserve the historical checkpoint/config representation of the control.
+        # Missing fields in older checkpoints therefore continue to mean "none".
+        if self.latent_state_norm == "none":
+            values.pop("latent_state_norm")
+        return values
 
 
 class SpatialEncoder(nn.Module):
@@ -99,6 +111,13 @@ class StructuredEventModel(EventBeliefModel):
             self.feedforward = nn.Sequential(
                 nn.LayerNorm(h), nn.Linear(h, 2 * h), nn.SiLU(), nn.Linear(2 * h, h)
             )
+        # This parameter-free boundary neither consumes RNG nor changes state_dict
+        # keys. The control skips the operation entirely, retaining its exact path.
+        self.latent_state_norm = (
+            nn.LayerNorm(h, eps=LATENT_STATE_NORM_EPS, elementwise_affine=False)
+            if config.latent_state_norm == "layernorm"
+            else None
+        )
 
     def initial(self, batch_size: int, device: torch.device | str) -> tuple[Tensor, ...]:
         integer(batch_size, "batch_size", 1)
@@ -217,6 +236,8 @@ class StructuredEventModel(EventBeliefModel):
         }
 
     def forecast(self, packed: Tensor, horizon: float | Tensor) -> dict[str, Tensor]:
+        # Forecast only the physical state: h is the already-normalized recurrent
+        # state from step(), with no additional latent transition or normalization.
         h, mean, covariance = self._unpack(packed)
         if isinstance(horizon, (int, float)):
             finite(horizon, "horizon")
@@ -276,6 +297,9 @@ class StructuredEventModel(EventBeliefModel):
                 updated_h, encodings, new, age, clock, tokens, stamps, used
             )
         h = torch.where(new.any(-1, keepdim=True), updated_h, prior_h)
+        hidden_pre_norm = h
+        if self.latent_state_norm is not None:
+            h = self.latent_state_norm(h)
         network = None if diagnostics is None else {}
         mean, covariance = self._predict(h, mean, covariance, dt, diagnostics=network)
         noise = self.noise(h)
@@ -310,6 +334,7 @@ class StructuredEventModel(EventBeliefModel):
             diagnostics["schema_version"] = 1
             network.update(
                 hidden=h.detach().clone(),
+                hidden_pre_norm=hidden_pre_norm.detach().clone(),
                 prior_hidden=prior_h.detach().clone(),
                 fusion_hidden=fusion_h.detach().clone(),
                 attention_residual=(updated_h - fusion_h).detach().clone(),
@@ -323,6 +348,8 @@ class StructuredEventModel(EventBeliefModel):
 
 
 def model_config_from_dict(values: dict) -> ModelConfig | StructuredConfig:
+    if "latent_state_norm" in values and "architecture" not in values:
+        raise ValueError("latent_state_norm is only configured for structured architectures")
     return StructuredConfig(**values) if "architecture" in values else ModelConfig(**values)
 
 

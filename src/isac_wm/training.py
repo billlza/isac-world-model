@@ -273,7 +273,15 @@ def train(
         }
         if saved.get("seed_plan") != explicit.get("seed_plan"):
             raise ValueError("Resume seed plan does not match saved run")
-        if any(saved.get(k) != v for k, v in expected.items()):
+        # Optional defaults omitted by old checkpoints and explicitly serialized
+        # defaults describe the same model. Parse first so unknown fields/modes
+        # cannot disappear during the comparison.
+        try:
+            saved_model_config = model_config_from_dict(saved["model_config"]).to_dict()
+        except (KeyError, TypeError, ValueError) as error:
+            raise ValueError("Resume model configuration is invalid") from error
+        comparison = saved | {"model_config": saved_model_config}
+        if any(comparison.get(k) != v for k, v in expected.items()):
             raise ValueError("Resume configuration does not match saved run")
         if (
             saved.get("validation_episodes", max(8, episodes // 8)) != n_val

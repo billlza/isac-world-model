@@ -187,6 +187,7 @@ def validation_snapshot(model, batch, *, room_m, dt, vision_loss_weight) -> dict
             weighted_vision_loss=float((vision_loss_weight * visual_mse).item()),
         )
         net = {key: torch.cat(values, 0) for key, values in network.items()}
+        hidden_post_norm_rms = _rms(net["hidden"])
         evidence = net["evidence_update"][:, 0].bool()
         residual, fusion = net["attention_residual"][evidence], net["fusion_hidden"][evidence]
         residual_rms, fusion_rms = _rms(residual), _rms(fusion)
@@ -226,7 +227,10 @@ def validation_snapshot(model, batch, *, room_m, dt, vision_loss_weight) -> dict
             "losses": losses,
             "corrections": correction_summary,
             "network": {
-                "hidden_rms": _rms(net["hidden"]),
+                "hidden_rms": hidden_post_norm_rms,
+                "hidden_pre_norm_rms": _rms(net["hidden_pre_norm"]),
+                "hidden_post_norm_rms": hidden_post_norm_rms,
+                "hidden_scope": "post-normalization latent used by readouts and stored in recurrent memory",
                 "prior_hidden_rms": _rms(net["prior_hidden"]),
                 "fusion_hidden_rms_on_evidence": fusion_rms,
                 "attention_residual_rms": residual_rms,
