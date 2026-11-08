@@ -77,8 +77,8 @@ jobs:
           if-no-files-found: error
           retention-days: 14
   vision-development:
-    name: Visual learning, state and capacity / Hamilton PyTorch 2.9 CPU compatibility
-    if: github.head_ref == 'research/vision-supervision-h200' || github.ref == 'refs/heads/research/vision-supervision-h200' || github.head_ref == 'research/recurrent-state-stability' || github.ref == 'refs/heads/research/recurrent-state-stability' || github.head_ref == 'research/normalized-capacity-h200' || github.ref == 'refs/heads/research/normalized-capacity-h200'
+    name: World model studies / Hamilton PyTorch 2.9 CPU compatibility
+    if: github.head_ref == 'research/vision-supervision-h200' || github.ref == 'refs/heads/research/vision-supervision-h200' || github.head_ref == 'research/recurrent-state-stability' || github.ref == 'refs/heads/research/recurrent-state-stability' || github.head_ref == 'research/normalized-capacity-h200' || github.ref == 'refs/heads/research/normalized-capacity-h200' || github.head_ref == 'research/width-optimization-h200' || github.ref == 'refs/heads/research/width-optimization-h200'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -262,6 +262,69 @@ jobs:
           print('NORMALIZED_CAPACITY_DEVELOPMENT', json.dumps(r['summary']['contrasts']))
           print('Actual six-cell CPU training, wide resume persistence and reload verified.')
           PYTHON
+      - name: Verify optimizer compatibility, checkpoint replay and Phase D contracts
+        if: github.head_ref == 'research/width-optimization-h200' || github.ref == 'refs/heads/research/width-optimization-h200'
+        run: |
+          export PYTHONPATH="$PWD/src"
+          .vision-runtime/bin/python -m pytest tests/test_optimizer_policy.py tests/test_checkpoint_replay.py tests/test_width_optimization_study.py tests/test_width_optimization_job_contract.py tests/test_resume_artifact_budget.py tests/test_latent_state_norm.py -q
+      - name: Train and replay all six actual optimization development cells
+        if: github.head_ref == 'research/width-optimization-h200' || github.ref == 'refs/heads/research/width-optimization-h200'
+        run: |
+          export PYTHONPATH="$PWD/src"
+          .vision-runtime/bin/python scripts/width_optimization_study.py --out validation/width-optimization-development --device cpu --profile development
+          .vision-runtime/bin/python - <<'PYTHON'
+          import hashlib
+          import json
+          import sys
+          from pathlib import Path
+          sys.path.insert(0, 'scripts')
+          from width_optimization_study import cells, cell_name, design, summarize, summarize_replays
+          from isac_wm.checkpoint_replay import validate_replay_report
+          root = Path('validation/width-optimization-development')
+          r = json.loads((root / 'study.json').read_text())
+          spec = design('development')
+          assert r['status'] == 'completed' and r['design'] == spec
+          assert r['fresh_test_consumed'] is False and r['deployment_validated'] is False
+          assert r['test_episode_seeds'] == [] and r['historical_replay']['status'] == 'not_applicable'
+          assert r['summary'] == summarize(r['cells'], spec)
+          replays, starts = {}, {}
+          for width, scale, seed in cells(spec):
+              name = cell_name(width, scale, seed)
+              row = r['cells'][name]
+              folder = root / 'cells' / name
+              m = json.loads((folder / 'manifest.json').read_text())
+              assert row['status'] == 'completed' and m['width_lr_scale'] == scale
+              assert row['final_checkpoint_weights_validated'] is True
+              assert starts.setdefault((width, seed), m['initial_parameters_sha256']) == m['initial_parameters_sha256']
+              assert m['optimizer_updates'] == 4 and m['validation_updates'] == [1, 2, 3, 4]
+              assert m['train_episode_seeds'] == list(range(89150000, 89150008))
+              assert m['validation_episode_seeds'] == list(range(89160000, 89160008))
+              replays[name] = {}
+              for kind in ('best', 'final'):
+                  path = root / row['replays'][kind]['path']
+                  raw = path.read_bytes()
+                  assert hashlib.sha256(raw).hexdigest() == row['replays'][kind]['sha256']
+                  replay = json.loads(raw)
+                  checksum = row['checkpoint_sha256' if kind == 'best' else 'resume_checkpoint_sha256']
+                  validate_replay_report(replay, m, kind=kind, device_name='cpu', profile='development',
+                                        source_commit=r['git_commit'], expected_checkpoint_sha256=checksum,
+                                        expected_manifest_sha256=row['manifest_sha256'])
+                  assert replay['weights_update'] == (m['best_update'] if kind == 'best' else 4)
+                  replays[name][kind] = replay
+          assert len(set(starts.values())) == 4
+          assert r['replay_summary'] == summarize_replays(r['cells'], replays, spec)
+          print('WIDTH_OPTIMIZATION_DEVELOPMENT', json.dumps(r['summary']['contrasts']))
+          print('Six actual-width CPU training cells and selected/final validation replays verified.')
+          PYTHON
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always() && (github.head_ref == 'research/width-optimization-h200' || github.ref == 'refs/heads/research/width-optimization-h200')
+        with:
+          name: width-optimization-pytorch-2.9-cpu
+          path: |
+            validation/width-optimization-development/**/*.json
+            validation/width-optimization-development/**/*.sha256
+          if-no-files-found: error
+          retention-days: 14
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always() && (github.head_ref == 'research/normalized-capacity-h200' || github.ref == 'refs/heads/research/normalized-capacity-h200')
         with:
@@ -475,7 +538,7 @@ jobs:
           REPRODUCIBILITY_RESULT: ${{ needs.reproducibility.result }}
           VIEWER_RESULT: ${{ needs.viewer.result }}
           VISION_RESULT: ${{ needs.vision-development.result }}
-          VISION_REQUIRED: ${{ github.head_ref == 'research/vision-supervision-h200' || github.ref == 'refs/heads/research/vision-supervision-h200' || github.head_ref == 'research/recurrent-state-stability' || github.ref == 'refs/heads/research/recurrent-state-stability' || github.head_ref == 'research/normalized-capacity-h200' || github.ref == 'refs/heads/research/normalized-capacity-h200' }}
+          VISION_REQUIRED: ${{ github.head_ref == 'research/vision-supervision-h200' || github.ref == 'refs/heads/research/vision-supervision-h200' || github.head_ref == 'research/recurrent-state-stability' || github.ref == 'refs/heads/research/recurrent-state-stability' || github.head_ref == 'research/normalized-capacity-h200' || github.ref == 'refs/heads/research/normalized-capacity-h200' || github.head_ref == 'research/width-optimization-h200' || github.ref == 'refs/heads/research/width-optimization-h200' }}
           NCC_RESULT: ${{ needs.ncc-development.result }}
           NCC_REQUIRED: ${{ github.head_ref == 'research/ncc-mig-pilot' || github.ref == 'refs/heads/research/ncc-mig-pilot' }}
         run: |

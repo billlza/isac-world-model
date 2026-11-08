@@ -19,6 +19,12 @@ from .artifacts import (
     write_json,
 )
 from .model import EventBeliefModel, ModelConfig, training_loss
+from .optimizer_policy import (
+    make_optimizer,
+    restore_optimizer,
+    validate_checkpoint_optimizer_policy,
+    validate_width_lr_scale,
+)
 from .simulator import SceneConfig, recorded_episode
 from .structured import StructuredConfig, build_model, model_config_from_dict
 from .validation import finite, integer
@@ -112,6 +118,7 @@ def train(
     *,
     resume: Path | None = None,
     learning_rate: float = 1e-3,
+    width_lr_scale: float = 1.0,
     patience: int = 0,
     max_dataset_bytes: int = 4 * 1024**3,
     train_seed_base: int | None = None,
@@ -130,6 +137,8 @@ def train(
     run may therefore have a resume checkpoint before any model is selected;
     its manifest explicitly records ``no_validation_yet`` and a null best score.
     Fixed-update studies disable early stopping so every cell gets its full budget.
+    ``width_lr_scale`` changes only width-dependent structured-model optimizer
+    groups; 1.0 retains the historical single-group AdamW computation.
     """
     integer(epochs, "epochs", 1, 100_000)
     integer(episodes, "episodes", 1, 100_000)
@@ -137,6 +146,9 @@ def train(
     integer(seed, "seed", 0, 99)
     integer(patience, "patience", 0, 100_000)
     finite(learning_rate, "learning_rate", positive=True)
+    width_lr_scale = validate_width_lr_scale(width_lr_scale)
+    if width_lr_scale != 1 and not isinstance(model_config, StructuredConfig):
+        raise ValueError("Width-scaled optimization requires a structured model configuration")
     vision_loss_weight = finite(vision_loss_weight, "vision_loss_weight")
     diagnostic_updates = validate_schedule(diagnostic_updates)
     if (vision_loss_weight or diagnostic_updates is not None) and not isinstance(
@@ -205,7 +217,7 @@ def train(
         raise ValueError("Structured model geometry must match scene room_m")
     model = build_model(model_config).to(device)
     observed_protocol = diagnostic_protocol(diagnostic_updates, val_seeds, scene.steps)
-    optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=1e-4)
+    optimizer, optimizer_policy = make_optimizer(model, learning_rate, width_lr_scale)
     rng = np.random.default_rng(order_seed)
     manifest = {
         **explicit,
@@ -238,6 +250,8 @@ def train(
         "visual_encoder_parameters": sum(p.numel() for p in model.visual.parameters()),
         "initial_visual_parameters_sha256": model_fingerprint(model.visual),
         "diagnostic_protocol": observed_protocol,
+        "width_lr_scale": width_lr_scale,
+        "optimizer_policy": optimizer_policy,
     }
     if custom_seeds:
         manifest["initial_parameters_sha256"] = model_fingerprint(model)
@@ -305,7 +319,8 @@ def train(
         if saved.get("diagnostic_protocol") != observed_protocol:
             raise ValueError("Resume diagnostic protocol does not match saved run")
         model.load_state_dict(saved["state_dict"], strict=True)
-        optimizer.load_state_dict(saved["optimizer"])
+        legacy_optimizer = restore_optimizer(optimizer, model, saved, optimizer_policy)
+        manifest["optimizer_restored_from_legacy_single_group"] = legacy_optimizer
         rng.bit_generator.state = json.loads(saved["numpy_rng_json"])
         torch.set_rng_state(saved["torch_rng"])
         if device.type == "cuda" and "torch_cuda_rng" in saved:
@@ -362,6 +377,17 @@ def train(
         stale = saved.get("stale_epochs", 0)
         # Preserve the true best checkpoint even if continuation never improves.
         if saved["best_checkpoint"] is not None:
+            legacy_best = validate_checkpoint_optimizer_policy(
+                saved["best_checkpoint"], optimizer_policy, allow_legacy=legacy_optimizer
+            )
+            if legacy_best:
+                # The old single-group state was validated above. Preserve its
+                # selected weights while making the inferred policy explicit.
+                saved["best_checkpoint"] = saved["best_checkpoint"] | {
+                    "width_lr_scale": width_lr_scale,
+                    "optimizer_policy": optimizer_policy,
+                    "optimizer_policy_origin": "validated_legacy_single_group_resume",
+                }
             save_checkpoint(outdir / "model.pt", saved["best_checkpoint"])
         elif history:
             raise ValueError("Resume has validation history but no selected checkpoint")
@@ -502,6 +528,8 @@ def train(
                         "vision_supervision_protocol": dict(VISION_SUPERVISION_PROTOCOL),
                         "initial_visual_parameters_sha256": manifest["initial_visual_parameters_sha256"],
                         "diagnostic_protocol": observed_protocol,
+                        "width_lr_scale": width_lr_scale,
+                        "optimizer_policy": optimizer_policy,
                     }
                     save_checkpoint(outdir / "model.pt", best_checkpoint)
                 else:
@@ -540,6 +568,8 @@ def train(
                 "validation_episodes": n_val,
                 "validation_every_updates": validation_every_updates,
                 "learning_rate": learning_rate,
+                "width_lr_scale": width_lr_scale,
+                "optimizer_policy": optimizer_policy,
                 "scene_config": scene.to_dict(),
                 "model_config": model.config.to_dict(),
                 "vision_loss_weight": vision_loss_weight,
