@@ -10,7 +10,14 @@ from pathlib import Path
 import numpy as np
 import torch
 
-from .artifacts import model_fingerprint, read_checkpoint, save_checkpoint, write_json
+from .artifacts import (
+    model_fingerprint,
+    read_checkpoint,
+    read_resume_checkpoint,
+    save_checkpoint,
+    save_resume_checkpoint,
+    write_json,
+)
 from .model import EventBeliefModel, ModelConfig, training_loss
 from .simulator import SceneConfig, recorded_episode
 from .structured import StructuredConfig, build_model, model_config_from_dict
@@ -262,7 +269,7 @@ def train(
     optimizer_updates = 0
     pending_loss_sum, pending_loss_count = 0.0, 0
     if resume is not None:
-        saved = read_checkpoint(resume)
+        saved = read_resume_checkpoint(resume)
         expected = {
             "seed": seed,
             "episodes": episodes,
@@ -508,7 +515,7 @@ def train(
                 "train_loss": float(np.mean(losses)),
             }
         )
-        save_checkpoint(
+        save_resume_checkpoint(
             outdir / "resume.pt",
             {
                 **explicit,

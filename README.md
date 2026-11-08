@@ -1,5 +1,18 @@
 # ISAC World Model — v0.4.1 release engineering
 
+## Normalized world-model capacity study
+
+Phase B completed four paired Hamilton runs. With the same 3,883,798 parameters,
+full recurrent-state LayerNorm reduced the final validation position RMSE from
+0.341885 to 0.259641 m for initialization 7 and from 0.411931 to 0.272337 m for
+initialization 11. The next registered study retrains six fresh cells at hidden
+widths 512, 1024 and 2048 (3.88M, 15.10M and 59.56M parameters), keeping the
+visual encoder, learning recipe, data exposure and validation budget fixed.
+
+See [the Phase C protocol, evidence scope and Hamilton submission guide](docs/NORMALIZED_CAPACITY_STUDY.zh-CN.md).
+The formal Phase C results are pending; CPU development execution checks the
+training, checkpoint and evidence pipeline.
+
 ## Active observation loop and MATLAB replay
 
 `scripts/active_observation_study.py` executes candidate-view predictions, moves a

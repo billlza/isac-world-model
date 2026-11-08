@@ -77,10 +77,10 @@ jobs:
           if-no-files-found: error
           retention-days: 14
   vision-development:
-    name: Visual learning and recurrent state / Hamilton PyTorch 2.9 CPU compatibility
-    if: github.head_ref == 'research/vision-supervision-h200' || github.ref == 'refs/heads/research/vision-supervision-h200' || github.head_ref == 'research/recurrent-state-stability' || github.ref == 'refs/heads/research/recurrent-state-stability'
+    name: Visual learning, state and capacity / Hamilton PyTorch 2.9 CPU compatibility
+    if: github.head_ref == 'research/vision-supervision-h200' || github.ref == 'refs/heads/research/vision-supervision-h200' || github.head_ref == 'research/recurrent-state-stability' || github.ref == 'refs/heads/research/recurrent-state-stability' || github.head_ref == 'research/normalized-capacity-h200' || github.ref == 'refs/heads/research/normalized-capacity-h200'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: {persist-credentials: false}
@@ -193,6 +193,84 @@ jobs:
           print('RECURRENT_STATE_DEVELOPMENT', json.dumps(r['summary']['contrasts']))
           print('CPU development execution verified; formal CUDA training remains a Hamilton experiment.')
           PYTHON
+      - name: Verify normalized capacity, recurrent state and checkpoint bounds
+        if: github.head_ref == 'research/normalized-capacity-h200' || github.ref == 'refs/heads/research/normalized-capacity-h200'
+        run: |
+          export PYTHONPATH="$PWD/src"
+          .vision-runtime/bin/python -m pytest tests/test_latent_state_norm.py tests/test_resume_artifact_budget.py -q
+          .vision-runtime/bin/python -m unittest discover -s tests -p 'test_recurrent_state*.py' -v
+          .vision-runtime/bin/python -m unittest discover -s tests -p 'test_normalized_capacity*.py' -v
+      - name: Train and reload all six actual capacity development cells
+        if: github.head_ref == 'research/normalized-capacity-h200' || github.ref == 'refs/heads/research/normalized-capacity-h200'
+        run: |
+          export PYTHONPATH="$PWD/src"
+          .vision-runtime/bin/python scripts/normalized_capacity_study.py --out validation/normalized-capacity-development --device cpu --profile development
+          .vision-runtime/bin/python - <<'PYTHON'
+          import hashlib
+          import json
+          from pathlib import Path
+          from isac_wm.artifacts import read_resume_checkpoint
+          from isac_wm.training import load_model
+          root = Path('validation/normalized-capacity-development')
+          r = json.loads((root / 'study.json').read_text())
+          counts = {512: 3883798, 1024: 15103766, 2048: 59563798}
+          expected = {f'a{width}-layernorm-init-{seed}': (width, seed)
+                      for width in counts for seed in (7, 11)}
+          assert r['status'] == 'completed' and set(r['cells']) == set(expected)
+          assert r['design']['phase'] == 'C' and r['profile'] == 'development'
+          assert r['fresh_test_consumed'] is False and r['test_episode_seeds'] == []
+          assert r['design']['optimizer_updates'] == 4
+          assert r['design']['training_episodes'] == r['design']['batch_size'] == 8
+          assert r['design']['validation_episodes'] == 8
+          assert r['design']['train_seed_base'] == 89130000 and r['design']['validation_seed_base'] == 89140000
+          assert r['design']['diagnostic_updates'] == [0, 1, 2, 3, 4]
+          starts, visual_starts, events = set(), {}, []
+          for name, (width, seed) in expected.items():
+              c = r['cells'][name]
+              folder = root / 'cells' / name
+              m = json.loads((folder / 'manifest.json').read_text())
+              assert c['status'] == 'completed'
+              assert c['checkpoint_metadata_validated'] is True and c['checkpoint_weights_validated'] is True
+              assert c['hidden_width'] == width and c['initialization'] == seed
+              assert c['numerical_settings'] == r['numerical_settings']
+              assert m['model']['hidden_dim'] == width and m['model']['latent_state_norm'] == 'layernorm'
+              assert m['parameters'] == c['parameters'] == counts[width]
+              assert m['visual_encoder_parameters'] == c['visual_encoder_parameters'] == 1230
+              assert m['seed'] == seed and m['learning_rate'] == 0.0003 and m['vision_loss_weight'] == 1.0
+              assert m['optimizer_updates'] == 4 and m['validation_updates'] == [1, 2, 3, 4]
+              assert m['validation_opportunities'] == 4 and m['completed_epochs'] == 4
+              assert m['train_episode_seeds'] == list(range(89130000, 89130008))
+              assert m['validation_episode_seeds'] == list(range(89140000, 89140008))
+              assert m['resume_source'] is None
+              assert m['initial_parameters_sha256'] not in starts
+              starts.add(m['initial_parameters_sha256'])
+              assert visual_starts.setdefault(seed, m['initial_visual_parameters_sha256']) == m['initial_visual_parameters_sha256']
+              events.append(m['event_counts_seen'])
+              checkpoint = folder / 'model.pt'
+              assert hashlib.sha256(checkpoint.read_bytes()).hexdigest() == c['checkpoint_sha256']
+              model, _, device = load_model(checkpoint, 'cpu')
+              assert model.config.hidden_dim == width and model.config.latent_state_norm == 'layernorm'
+              assert sum(p.numel() for p in model.parameters()) == counts[width] and device.type == 'cpu'
+              del model
+              if width == 2048:
+                  assert (folder / 'resume.pt').stat().st_size > 256 * 1024 * 1024
+                  resume = read_resume_checkpoint(folder / 'resume.pt')
+                  assert resume['model_config']['hidden_dim'] == width
+                  del resume
+          assert len(starts) == 6 and visual_starts[7] != visual_starts[11]
+          assert all(value == events[0] for value in events)
+          print('NORMALIZED_CAPACITY_DEVELOPMENT', json.dumps(r['summary']['contrasts']))
+          print('Actual six-cell CPU training, wide resume persistence and reload verified.')
+          PYTHON
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always() && (github.head_ref == 'research/normalized-capacity-h200' || github.ref == 'refs/heads/research/normalized-capacity-h200')
+        with:
+          name: normalized-capacity-pytorch-2.9-cpu
+          path: |
+            validation/normalized-capacity-development/**/*.json
+            validation/normalized-capacity-development/**/*.sha256
+          if-no-files-found: error
+          retention-days: 14
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always() && (github.head_ref == 'research/vision-supervision-h200' || github.ref == 'refs/heads/research/vision-supervision-h200')
         with:
@@ -397,7 +475,7 @@ jobs:
           REPRODUCIBILITY_RESULT: ${{ needs.reproducibility.result }}
           VIEWER_RESULT: ${{ needs.viewer.result }}
           VISION_RESULT: ${{ needs.vision-development.result }}
-          VISION_REQUIRED: ${{ github.head_ref == 'research/vision-supervision-h200' || github.ref == 'refs/heads/research/vision-supervision-h200' || github.head_ref == 'research/recurrent-state-stability' || github.ref == 'refs/heads/research/recurrent-state-stability' }}
+          VISION_REQUIRED: ${{ github.head_ref == 'research/vision-supervision-h200' || github.ref == 'refs/heads/research/vision-supervision-h200' || github.head_ref == 'research/recurrent-state-stability' || github.ref == 'refs/heads/research/recurrent-state-stability' || github.head_ref == 'research/normalized-capacity-h200' || github.ref == 'refs/heads/research/normalized-capacity-h200' }}
           NCC_RESULT: ${{ needs.ncc-development.result }}
           NCC_REQUIRED: ${{ github.head_ref == 'research/ncc-mig-pilot' || github.ref == 'refs/heads/research/ncc-mig-pilot' }}
         run: |
