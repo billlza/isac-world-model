@@ -42,3 +42,7 @@ history.bundle
 
 # Optional historical research checkpoints stay local, including their sidecars
 checkpoints/
+
+# Generated records for the isolated complex-pretraining checkout
+.pretrain-submission/
+slurm-*.out

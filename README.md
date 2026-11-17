@@ -1,5 +1,24 @@
 # ISAC World Model — v0.4.1 release engineering
 
+## Complex-scene pretraining from random initialization
+
+The new pretraining study brings maneuvering, occlusion, asynchronous delays,
+radio outliers/bias, sparse camera sampling and their combinations into training.
+It compares a nominal-data control, a mixed-data control, and a mixed-data model
+with a larger visual encoder, a wider acceleration range and a differentiable
+displacement objective. All three use the same held-out evaluation episodes.
+
+```bash
+bash scripts/env.sh python scripts/complex_scene_pretraining.py \
+  --out runs/complex-development --profile development --device cpu --threads 2
+```
+
+Selected, final and continuation weights are saved with checksums. The new
+Hamilton launcher pins the exact source revision and archives the weights too.
+See [the training protocol, recovery guide and scope](docs/COMPLEX_PRETRAINING.zh-CN.md).
+This stage trains the existing synthetic RGB/radio state model; language question
+answering requires an additional language-model path.
+
 ## Large-model optimization and trajectory error replay
 
 Phase C completed six Hamilton cells (job 19404810). At equal data and update

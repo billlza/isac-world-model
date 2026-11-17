@@ -1,0 +1,57 @@
+name: Complex-scene pretraining
+
+on:
+  push:
+    branches: [research/complex-scene-pretraining]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: complex-pretraining-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  development:
+    name: Hamilton-compatible CPU development study
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: {persist-credentials: false}
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with: {version: '0.13.5', enable-cache: true}
+      - name: Install the Hamilton Python and CPU-equivalent Torch versions
+        run: |
+          uv python install 3.13.9
+          uv venv --python 3.13.9 .venv
+          uv pip install --python .venv/bin/python --index-url https://download.pytorch.org/whl/cpu 'torch==2.9.0+cpu'
+          uv pip install --python .venv/bin/python numpy==2.3.4 pytest==9.1.1
+          .venv/bin/python - <<'PYTHON'
+          import sys
+          import numpy
+          import torch
+          assert sys.version_info[:3] == (3, 13, 9)
+          assert numpy.__version__ == '2.3.4' and torch.__version__ == '2.9.0+cpu'
+          PYTHON
+      - name: Verify model, data, objectives, recovery and submission contracts
+        env:
+          PYTHONPATH: src
+          OMP_NUM_THREADS: '2'
+        run: |
+          .venv/bin/python -m pytest tests/test_pretraining_architecture.py tests/test_pretraining_data.py tests/test_pretraining_objective.py tests/test_complex_pretraining.py tests/test_complex_pretraining_jobs.py tests/test_structured.py tests/test_latent_state_norm.py tests/test_optimizer_policy.py
+          bash -n scripts/hamilton_complex_pretraining.sh scripts/submit_complex_pretraining_from_mac.sh
+      - name: Pretrain the three controlled development cells from random initialization
+        env:
+          OMP_NUM_THREADS: '2'
+        run: |
+          .venv/bin/python scripts/complex_scene_pretraining.py --out runs/complex-development --profile development --device cpu --threads 2 --episodes 176 --epochs 12
+      - name: Retain model weights, continuation checkpoints and evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: complex-pretraining-${{ github.sha }}
+          path: runs/complex-development/
+          if-no-files-found: warn
+          retention-days: 30

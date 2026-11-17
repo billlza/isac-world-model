@@ -27,12 +27,21 @@ class StructuredConfig:
     heads: int = 4
     room_m: float = 10.0
     latent_state_norm: str = "none"
+    visual_channels: int = 16
+    visual_depth: int = 1
+    # Per-axis physical bound; the velocity state is normalized by 2 m/s.
+    max_acceleration_mps2: float = 0.5
 
     def __post_init__(self) -> None:
         ModelConfig(self.feature_dim, self.hidden_dim)
         integer(self.memory_size, "memory_size", 1, 256)
         integer(self.heads, "heads", 1, 16)
         finite(self.room_m, "room_m", positive=True)
+        integer(self.visual_channels, "visual_channels", 1, 256)
+        integer(self.visual_depth, "visual_depth", 1, 8)
+        finite(self.max_acceleration_mps2, "max_acceleration_mps2", positive=True)
+        if self.max_acceleration_mps2 > 100:
+            raise ValueError("max_acceleration_mps2 must be at most 100 m/s^2")
         if self.architecture not in {"structured", "structured-attention"}:
             raise ValueError("Unknown structured architecture")
         if self.hidden_dim % self.heads:
@@ -45,20 +54,36 @@ class StructuredConfig:
     def to_dict(self) -> dict:
         values = asdict(self)
         # Preserve the historical checkpoint/config representation of the control.
-        # Missing fields in older checkpoints therefore continue to mean "none".
+        # Missing fields in older checkpoints retain their original architecture
+        # and physical acceleration bound, without changing config fingerprints.
         if self.latent_state_norm == "none":
             values.pop("latent_state_norm")
+        for name, default in (
+            ("visual_channels", 16),
+            ("visual_depth", 1),
+            ("max_acceleration_mps2", 0.5),
+        ):
+            if values[name] == default:
+                values.pop(name)
         return values
 
 
 class SpatialEncoder(nn.Module):
     """Learn a spatial likelihood map without a pretrained detector or colour rule."""
 
-    def __init__(self, features: int):
+    def __init__(self, features: int, channels: int = 16, depth: int = 1):
         super().__init__()
-        self.trunk = nn.Sequential(nn.Conv2d(3, 16, 3, padding=1), nn.SiLU())
-        self.heat = nn.Conv2d(16, 1, 1)
-        self.context = nn.Linear(16, features - 3)
+        integer(channels, "visual_channels", 1, 256)
+        integer(depth, "visual_depth", 1, 8)
+        # Defaults preserve module names, construction order and RNG consumption.
+        # Spatial resolution stays fixed; no batch statistics mix future events
+        # into earlier encodings when training encodes a whole sequence at once.
+        layers = [nn.Conv2d(3, channels, 3, padding=1), nn.SiLU()]
+        for _ in range(depth - 1):
+            layers.extend([nn.Conv2d(channels, channels, 3, padding=1), nn.SiLU()])
+        self.trunk = nn.Sequential(*layers)
+        self.heat = nn.Conv2d(channels, 1, 1)
+        self.context = nn.Linear(channels, features - 3)
 
     def forward(self, image: Tensor) -> Tensor:
         feature = self.trunk(image)
@@ -92,7 +117,7 @@ class StructuredEventModel(EventBeliefModel):
         nn.Module.__init__(self)
         self.config = config
         f, h = config.feature_dim, config.hidden_dim
-        self.visual = SpatialEncoder(f)
+        self.visual = SpatialEncoder(f, config.visual_channels, config.visual_depth)
         self.radio_encoder = nn.Sequential(nn.Linear(4, f), nn.SiLU(), nn.Linear(f, f))
         self.fusion = nn.GRUCell(2 * f + 7, h)
         self.dynamics = nn.Sequential(nn.Linear(h, h), nn.Tanh(), nn.Linear(h, h), nn.Tanh())
@@ -147,7 +172,9 @@ class StructuredEventModel(EventBeliefModel):
     def _predict(self, h: Tensor, mean: Tensor, covariance: Tensor, dt: Tensor, *, diagnostics=None):
         ratio = 2 / self.config.room_m
         acceleration_logits = self.acceleration(h)
-        acc = 0.25 * acceleration_logits.tanh()
+        # Velocity is normalized by 2 m/s; per-axis acceleration uses that scale.
+        # The historical 0.5 m/s^2 bound therefore retains exactly 0.25 here.
+        acc = (self.config.max_acceleration_mps2 / 2) * acceleration_logits.tanh()
         position = mean[:, :2] + ratio * (dt * mean[:, 2:] + 0.5 * dt.square() * acc)
         velocity = mean[:, 2:] + dt * acc
         predicted = torch.cat([position, velocity], -1)
@@ -348,8 +375,10 @@ class StructuredEventModel(EventBeliefModel):
 
 
 def model_config_from_dict(values: dict) -> ModelConfig | StructuredConfig:
-    if "latent_state_norm" in values and "architecture" not in values:
-        raise ValueError("latent_state_norm is only configured for structured architectures")
+    if "architecture" not in values:
+        for field in ("latent_state_norm", "visual_channels", "visual_depth", "max_acceleration_mps2"):
+            if field in values:
+                raise ValueError(f"{field} is only configured for structured architectures")
     return StructuredConfig(**values) if "architecture" in values else ModelConfig(**values)
 
 
