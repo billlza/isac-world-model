@@ -16,15 +16,17 @@ bash scripts/env.sh python scripts/complex_scene_pretraining.py \
 Selected, final and continuation weights are saved with checksums. The new
 Hamilton launcher pins the exact source revision and archives the weights too.
 See [the training protocol, recovery guide and scope](docs/COMPLEX_PRETRAINING.zh-CN.md).
-This stage trains the existing synthetic RGB/radio state model; language question
-answering requires an additional language-model path.
+This stage trains the existing synthetic RGB/radio state model for complex-scene
+state estimation and multi-step physical prediction.
 
 The completed two-initialization development study measured a 12.10% reduction
 in two-second forecast macro RMSE for mixed-data training, with a 1.07% increase
 in current-position macro RMSE. Radio-outlier and combined-condition tracking
-improved by 21.34% and 16.79%. The enhanced architecture did not beat the
+improved by 21.34% and 16.79%. The combined enhanced configuration did not beat the
 mixed-data control under this budget. Full results and scope are in the protocol;
-the formal H200 run has not yet been submitted.
+the first formal H200 submission was rejected by the partition resource policy.
+The corrected launcher leaves CPU and memory allocation to the GPU partition;
+formal execution still requires a new scheduler receipt.
 
 ## Large-model optimization and trajectory error replay
 

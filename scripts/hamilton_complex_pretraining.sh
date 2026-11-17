@@ -2,10 +2,10 @@
 #SBATCH --partition=cuda
 #SBATCH --gres=gpu:h200_nvl:1
 #SBATCH --time=04:00:00
-#SBATCH --cpus-per-task=16
-#SBATCH --mem=64G
 #SBATCH --job-name=isac-pretrain
 #SBATCH --output=slurm-%j.out
+# Hamilton derives CPU, host RAM and temporary disk allocations from the GPU request.
+# Do not add separate CPU, memory or temporary-disk resource requests.
 set -euo pipefail
 umask 077
 

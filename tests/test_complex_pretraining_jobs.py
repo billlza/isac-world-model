@@ -8,6 +8,7 @@ import hashlib
 import importlib.util
 import json
 import os
+import shlex
 import subprocess
 import tarfile
 import tempfile
@@ -147,7 +148,13 @@ fi""",
         )
 
     def test_full_bundle_submits_once_without_previous_checkouts_and_clears_overrides(self):
-        first = self.submit(SBATCH_PARTITION="wrong", SBATCH_GRES="gpu:1g.10gb:1", SBATCH_TIME="1")
+        first = self.submit(
+            SBATCH_PARTITION="wrong",
+            SBATCH_GRES="gpu:1g.10gb:1",
+            SBATCH_TIME="1",
+            SBATCH_CPUS_PER_TASK="16",
+            SBATCH_MEM_PER_NODE="64G",
+        )
         self.assertEqual(first.returncode, 0, process_output(first))
         self.assertIn("Slurm job: 391", first.stdout)
         self.assertIn('pretrain_backup="$HOME/Downloads/isac-pretrain-391"', first.stdout)
@@ -305,9 +312,24 @@ fi""",
         self.assertIn("#SBATCH --partition=cuda", directives)
         self.assertIn("#SBATCH --gres=gpu:h200_nvl:1", directives)
         self.assertIn("#SBATCH --time=04:00:00", directives)
-        self.assertIn("#SBATCH --cpus-per-task=16", directives)
-        self.assertIn("#SBATCH --mem=64G", directives)
         self.assertIn("--expected-profile formal", script)
+
+    def test_gpu_partition_controls_cpu_memory_and_temporary_disk(self):
+        # Hamilton's GPU policy prohibits separate CPU/RAM/TMP requests. This
+        # guards the observed sbatch rejection, including short-option aliases.
+        script = (PROJECT / "scripts/hamilton_complex_pretraining.sh").read_text()
+        for line in script.splitlines():
+            line = line.lstrip()
+            if not line.startswith("#SBATCH ") and not line.startswith("#SBATCH\t"):
+                continue
+            for argument in shlex.split(line[len("#SBATCH") :], comments=True):
+                option = argument.partition("=")[0].replace("_", "-")
+                with self.subTest(directive=line, argument=argument):
+                    self.assertFalse(
+                        option.startswith(("-c", "-n", "--cpus-", "--ntasks", "--mem", "--tmp")),
+                        "CPU and host-memory allocations are controlled by Hamilton's cuda partition",
+                    )
+                    self.assertNotIn("tmp:", argument, "Temporary disk is allocated from the GPU request")
 
     def test_preflight_or_source_snapshot_failure_stops_before_training(self):
         for job, failure in (

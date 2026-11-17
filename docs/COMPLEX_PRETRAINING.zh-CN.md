@@ -130,7 +130,7 @@ development 用于这一轮设计诊断；formal 使用独立数据 namespace，
 独立 GitHub 运行在 Python 3.13.9 / PyTorch 2.9.0+cpu / NumPy 2.3.4 上也已完成全部 6 个训练 cell 并保存权重：
 [Hamilton 对应版本的 CPU 训练运行](https://github.com/billlza/isac-world-model/actions/runs/43991703172)。该运行是另一软件环境下的复跑，以上表格来自本地的明确版本，二者不能混成一次实验。
 
-这些开发训练与交付可结项；正式 H200 任务尚未提交，依赖用户可用的 Hamilton 连接。模型仍是本文件定义的合成状态预测模型，本次没有执行自然语言问答训练或 RLHF。
+这些开发训练与交付可结项。2026-11-17 取回的正式提交诊断表明，`54387b616374` 版本在调度器接纳前被拒绝：`cannot use '-c' or '--cpus_per_task' options: controlled by partition`。`receipt.pending` 为空，提交阶段停在 `submitting`，本次没有生成正式 H200 训练结果。模型与上述开发结果仍按本文件定义的合成状态预测任务解释。
 
 ## Hamilton 正式运行
 
@@ -145,7 +145,9 @@ bash scripts/submit_complex_pretraining_from_mac.sh EXACT_FULL_SHA DURHAM_SHORT_
 
 launcher 传输完整 Git bundle，远端创建 `isac-pretrain-<SHA前12位>`，不依赖历史 checkpoint。它检查固定源码、登录主机与账号，使用原子提交声明防重复；只接受真实 `sbatch --parsable` 回执。不确定的提交状态保留现场供查询，不自动再次提交。
 
-资源请求为 cuda 分区、1 张完整 H200 NVL、16 CPU、64 GiB RAM、最多 4 小时。计算节点先运行既有硬件预检，固定学校 Python 3.13.9 / NumPy 2.3.4 / Torch 2.9.0+cu128 / CUDA 12.8，然后启动 formal。
+资源请求只指定 cuda 分区、1 张完整 H200 NVL、最多 4 小时。CPU、主机内存与临时磁盘由分区按 GPU 自动分配，不再显式设置 `--cpus-per-task` 或 `--mem`。按 [Hamilton 官方 GPU 调度规则](https://dur.ac.uk/research/institutes-and-centres/advanced-research-computing/hamilton-supercomputer/usage/jobs/)，完整 H200 对应 16 个 CPU 核心、273 GB 主机内存和 349 GB 临时磁盘。计算节点先运行既有硬件预检，固定学校 Python 3.13.9 / NumPy 2.3.4 / Torch 2.9.0+cu128 / CUDA 12.8，然后启动 formal。
+
+修正后的提交使用新的完整 Git SHA，因此会建立独立的 `isac-pretrain-<SHA前12位>` 目录。旧版本的 `.pretrain-submission` 与 `submission.stderr` 保留为失败证据；不通过删除旧声明或修改旧固定 checkout 来重试。上述调度参数修正不更改训练架构、数据、目标函数或预算，正式运行是否被接纳仍以新版本的真实 Slurm 回执为准。
 
 输出位于 `runs/pretrain-<JOBID>/`。必须同时检查 Slurm 的 `COMPLETED` 与 `ExitCode=0:0`，以及该目录的 `status.json`。提交回执只说明调度器接受任务。完整训练、源文件核验、包含全部权重的归档及归档重读校验成功后，顶层状态才为 completed。
 
