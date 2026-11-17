@@ -19,6 +19,13 @@ See [the training protocol, recovery guide and scope](docs/COMPLEX_PRETRAINING.z
 This stage trains the existing synthetic RGB/radio state model; language question
 answering requires an additional language-model path.
 
+The completed two-initialization development study measured a 12.10% reduction
+in two-second forecast macro RMSE for mixed-data training, with a 1.07% increase
+in current-position macro RMSE. Radio-outlier and combined-condition tracking
+improved by 21.34% and 16.79%. The enhanced architecture did not beat the
+mixed-data control under this budget. Full results and scope are in the protocol;
+the formal H200 run has not yet been submitted.
+
 ## Large-model optimization and trajectory error replay
 
 Phase C completed six Hamilton cells (job 19404810). At equal data and update

@@ -111,6 +111,27 @@ bash scripts/env.sh python scripts/complex_scene_pretraining.py \
 
 development 用于这一轮设计诊断；formal 使用独立数据 namespace，尚未消费。开发过程中反复查看的结果不能替代 formal 评估。
 
+## 双初始化复跑结果
+
+实现版本 `8311a0d3edca9129aebde615a6b1bbd883dc41f5` 已完成本地 6 个 cell：每组 176 个训练 episode、12 epochs、264 次更新，初始化 seed 7 和 11。两个初始化共用相同的 88 个独立测试 episode。下表先对 11 个条件的 RMSE 取平均，再对两个初始化取平均，单位为米：
+
+| 第二轮模型 | 当前状态 | 0.3 s 预测 | 1.0 s 预测 | 2.0 s 预测 |
+|---|---:|---:|---:|---:|
+| nominal-control | 0.90766 | 1.17059 | 1.89995 | 2.92474 |
+| mixed-control | 0.91735 | 1.13391 | 1.74133 | 2.57079 |
+| mixed-enhanced，修正初始化 | 0.98036 | 1.21880 | 1.85304 | 2.76630 |
+
+混合数据组在 0.3/1/2 秒预测上分别改善 3.13% / 8.35% / 12.10%，两个初始化的 2 秒预测方向一致。无线离群点和 combined 条件的当前位置 RMSE 分别改善 21.34% 和 16.79%。全部条件的当前位置宏平均误差增加 1.07%，nominal 条件从 0.26015 增至 0.49498 m，因此当前结果具有明确的任务取舍。
+
+增强模型的初始化修正确实缓解了首轮退化，但本预算下整体结果仍未超过 mixed-control。全部 6 个 cell 按验证集宏平均位置 RMSE 比较，当前候选是 `mixed-control-seed11/model.pt`，验证 RMSE 为 0.877233 m；其测试当前位置 RMSE 为 0.909670 m。候选选择没有使用测试分数。
+
+两轮共 9 个模型的 selected/final/resume 权重、分项指标、数据计划、初始化反事实和源码对应核验均保存在交付包中；未把权重加入 Git。原始本地运行记录保留了当时未提交源码快照的身份，发布后另行验证全部实现字节与相应提交一致，没有改写原始 provenance。
+
+独立 GitHub 运行在 Python 3.13.9 / PyTorch 2.9.0+cpu / NumPy 2.3.4 上也已完成全部 6 个训练 cell 并保存权重：
+[Hamilton 对应版本的 CPU 训练运行](https://github.com/billlza/isac-world-model/actions/runs/43991703172)。该运行是另一软件环境下的复跑，以上表格来自本地的明确版本，二者不能混成一次实验。
+
+这些开发训练与交付可结项；正式 H200 任务尚未提交，依赖用户可用的 Hamilton 连接。模型仍是本文件定义的合成状态预测模型，本次没有执行自然语言问答训练或 RLHF。
+
 ## Hamilton 正式运行
 
 在 Mac 的现有 Git 仓库中 fetch 本分支，使用发布时给出的完整 commit SHA 创建独立 worktree，再执行新 launcher。下面的 `EXACT_FULL_SHA` 应替换为经过验证的完整 40 位 SHA：
