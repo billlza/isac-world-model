@@ -174,6 +174,10 @@ def model_config(config: PretrainingConfig, recipe: str) -> StructuredConfig:
         visual_channels=64 if enhanced else 16,
         visual_depth=3 if enhanced else 1,
         max_acceleration_mps2=6.0 if enhanced else 0.5,
+        # Keep initial physical increments small while allowing larger learned
+        # accelerations. The first development trial exposed the 12x jump from
+        # increasing the output bound without scaling the random output head.
+        acceleration_init_scale=1.0 / 12.0 if enhanced else 1.0,
     )
 
 

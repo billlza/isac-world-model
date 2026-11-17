@@ -30,6 +30,9 @@ def main() -> None:
     parser.add_argument(
         "--episodes", type=int, help="Explicit corpus-size override, recorded in the protocol"
     )
+    parser.add_argument(
+        "--initialization-seeds", type=int, nargs="+", help="Paired initialization seeds for all recipes"
+    )
     args = parser.parse_args()
     if not 1 <= args.threads <= 64:
         parser.error("--threads must be in [1,64]")
@@ -38,6 +41,8 @@ def main() -> None:
     overrides = {
         name: getattr(args, name) for name in ("epochs", "episodes") if getattr(args, name) is not None
     }
+    if args.initialization_seeds is not None:
+        overrides["initialization_seeds"] = tuple(args.initialization_seeds)
     config = replace(config, **overrides)
     result = run_pretraining(args.out, config, device_name=args.device, source_root=ROOT, resume=args.resume)
     print(

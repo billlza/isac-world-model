@@ -130,8 +130,14 @@ def test_default_config_omission_and_each_opt_in_roundtrip():
     }
     assert StructuredConfig().to_dict() == legacy
     assert StructuredConfig(visual_channels=16, visual_depth=1, max_acceleration_mps2=0.5).to_dict() == legacy
+    assert StructuredConfig(acceleration_init_scale=1.0).to_dict() == legacy
     assert model_config_from_dict(legacy) == StructuredConfig()
-    for field, value in (("visual_channels", 64), ("visual_depth", 3), ("max_acceleration_mps2", 6.0)):
+    for field, value in (
+        ("visual_channels", 64),
+        ("visual_depth", 3),
+        ("max_acceleration_mps2", 6.0),
+        ("acceleration_init_scale", 1 / 12),
+    ):
         encoded = legacy | {field: value}
         assert StructuredConfig(**encoded).to_dict() == encoded
         assert model_config_from_dict(encoded).to_dict() == encoded
@@ -157,6 +163,13 @@ def test_default_config_omission_and_each_opt_in_roundtrip():
         ("max_acceleration_mps2", float("nan")),
         ("max_acceleration_mps2", float("inf")),
         ("max_acceleration_mps2", True),
+        ("acceleration_init_scale", 0),
+        ("acceleration_init_scale", -1),
+        ("acceleration_init_scale", 1.0001),
+        ("acceleration_init_scale", float("nan")),
+        ("acceleration_init_scale", float("inf")),
+        ("acceleration_init_scale", True),
+        ("acceleration_init_scale", None),
     ],
 )
 def test_invalid_capacity_or_physical_bound_is_rejected(field, value):
@@ -175,6 +188,60 @@ def test_registered_parameter_counts_and_optimizer_cover_expanded_encoder():
     fixed = next(group for group in policy["groups"] if group["name"] == "fixed_width")
     visual_names = {"visual." + name for name, _ in expanded.visual.named_parameters()}
     assert visual_names.issubset(fixed["parameter_names"])
+
+
+@pytest.mark.parametrize("architecture", ["structured", "structured-attention"])
+@pytest.mark.parametrize("scale", [1.0, 1 / 12])
+def test_acceleration_initialization_only_scales_its_head_without_rng_draws(architecture, scale):
+    settings = {
+        "architecture": architecture,
+        "visual_channels": 64,
+        "visual_depth": 3,
+        "max_acceleration_mps2": 6.0,
+    }
+    torch.manual_seed(7)
+    original = build_model(small_config(**settings))
+    original_rng = torch.get_rng_state().clone()
+    torch.manual_seed(7)
+    scaled = build_model(small_config(**settings, acceleration_init_scale=scale))
+    assert_exact(torch.get_rng_state(), original_rng)
+    assert list(scaled.state_dict()) == list(original.state_dict())
+    for name, value in original.state_dict().items():
+        expected = value * scale if name.startswith("acceleration.") else value
+        assert_exact(scaled.state_dict()[name], expected)
+
+
+@pytest.mark.parametrize("seed", [7, 11])
+def test_scaled_initial_forecast_stays_nearer_small_bound_reference_on_fixed_batch(batch, seed):
+    # Hold every other weight and the observed batch fixed. This checks the
+    # initialization's physical effect, not learning progress or held-out skill.
+    models = []
+    for bound, scale in ((0.5, 1.0), (6.0, 1.0), (6.0, 1 / 12)):
+        torch.manual_seed(seed)
+        models.append(
+            build_model(
+                small_config(
+                    visual_channels=64,
+                    visual_depth=3,
+                    latent_state_norm="layernorm",
+                    max_acceleration_mps2=bound,
+                    acceleration_init_scale=scale,
+                )
+            ).eval()
+        )
+    with torch.no_grad():
+        reference, unscaled, scaled = [
+            model(batch, forecast_s=1.0, batched_encoding=True) for model in models
+        ]
+    assert all(
+        bool(torch.isfinite(value).all())
+        for output in (reference, unscaled, scaled)
+        for value in output.values()
+    )
+    for name in ("mean", "future_mean"):
+        unscaled_delta = (unscaled[name] - reference[name]).square().mean()
+        scaled_delta = (scaled[name] - reference[name]).square().mean()
+        assert scaled_delta < unscaled_delta
 
 
 @pytest.mark.parametrize("bound", [0.5, 6.0])
@@ -201,11 +268,16 @@ def test_acceleration_bound_has_physical_units_in_prediction_and_forecast(bound)
     assert_exact(model._predict(h, mean, covariance, torch.zeros_like(dt)), (mean, covariance))
 
 
-def test_expanded_encoder_gradients_future_isolation_and_label_isolation(batch):
+@pytest.mark.parametrize("acceleration_scale", [1.0, 1 / 12])
+def test_expanded_encoder_gradients_future_isolation_and_label_isolation(batch, acceleration_scale):
     torch.manual_seed(7)
     model = build_model(
         small_config(
-            visual_channels=64, visual_depth=3, max_acceleration_mps2=6.0, latent_state_norm="layernorm"
+            visual_channels=64,
+            visual_depth=3,
+            max_acceleration_mps2=6.0,
+            latent_state_norm="layernorm",
+            acceleration_init_scale=acceleration_scale,
         )
     )
     output = model(batch, batched_encoding=True, return_visual=True)
@@ -239,15 +311,23 @@ def test_expanded_encoder_gradients_future_isolation_and_label_isolation(batch):
     assert torch.count_nonzero(gradient[:, 5:]) == 0
 
 
-@pytest.mark.parametrize("mode", ["legacy-missing", "explicit-defaults", "expanded"])
+@pytest.mark.parametrize("mode", ["legacy-missing", "explicit-defaults", "expanded", "expanded-scaled"])
 def test_checkpoint_roundtrip_for_old_defaults_and_expanded_config(tmp_path, batch, scene, mode):
     settings = {"visual_channels": 64, "visual_depth": 3, "max_acceleration_mps2": 6.0}
-    model = build_model(small_config(**(settings if mode == "expanded" else {}))).eval()
+    if mode == "expanded-scaled":
+        settings["acceleration_init_scale"] = 1 / 12
+    model = build_model(small_config(**(settings if mode.startswith("expanded") else {}))).eval()
     encoded = model.config.to_dict()
     if mode == "explicit-defaults":
-        encoded |= {"visual_channels": 16, "visual_depth": 1, "max_acceleration_mps2": 0.5}
+        encoded |= {
+            "visual_channels": 16,
+            "visual_depth": 1,
+            "max_acceleration_mps2": 0.5,
+            "acceleration_init_scale": 1.0,
+        }
     if mode == "legacy-missing":
         assert set(settings).isdisjoint(encoded)
+        assert "acceleration_init_scale" not in encoded
     path = tmp_path / "model.pt"
     save_checkpoint(
         path,

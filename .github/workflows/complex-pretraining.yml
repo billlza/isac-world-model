@@ -3,6 +3,15 @@ name: Complex-scene pretraining
 on:
   push:
     branches: [research/complex-scene-pretraining]
+    paths:
+      - 'src/**'
+      - 'tests/test_pretraining_*.py'
+      - 'tests/test_complex_pretraining*.py'
+      - 'scripts/complex_scene_pretraining.py'
+      - 'scripts/hamilton_complex_pretraining.sh'
+      - 'scripts/submit_complex_pretraining_from_mac.sh'
+      - 'scripts/package_complex_pretraining.py'
+      - '.github/workflows/complex-pretraining.yml'
   workflow_dispatch:
 
 permissions:
@@ -42,11 +51,11 @@ jobs:
         run: |
           .venv/bin/python -m pytest tests/test_pretraining_architecture.py tests/test_pretraining_data.py tests/test_pretraining_objective.py tests/test_complex_pretraining.py tests/test_complex_pretraining_jobs.py tests/test_structured.py tests/test_latent_state_norm.py tests/test_optimizer_policy.py
           bash -n scripts/hamilton_complex_pretraining.sh scripts/submit_complex_pretraining_from_mac.sh
-      - name: Pretrain the three controlled development cells from random initialization
+      - name: Pretrain all six controlled development cells from random initialization
         env:
           OMP_NUM_THREADS: '2'
         run: |
-          .venv/bin/python scripts/complex_scene_pretraining.py --out runs/complex-development --profile development --device cpu --threads 2 --episodes 176 --epochs 12
+          .venv/bin/python scripts/complex_scene_pretraining.py --out runs/complex-development --profile development --device cpu --threads 2 --episodes 176 --epochs 12 --initialization-seeds 7 11
       - name: Retain model weights, continuation checkpoints and evidence
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

@@ -18,6 +18,8 @@
 
 全部采用 `structured-attention`、feature dimension 48、latent layer normalization、同一 AdamW 配置和相同 batch-order RNG。nominal-control 与 mixed-control 在同一初始化种子下具有完全相同的初始参数。增强模型新增参数会改变后续随机数抽样，因此它与对照是同种子、同预算比较，初始参数摘要分别记录。
 
+首轮开发实验发现，直接把加速度界从 0.5 扩大到 6 会同时放大随机初始化的运动增量。当前 enhanced 配置增加 `acceleration_init_scale=1/12`：完整构造后仅缩放加速度输出头的初始权重和偏置，不消耗额外随机数、不改变其余初值，也不缩放保存的 checkpoint 权重。可学习范围仍为每轴 ±6 m/s²。默认值 1 保持旧模型兼容。该调整改变初始化，不自动改变加速度头的学习率。
+
 11 类条件按固定顺序为：nominal、maneuver、delay、occlusion、radio_outliers、radio_bias、sparse_camera、maneuver_delay、occlusion_outliers、maneuver_bias、combined。训练 episode 循环分配条件，每个 epoch 再打乱采样顺序。除 nominal 外，混合数据与评估数据包含颜色变化、背景纹理和静态低对比度非目标 clutter。增强按实际 capture UID 固定；缓存帧不在每个时刻重新随机化。图像增强不读取真值、不补画被遮挡目标。
 
 nominal-control 到 mixed-control 的变化包含场景与外观两部分；mixed-control 到 mixed-enhanced 的变化包含视觉容量、加速度表达范围和位移目标三部分。三组比较可以判断整套干预的效果，不能独立分解每个部件的增益。
@@ -27,6 +29,7 @@ nominal-control 到 mixed-control 的变化包含场景与外观两部分；mixe
 | smoke | 4 | 1 | 2 | 32 | 1 / 1 | 7 | 0.3、0.6 s |
 | development 默认 | 96 | 8 | 8 | 96 | 4 / 8 | 7 | 0.3、1.0、2.0 s |
 | development 首轮扩展 | 176 | 12 | 8 | 96 | 4 / 8 | 7 | 0.3、1.0、2.0 s |
+| development 初始化修正复跑 | 176 | 12 | 8 | 96 | 4 / 8 | 7、11 | 0.3、1.0、2.0 s |
 | formal | 3072 | 8 | 16 | 512 | 16 / 32 | 7、11 | 0.3、1.0、2.0 s |
 
 smoke 的 4 条训练序列不能覆盖全部条件，只用于执行链路验证。development 每条序列 40 步，formal 每条 64 步；dt 均为 0.1 s，图像 24×24。formal 共 6 个 cell，每个 cell 1536 次参数更新。实际运行时间由硬件与日志确定，4 小时是调度上限。
@@ -77,7 +80,7 @@ state NLL
 ```bash
 bash scripts/env.sh python scripts/complex_scene_pretraining.py \
   --out runs/complex-development --profile development --device cpu --threads 2 \
-  --episodes 176 --epochs 12
+  --episodes 176 --epochs 12 --initialization-seeds 7 11
 ```
 
 同一个输出目录默认拒绝覆盖。中断后，保持源码、runtime、配置和数据计划一致，使用同一参数加 `--resume`。这表示继续原定预算，不会无声增加 epoch。已有完成 cell 会校验产物后跳过。
@@ -85,12 +88,28 @@ bash scripts/env.sh python scripts/complex_scene_pretraining.py \
 ```bash
 bash scripts/env.sh python scripts/complex_scene_pretraining.py \
   --out runs/complex-development --profile development --device cpu --threads 2 \
-  --episodes 176 --epochs 12 --resume
+  --episodes 176 --epochs 12 --initialization-seeds 7 11 --resume
 ```
 
 若首次完整 epoch 之前失败，还没有可恢复的 checkpoint，旧 cell 目录会移入相邻的 `<study>-interrupted/`，明确记录恢复事件，然后从该 cell 原来的随机种子重新训练。已有完整 checkpoint 损坏时会停止，不会跳过校验或自动降级重训。
 
-推送 `research/complex-scene-pretraining` 会触发独立的 CPU development workflow：使用 Hamilton 对应的 Python 3.13.9、PyTorch 2.9.0 CPU 版和 NumPy 2.3.4，先测试再运行三组训练，保留权重及结果为 Actions artifact。它验证 CPU 兼容运行，不构成 H200/CUDA 执行记录。
+推送 `research/complex-scene-pretraining` 的训练源码、相关测试或 workflow 改动会触发独立的 CPU development workflow：使用 Hamilton 对应的 Python 3.13.9、PyTorch 2.9.0 CPU 版和 NumPy 2.3.4，先测试再运行三组、两个初始化的六个训练 cell，保留权重及结果为 Actions artifact。它验证 CPU 兼容运行，不构成 H200/CUDA 执行记录。
+
+## 首轮开发结果与初始化诊断
+
+首轮源码为 `5ec132fe6f6c95742d1695d460df8076c1dd84d9`。本地使用 Python 3.12.14 / Torch 2.14.1+cpu / NumPy 2.3.5，全部从随机初始化 seed 7 训练 176 个 episode、12 epochs、264 次更新。这里的量是 11 个条件 RMSE 的宏平均，单位为米：
+
+| 首轮模型 | 当前位置 | 0.3 s 预测 | 1.0 s 预测 | 2.0 s 预测 |
+|---|---:|---:|---:|---:|
+| nominal-control | 0.89148 | 1.15324 | 1.87508 | 2.87571 |
+| mixed-control | 0.92502 | 1.13678 | 1.72608 | 2.51315 |
+| mixed-enhanced，未缩放初始化 | 1.07530 | 1.30702 | 1.92732 | 2.82252 |
+
+混合数据组的当前位置宏平均误差增加 3.76%，2.0 s 预测宏平均误差降低 12.61%，其中 11 个条件里 10 个改善。无线离群点条件的当前位置 RMSE 从 1.25959 降至 1.02079 m，combined 从 1.84899 降至 1.64304 m。增强模型在当前定位上增加 20.62%，未达到整体增强目标；该结果保留，不因训练运行成功而改写结论。
+
+随后只用同一 validation 数据做初始化反事实，保持增强模型其他 48 个参数张量逐位相同。加速度头初始缩放从 1 改为 1/12 后，初始当前状态宏平均 RMSE 从 3.188695 降至 1.245693 m；0.3/1.0/2.0 s 预测从 4.462710/7.908563/13.306991 降至 1.659982/2.776010/4.681351 m。该实验直接检验了初始运动增量失配，最终训练收益由复跑结果另外判定。
+
+development 用于这一轮设计诊断；formal 使用独立数据 namespace，尚未消费。开发过程中反复查看的结果不能替代 formal 评估。
 
 ## Hamilton 正式运行
 

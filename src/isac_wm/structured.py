@@ -31,6 +31,7 @@ class StructuredConfig:
     visual_depth: int = 1
     # Per-axis physical bound; the velocity state is normalized by 2 m/s.
     max_acceleration_mps2: float = 0.5
+    acceleration_init_scale: float = 1.0
 
     def __post_init__(self) -> None:
         ModelConfig(self.feature_dim, self.hidden_dim)
@@ -42,6 +43,9 @@ class StructuredConfig:
         finite(self.max_acceleration_mps2, "max_acceleration_mps2", positive=True)
         if self.max_acceleration_mps2 > 100:
             raise ValueError("max_acceleration_mps2 must be at most 100 m/s^2")
+        finite(self.acceleration_init_scale, "acceleration_init_scale", positive=True)
+        if self.acceleration_init_scale > 1:
+            raise ValueError("acceleration_init_scale must be in (0, 1]")
         if self.architecture not in {"structured", "structured-attention"}:
             raise ValueError("Unknown structured architecture")
         if self.hidden_dim % self.heads:
@@ -62,6 +66,7 @@ class StructuredConfig:
             ("visual_channels", 16),
             ("visual_depth", 1),
             ("max_acceleration_mps2", 0.5),
+            ("acceleration_init_scale", 1.0),
         ):
             if values[name] == default:
                 values.pop(name)
@@ -143,6 +148,13 @@ class StructuredEventModel(EventBeliefModel):
             if config.latent_state_norm == "layernorm"
             else None
         )
+        # Apply only to random initialization, after every module is constructed.
+        # This consumes no RNG and changes neither other weights nor the learned
+        # acceleration range. Loading a checkpoint replaces these initial values.
+        if config.acceleration_init_scale != 1.0:
+            with torch.no_grad():
+                self.acceleration.weight.mul_(config.acceleration_init_scale)
+                self.acceleration.bias.mul_(config.acceleration_init_scale)
 
     def initial(self, batch_size: int, device: torch.device | str) -> tuple[Tensor, ...]:
         integer(batch_size, "batch_size", 1)
@@ -376,7 +388,13 @@ class StructuredEventModel(EventBeliefModel):
 
 def model_config_from_dict(values: dict) -> ModelConfig | StructuredConfig:
     if "architecture" not in values:
-        for field in ("latent_state_norm", "visual_channels", "visual_depth", "max_acceleration_mps2"):
+        for field in (
+            "latent_state_norm",
+            "visual_channels",
+            "visual_depth",
+            "max_acceleration_mps2",
+            "acceleration_init_scale",
+        ):
             if field in values:
                 raise ValueError(f"{field} is only configured for structured architectures")
     return StructuredConfig(**values) if "architecture" in values else ModelConfig(**values)
