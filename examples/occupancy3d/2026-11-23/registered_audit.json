@@ -1,0 +1,483 @@
+{
+  "status": "passed",
+  "created_utc": "2026-11-23T22:04:59.424573+00:00",
+  "run_dir": "/workspace/scratch/2a63e545b553/isac-world-model/research_outputs/occupancy3d/2026-11-23_registered",
+  "audit_source_sha256": "ee2effbaad71fed057c606fb13e4f2f89d00a9be13e363774cb61633245b3d60",
+  "checks": [
+    {
+      "check": "run_completed",
+      "passed": true
+    },
+    {
+      "check": "source_unchanged_during_run",
+      "passed": true
+    },
+    {
+      "check": "current_source_matches_registered_source",
+      "passed": true,
+      "actual_sha256": {
+        "scripts/occupancy3d_study.py": "e0d5e966fa96af18d4dff29647340fb17effcf8d7d40b0e1cc425e7be6d46439",
+        "src/isac_wm/occupancy3d_data.py": "c5849ce8ca0c5d3b3d36b514723eaa9aa6deeb8969ff40ecb1e5da8962f57a77",
+        "src/isac_wm/occupancy3d_evaluation.py": "551364f1349ed86b6f0a160d93a614ba4e44395a893d0c269ae06c82fa0a0dcc",
+        "src/isac_wm/occupancy3d_model.py": "0336ae1dc76bd1bed1021c867dec9f33e4cdc314c549122fb0a6170b2c32e938"
+      }
+    },
+    {
+      "check": "completed_status_source_matches_protocol",
+      "passed": true
+    },
+    {
+      "check": "train_scene_hashes_match_bytes",
+      "passed": true
+    },
+    {
+      "check": "train_dataset_hash_matches",
+      "passed": true
+    },
+    {
+      "check": "train_count",
+      "passed": true,
+      "scenes": 512
+    },
+    {
+      "check": "train_mirror_families_are_pairs",
+      "passed": true
+    },
+    {
+      "check": "train_pairs_are_geometric_mirrors",
+      "passed": true
+    },
+    {
+      "check": "validation_scene_hashes_match_bytes",
+      "passed": true
+    },
+    {
+      "check": "validation_dataset_hash_matches",
+      "passed": true
+    },
+    {
+      "check": "validation_count",
+      "passed": true,
+      "scenes": 128
+    },
+    {
+      "check": "validation_mirror_families_are_pairs",
+      "passed": true
+    },
+    {
+      "check": "validation_pairs_are_geometric_mirrors",
+      "passed": true
+    },
+    {
+      "check": "test_scene_hashes_match_bytes",
+      "passed": true
+    },
+    {
+      "check": "test_dataset_hash_matches",
+      "passed": true
+    },
+    {
+      "check": "test_count",
+      "passed": true,
+      "scenes": 192
+    },
+    {
+      "check": "test_mirror_families_are_pairs",
+      "passed": true
+    },
+    {
+      "check": "test_pairs_are_geometric_mirrors",
+      "passed": true
+    },
+    {
+      "check": "zero_duplicate_scenes_across_splits",
+      "passed": true,
+      "duplicate_count": 0
+    },
+    {
+      "check": "zero_shared_families_across_splits",
+      "passed": true
+    },
+    {
+      "check": "recorded_duplicate_count_matches",
+      "passed": true
+    },
+    {
+      "check": "unique_training_stage_names",
+      "passed": true
+    },
+    {
+      "check": "all_training_stages_recorded",
+      "passed": true
+    },
+    {
+      "check": "same_height_seed7_both_stages_completed",
+      "passed": true
+    },
+    {
+      "check": "same_height_seed7_paired_initial_weight_sha256",
+      "passed": true,
+      "value": "8f13dc7df85aa3624338859d32dd9d9ee323f009bbe83e843c29da7d148717a8"
+    },
+    {
+      "check": "same_height_seed7_paired_batch_schedule_sha256",
+      "passed": true,
+      "value": "179fca3fbe900a5906baa1519c73fff222e268c7786441a19e13a2ef07fcbea0"
+    },
+    {
+      "check": "same_height_seed7_paired_optimizer_updates",
+      "passed": true,
+      "value": 192
+    },
+    {
+      "check": "same_height_seed7_forks_selected_warmup",
+      "passed": true
+    },
+    {
+      "check": "same_height_seed11_both_stages_completed",
+      "passed": true
+    },
+    {
+      "check": "same_height_seed11_paired_initial_weight_sha256",
+      "passed": true,
+      "value": "8b4647356e20a72232af8f2c2215c482e096e07efc119396c4e65a70d991cb5c"
+    },
+    {
+      "check": "same_height_seed11_paired_batch_schedule_sha256",
+      "passed": true,
+      "value": "f03526a90a61dff9963b7809e3ea2a4bf234d7422e318db87ad7addc18987108"
+    },
+    {
+      "check": "same_height_seed11_paired_optimizer_updates",
+      "passed": true,
+      "value": 192
+    },
+    {
+      "check": "same_height_seed11_forks_selected_warmup",
+      "passed": true
+    },
+    {
+      "check": "height_diverse_seed7_both_stages_completed",
+      "passed": true
+    },
+    {
+      "check": "height_diverse_seed7_paired_initial_weight_sha256",
+      "passed": true,
+      "value": "9c09a6e9fdab728b0dda13f29280d7ffe7ab35a93c9160c54058893508d07126"
+    },
+    {
+      "check": "height_diverse_seed7_paired_batch_schedule_sha256",
+      "passed": true,
+      "value": "179fca3fbe900a5906baa1519c73fff222e268c7786441a19e13a2ef07fcbea0"
+    },
+    {
+      "check": "height_diverse_seed7_paired_optimizer_updates",
+      "passed": true,
+      "value": 192
+    },
+    {
+      "check": "height_diverse_seed7_forks_selected_warmup",
+      "passed": true
+    },
+    {
+      "check": "height_diverse_seed11_both_stages_completed",
+      "passed": true
+    },
+    {
+      "check": "height_diverse_seed11_paired_initial_weight_sha256",
+      "passed": true,
+      "value": "d64a43dd183ad0eff3759811ece08fdbc1dfbaa7833f754a968ccde7dac8fa50"
+    },
+    {
+      "check": "height_diverse_seed11_paired_batch_schedule_sha256",
+      "passed": true,
+      "value": "f03526a90a61dff9963b7809e3ea2a4bf234d7422e318db87ad7addc18987108"
+    },
+    {
+      "check": "height_diverse_seed11_paired_optimizer_updates",
+      "passed": true,
+      "value": 192
+    },
+    {
+      "check": "height_diverse_seed11_forks_selected_warmup",
+      "passed": true
+    },
+    {
+      "check": "same_height_operator_reproduces",
+      "passed": true
+    },
+    {
+      "check": "same_height_seed7_geometry_checkpoint_path_is_local",
+      "passed": true
+    },
+    {
+      "check": "same_height_seed7_geometry_checkpoint_source",
+      "passed": true
+    },
+    {
+      "check": "same_height_seed7_geometry_selected_epoch",
+      "passed": true
+    },
+    {
+      "check": "same_height_seed7_geometry_selected_weight_fingerprint",
+      "passed": true
+    },
+    {
+      "check": "same_height_seed7_geometry_nominal_full_prefix_replay",
+      "passed": true,
+      "maximum_absolute_difference": 0.0,
+      "absolute_tolerance": 5e-06
+    },
+    {
+      "check": "same_height_seed7_geometry_rf_checkpoint_path_is_local",
+      "passed": true
+    },
+    {
+      "check": "same_height_seed7_geometry_rf_checkpoint_source",
+      "passed": true
+    },
+    {
+      "check": "same_height_seed7_geometry_rf_selected_epoch",
+      "passed": true
+    },
+    {
+      "check": "same_height_seed7_geometry_rf_selected_weight_fingerprint",
+      "passed": true
+    },
+    {
+      "check": "same_height_seed7_geometry_rf_nominal_full_prefix_replay",
+      "passed": true,
+      "maximum_absolute_difference": 0.0,
+      "absolute_tolerance": 5e-06
+    },
+    {
+      "check": "same_height_seed11_geometry_checkpoint_path_is_local",
+      "passed": true
+    },
+    {
+      "check": "same_height_seed11_geometry_checkpoint_source",
+      "passed": true
+    },
+    {
+      "check": "same_height_seed11_geometry_selected_epoch",
+      "passed": true
+    },
+    {
+      "check": "same_height_seed11_geometry_selected_weight_fingerprint",
+      "passed": true
+    },
+    {
+      "check": "same_height_seed11_geometry_nominal_full_prefix_replay",
+      "passed": true,
+      "maximum_absolute_difference": 0.0,
+      "absolute_tolerance": 5e-06
+    },
+    {
+      "check": "same_height_seed11_geometry_rf_checkpoint_path_is_local",
+      "passed": true
+    },
+    {
+      "check": "same_height_seed11_geometry_rf_checkpoint_source",
+      "passed": true
+    },
+    {
+      "check": "same_height_seed11_geometry_rf_selected_epoch",
+      "passed": true
+    },
+    {
+      "check": "same_height_seed11_geometry_rf_selected_weight_fingerprint",
+      "passed": true
+    },
+    {
+      "check": "same_height_seed11_geometry_rf_nominal_full_prefix_replay",
+      "passed": true,
+      "maximum_absolute_difference": 0.0,
+      "absolute_tolerance": 5e-06
+    },
+    {
+      "check": "height_diverse_operator_reproduces",
+      "passed": true
+    },
+    {
+      "check": "height_diverse_seed7_geometry_checkpoint_path_is_local",
+      "passed": true
+    },
+    {
+      "check": "height_diverse_seed7_geometry_checkpoint_source",
+      "passed": true
+    },
+    {
+      "check": "height_diverse_seed7_geometry_selected_epoch",
+      "passed": true
+    },
+    {
+      "check": "height_diverse_seed7_geometry_selected_weight_fingerprint",
+      "passed": true
+    },
+    {
+      "check": "height_diverse_seed7_geometry_nominal_full_prefix_replay",
+      "passed": true,
+      "maximum_absolute_difference": 0.0,
+      "absolute_tolerance": 5e-06
+    },
+    {
+      "check": "height_diverse_seed7_geometry_rf_checkpoint_path_is_local",
+      "passed": true
+    },
+    {
+      "check": "height_diverse_seed7_geometry_rf_checkpoint_source",
+      "passed": true
+    },
+    {
+      "check": "height_diverse_seed7_geometry_rf_selected_epoch",
+      "passed": true
+    },
+    {
+      "check": "height_diverse_seed7_geometry_rf_selected_weight_fingerprint",
+      "passed": true
+    },
+    {
+      "check": "height_diverse_seed7_geometry_rf_nominal_full_prefix_replay",
+      "passed": true,
+      "maximum_absolute_difference": 0.0,
+      "absolute_tolerance": 5e-06
+    },
+    {
+      "check": "height_diverse_seed11_geometry_checkpoint_path_is_local",
+      "passed": true
+    },
+    {
+      "check": "height_diverse_seed11_geometry_checkpoint_source",
+      "passed": true
+    },
+    {
+      "check": "height_diverse_seed11_geometry_selected_epoch",
+      "passed": true
+    },
+    {
+      "check": "height_diverse_seed11_geometry_selected_weight_fingerprint",
+      "passed": true
+    },
+    {
+      "check": "height_diverse_seed11_geometry_nominal_full_prefix_replay",
+      "passed": true,
+      "maximum_absolute_difference": 0.0,
+      "absolute_tolerance": 5e-06
+    },
+    {
+      "check": "height_diverse_seed11_geometry_rf_checkpoint_path_is_local",
+      "passed": true
+    },
+    {
+      "check": "height_diverse_seed11_geometry_rf_checkpoint_source",
+      "passed": true
+    },
+    {
+      "check": "height_diverse_seed11_geometry_rf_selected_epoch",
+      "passed": true
+    },
+    {
+      "check": "height_diverse_seed11_geometry_rf_selected_weight_fingerprint",
+      "passed": true
+    },
+    {
+      "check": "height_diverse_seed11_geometry_rf_nominal_full_prefix_replay",
+      "passed": true,
+      "maximum_absolute_difference": 0.0,
+      "absolute_tolerance": 5e-06
+    }
+  ],
+  "runtime": {
+    "python": "3.12.14 (main, Aug 25 2026, 14:00:49) [Clang 22.1.3 ]",
+    "numpy": "2.5.4",
+    "torch": "2.14.1+cpu"
+  },
+  "checkpoint_replay": [
+    {
+      "name": "same_height_seed7_geometry",
+      "checkpoint": "checkpoints/same_height_seed7_geometry.pt",
+      "checkpoint_sha256": "daa17ec79728191e9b1fa6a4029e2560fd3feadd37cc97fc38a5f14b03c5fc76",
+      "selected_weight_sha256": "a5a96bfc00b7b01c6da7b32fd90f8dcd637a7cf05db64b75db3396a8b32bfc2e",
+      "prediction_key": "nominal__same_height__geometry__seed7",
+      "maximum_absolute_difference": 0.0,
+      "parameter_count": 41245
+    },
+    {
+      "name": "same_height_seed7_geometry_rf",
+      "checkpoint": "checkpoints/same_height_seed7_geometry_rf.pt",
+      "checkpoint_sha256": "ae74eafbc196ac854c9f502714497fb8f55bb05669cb8897edbbc6f6428b1f95",
+      "selected_weight_sha256": "8d28474763b079ab133df1598443446b6037142cdefcf002263a4959b75048fb",
+      "prediction_key": "nominal__same_height__geometry_rf__seed7",
+      "maximum_absolute_difference": 0.0,
+      "parameter_count": 41245
+    },
+    {
+      "name": "same_height_seed11_geometry",
+      "checkpoint": "checkpoints/same_height_seed11_geometry.pt",
+      "checkpoint_sha256": "8c2b891c73c34f79d833adad1e0953a82777cdaedfda3652be1198eaa3e3706c",
+      "selected_weight_sha256": "b505d0103ef726ead6136c55d7c58c10ea2daa8143a4319d7275138855bf4658",
+      "prediction_key": "nominal__same_height__geometry__seed11",
+      "maximum_absolute_difference": 0.0,
+      "parameter_count": 41245
+    },
+    {
+      "name": "same_height_seed11_geometry_rf",
+      "checkpoint": "checkpoints/same_height_seed11_geometry_rf.pt",
+      "checkpoint_sha256": "b4c370afb4b0ca749ef6af05db0a6dbb2a1d0a3eed8a0a512b32517da696a655",
+      "selected_weight_sha256": "4707bb1d7741ecf34c44ee54d233b58875d463e21fbe9bc659e4f0e00438ec3a",
+      "prediction_key": "nominal__same_height__geometry_rf__seed11",
+      "maximum_absolute_difference": 0.0,
+      "parameter_count": 41245
+    },
+    {
+      "name": "height_diverse_seed7_geometry",
+      "checkpoint": "checkpoints/height_diverse_seed7_geometry.pt",
+      "checkpoint_sha256": "578f8e96fa8dbf1de4975f2c4134462d12d5e476287365246ebbca156f217e76",
+      "selected_weight_sha256": "f80021ef96d0793cfcc12762598a8a94df7cf1e6ab31c6d04eb73d7e76de5385",
+      "prediction_key": "nominal__height_diverse__geometry__seed7",
+      "maximum_absolute_difference": 0.0,
+      "parameter_count": 41245
+    },
+    {
+      "name": "height_diverse_seed7_geometry_rf",
+      "checkpoint": "checkpoints/height_diverse_seed7_geometry_rf.pt",
+      "checkpoint_sha256": "d86970f7e0fefc3e29f3f2b9efea674d0d3a0b40c03186a0ea8c0062e0582b5e",
+      "selected_weight_sha256": "2e27858c7dfe3237cae3cf44706e107eae0c7532a57a4311a59c1ab7ca38ae31",
+      "prediction_key": "nominal__height_diverse__geometry_rf__seed7",
+      "maximum_absolute_difference": 0.0,
+      "parameter_count": 41245
+    },
+    {
+      "name": "height_diverse_seed11_geometry",
+      "checkpoint": "checkpoints/height_diverse_seed11_geometry.pt",
+      "checkpoint_sha256": "8c5e58c2e89b69f4a52cab74def5fb95ffd6fd97b8841805c655191355a84918",
+      "selected_weight_sha256": "b8aac030ae113aec086485b216c890efbc7d1b83e5a8794b35b886ee043bcc61",
+      "prediction_key": "nominal__height_diverse__geometry__seed11",
+      "maximum_absolute_difference": 0.0,
+      "parameter_count": 41245
+    },
+    {
+      "name": "height_diverse_seed11_geometry_rf",
+      "checkpoint": "checkpoints/height_diverse_seed11_geometry_rf.pt",
+      "checkpoint_sha256": "a4e3f3f2bfe7bd67eccf62d79d345029f08c930bc6e659d350f141a6958a33f7",
+      "selected_weight_sha256": "d6ddfd934a0ffcc1e92f8a1b6b79703f2fe49b3127dec0ef62f7770b2ef3fbbe",
+      "prediction_key": "nominal__height_diverse__geometry_rf__seed11",
+      "maximum_absolute_difference": 0.0,
+      "parameter_count": 41245
+    }
+  ],
+  "replayed_checkpoint_count": 8,
+  "checkpoint_replay_batch_size": 32,
+  "checkpoint_replay_device": "cpu",
+  "inputs_sha256": {
+    "protocol.json": "b156b7fe074316856ab44479563041a868ec75a6a3b4b8fc9c22f03b4f47f298",
+    "data_provenance.json": "5b7679680b8dae2480dbdefbf72d325e4f3a325ca7f6b893970dd64d9ed91483",
+    "dataset.npz": "c4ad59d3de51725abae7af653aefa2414b516e2629646744221c52259a61e2f2",
+    "training_manifest.json": "640d37ec2a5fe67df6e1dfeb7ed4853edb1e045045deb65ad2ec2682df1b5b1d",
+    "summary.json": "b2eff1807e9c9656fb98203a92f6a29e72bcb3fdea912172ac0d9455753d9ecd",
+    "per_scene_metrics.json": "a5574659e69bdfcb8c65d2f489d21302fbecdff92e226729305fb1b4854a9705",
+    "test_predictions.npz": "ccde655178b2c5dbc8c16544f3e16edb80cc1393442bf608d0e1ce9368b77188"
+  },
+  "paired_comparisons_sha256": "6f54410a59fe05c9f6b7a96dcac45736da6cf888c6d0711eacd7a4e2ccd3acef",
+  "paired_comparison_count": 210
+}

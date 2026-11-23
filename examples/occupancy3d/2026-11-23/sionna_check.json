@@ -1,0 +1,146 @@
+{
+  "schema": "isac.occupancy3d.sionna_forward_check.v1",
+  "created_utc": "2026-11-23T21:55:41.709241+00:00",
+  "status": "passed",
+  "role": "independent_forward_model_check_not_used_for_occupancy_training",
+  "scope": "Four noiseless single isotropic RCS targets in empty scenes, known monostatic poses. Validates radial attenuation and propagation delay, not room reconstruction, multipath, occlusion, material recovery, or sim-to-real accuracy. Complex amplitudes are recorded but no full coherent phase-agreement claim is made.",
+  "versions": {
+    "sionna-rt": "2.2.0",
+    "mitsuba": "3.9.1",
+    "drjit": "1.5.0",
+    "numpy": "2.5.4",
+    "torch": "2.14.1+cpu"
+  },
+  "python": "3.12.14",
+  "platform": "Linux-6.18.57-x86_64-with-glibc2.41",
+  "backend": "llvm_ad_mono_polarized",
+  "threads": 2,
+  "frequency_hz": 60000000000.0,
+  "sigma_m2": 1.0,
+  "solver": {
+    "deterministic": true,
+    "max_depth": 1,
+    "buffer_size_per_sp": 1024,
+    "samples_per_sp": 256,
+    "synthetic_array": false,
+    "los": true,
+    "specular_reflection": false,
+    "refraction": false,
+    "seed": 20261123
+  },
+  "source_sha256": "3385ad0bc8fffa692197a90d2862977be710955df7f5dcc2d682269b7a58e580",
+  "documentation": [
+    "https://nvlabs.github.io/sionna/rt/tutorials/RCS.html",
+    "https://nvlabs.github.io/sionna/rt/api/rcs.html"
+  ],
+  "cases": [
+    {
+      "case": "same_height_A",
+      "sensor_position_m": [
+        0.0,
+        0.0,
+        1.5
+      ],
+      "target_position_m": [
+        2.0,
+        0.0,
+        0.75
+      ],
+      "analytic_range_m": 2.1360009363293826,
+      "sionna_range_m": 2.136000804122844,
+      "absolute_range_error_m": 1.3220653860557263e-07,
+      "analytic_channel_power": 6.043708027304123e-10,
+      "sionna_channel_power": 6.043709930682013e-10,
+      "relative_power_error": 3.149354472764543e-07,
+      "path_delay_s": 1.4249863511395233e-08,
+      "path_amplitude_real_imag": [
+        2.4551654860260896e-05,
+        1.259855821444944e-06
+      ],
+      "elapsed_s": 0.8376576640002895
+    },
+    {
+      "case": "same_height_B",
+      "sensor_position_m": [
+        0.0,
+        0.0,
+        1.5
+      ],
+      "target_position_m": [
+        2.0,
+        0.0,
+        2.25
+      ],
+      "analytic_range_m": 2.1360009363293826,
+      "sionna_range_m": 2.136000804122844,
+      "absolute_range_error_m": 1.3220653860557263e-07,
+      "analytic_channel_power": 6.043708027304123e-10,
+      "sionna_channel_power": 6.043709930682013e-10,
+      "relative_power_error": 3.149354472764543e-07,
+      "path_delay_s": 1.4249863511395233e-08,
+      "path_amplitude_real_imag": [
+        2.4551654860260896e-05,
+        1.259855821444944e-06
+      ],
+      "elapsed_s": 0.018252562999805377
+    },
+    {
+      "case": "lower_sensor_A",
+      "sensor_position_m": [
+        0.0,
+        0.0,
+        0.75
+      ],
+      "target_position_m": [
+        2.0,
+        0.0,
+        0.75
+      ],
+      "analytic_range_m": 2.0,
+      "sionna_range_m": 1.999999953617805,
+      "absolute_range_error_m": 4.638219497365981e-08,
+      "analytic_channel_power": 7.86301759704679e-10,
+      "sionna_channel_power": 7.863020904042547e-10,
+      "relative_power_error": 4.205759069897397e-07,
+      "path_delay_s": 1.3342563498497384e-08,
+      "path_amplitude_real_imag": [
+        -2.6451065423316322e-05,
+        9.308234439231455e-06
+      ],
+      "elapsed_s": 0.016462280999803625
+    },
+    {
+      "case": "lower_sensor_B",
+      "sensor_position_m": [
+        0.0,
+        0.0,
+        0.75
+      ],
+      "target_position_m": [
+        2.0,
+        0.0,
+        2.25
+      ],
+      "analytic_range_m": 2.5,
+      "sionna_range_m": 2.4999998421713094,
+      "absolute_range_error_m": 1.5782869056124582e-07,
+      "analytic_channel_power": 3.2206920077503655e-10,
+      "sionna_channel_power": 3.2206941302781043e-10,
+      "relative_power_error": 6.590284737928442e-07,
+      "path_delay_s": 1.6678203706987915e-08,
+      "path_amplitude_real_imag": [
+        -6.368976301018847e-06,
+        1.677812724665273e-05
+      ],
+      "elapsed_s": 0.012292829000216443
+    }
+  ],
+  "summary": {
+    "same_height_range_difference_m": 0.0,
+    "lower_sensor_range_difference_m": 0.4999998885535044,
+    "max_absolute_range_error_m": 1.5782869056124582e-07,
+    "max_relative_power_error": 6.590284737928442e-07,
+    "elapsed_s": 0.8909483819998059,
+    "process_peak_rss_kib": 160232
+  }
+}

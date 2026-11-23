@@ -1,0 +1,21 @@
+{
+  "status": "completed",
+  "elapsed_s": 47.978566050000154,
+  "fresh_test_scenes": 192,
+  "independent_scene_families": 96,
+  "evaluation_cells": 42,
+  "comparisons": 90,
+  "source_unchanged_during_run": true,
+  "checkpoint_weights_unchanged": true,
+  "validation_selection_unchanged": true,
+  "source_sha256": {
+    "scripts/occupancy3d_study.py": "e0d5e966fa96af18d4dff29647340fb17effcf8d7d40b0e1cc425e7be6d46439",
+    "src/isac_wm/occupancy3d_data.py": "c5849ce8ca0c5d3b3d36b514723eaa9aa6deeb8969ff40ecb1e5da8962f57a77",
+    "src/isac_wm/occupancy3d_evaluation.py": "551364f1349ed86b6f0a160d93a614ba4e44395a893d0c269ae06c82fa0a0dcc",
+    "src/isac_wm/occupancy3d_model.py": "0336ae1dc76bd1bed1021c867dec9f33e4cdc314c549122fb0a6170b2c32e938",
+    "scripts/occupancy3d_refinement_study.py": "f92333fa1b68ed7886d91ceb4fe90ab4a265eed3bc76afed189a54e114b1d54f"
+  },
+  "validation_selection_sha256": "ac1e35f32f96e26f1c64cfb7ccca56bb90925d777d64e333345877a3c116a1bf",
+  "fresh_dataset_sha256": "2e4d3ba469390cd7baad9b48f23abfbf88250ce11b531b974137ae105f96e852",
+  "note": "No retraining. Matched inverse iteration counts do not imply equal total compute; neural refinement includes CNN cost."
+}
