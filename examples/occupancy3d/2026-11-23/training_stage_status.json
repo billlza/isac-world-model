@@ -1,0 +1,45 @@
+{
+  "scope": "3D RF geometry programme after the 2026-11-23 CPU pilot",
+  "updated_utc": "2026-11-23T22:48:45.041481+00:00",
+  "cpu_pilot": {
+    "status": "completed",
+    "device": "cpu",
+    "initialization": "random",
+    "training_scenes": 512,
+    "validation_scenes": 128,
+    "original_test_scenes": 192,
+    "fresh_refinement_test_scenes": 192,
+    "selected_model_checkpoints": 8,
+    "optimizer_updates": 2048,
+    "training_type": "supervised_geometry_and_RF_consistency",
+    "physical_refinement_type": "FISTA_numerical_inversion_no_parameter_training",
+    "executed_source_commit": "90e278bffd7af659761404ca5c1c10bb3db4f09d"
+  },
+  "formal_pretraining": {
+    "status": "prepared_not_gpu_validated_or_submitted",
+    "target": "Durham Hamilton 8 H200",
+    "configuration": "configs/occupancy3d_h200_pretrain.json",
+    "job_id": null,
+    "gpu_preflight_executed": false,
+    "training_scenes_planned": 8192,
+    "validation_scenes_planned": 512,
+    "test_scenes_planned": 1024,
+    "pretrain_epochs_planned": 40,
+    "supervised_continuation_epochs_per_branch_planned": 40,
+    "prior_scene_hashes_excluded": 1024,
+    "blocking_observation": "SSH stopped locally before connection: Bad owner or permissions on /etc/ssh/ssh_config.d/20-systemd-ssh-proxy.conf"
+  },
+  "reinforcement_learning": {
+    "status": "not_implemented_not_executed_for_this_3D_task",
+    "policy_updates": 0,
+    "next_dependency": "Action-conditioned sensing environment, fixed resource budget, and equal-budget baselines"
+  },
+  "rlhf": {
+    "status": "not_implemented_not_executed_for_this_3D_task",
+    "human_preference_annotations": 0,
+    "reward_model_updates": 0,
+    "policy_updates": 0,
+    "next_dependency": "Real human candidate/trajectory preferences with provenance, ties and unable-to-judge support"
+  },
+  "evidence_rule": "Each stage is marked completed only from actual execution and evaluation records; supervised RF loss and numerical correction are not RL, and automatic scores are not human feedback."
+}
