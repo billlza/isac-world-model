@@ -46,13 +46,14 @@ class GridSpec:
 
     @property
     def spacing_m(self) -> tuple[float, float, float]:
-        return tuple((hi - lo) / n for lo, hi, n in
-                     zip(self.lower_m, self.upper_m, self.shape, strict=True))
+        return tuple((hi - lo) / n for lo, hi, n in zip(self.lower_m, self.upper_m, self.shape, strict=True))
 
     @property
     def coordinates_m(self) -> np.ndarray:
-        axes = [lo + (np.arange(n, dtype=np.float64) + 0.5) * step
-                for lo, n, step in zip(self.lower_m, self.shape, self.spacing_m, strict=True)]
+        axes = [
+            lo + (np.arange(n, dtype=np.float64) + 0.5) * step
+            for lo, n, step in zip(self.lower_m, self.shape, self.spacing_m, strict=True)
+        ]
         return np.stack(np.meshgrid(*axes, indexing="ij"), axis=-1).reshape(-1, 3)
 
     @property
@@ -78,8 +79,7 @@ class RFConfig:
         for value in (self.n_poses, self.n_frequencies, self.heldout_n_poses):
             if int(value) != value or value < 2:
                 raise ValueError("Pose and frequency counts must be integers >= 2")
-        if not np.all(np.isfinite([self.carrier_hz, self.bandwidth_hz,
-                                   self.radius_m, self.noise_std])):
+        if not np.all(np.isfinite([self.carrier_hz, self.bandwidth_hz, self.radius_m, self.noise_std])):
             raise ValueError("RF configuration must be finite")
         if self.bandwidth_hz <= 0 or self.carrier_hz <= self.bandwidth_hz / 2:
             raise ValueError("RF frequencies must be strictly positive")
@@ -148,8 +148,9 @@ class RFOperator:
         return np.asarray(flat @ self.matrix.T, dtype=np.complex64)
 
     def metadata(self) -> dict:
-        max_range = float(np.linalg.norm(
-            self.sensors_m[:, None, :] - self.grid.coordinates_m[None, :, :], axis=-1).max())
+        max_range = float(
+            np.linalg.norm(self.sensors_m[:, None, :] - self.grid.coordinates_m[None, :, :], axis=-1).max()
+        )
         return {
             "data_version": DATA_VERSION,
             "model": "coherent_monostatic_discrete_first_Born_point_scattering",
@@ -166,11 +167,16 @@ class RFOperator:
             "maximum_sensor_voxel_range_m": max_range,
             "operator_shape": list(self.matrix.shape),
             "operator_sha256": hashlib.sha256(self.matrix.tobytes()).hexdigest(),
-            "assumptions": ["known sensor poses", "coherent calibrated complex RF",
-                            "isotropic antenna and scatterer response", "single scattering",
-                            "no occlusion or multipath", "unit relative scatterer strength in nominal model",
-                            "one weak point scatterer per occupied voxel center",
-                            "cuboid-shaped discrete support, not continuum dielectric cuboids"],
+            "assumptions": [
+                "known sensor poses",
+                "coherent calibrated complex RF",
+                "isotropic antenna and scatterer response",
+                "single scattering",
+                "no occlusion or multipath",
+                "unit relative scatterer strength in nominal model",
+                "one weak point scatterer per occupied voxel center",
+                "cuboid-shaped discrete support, not continuum dielectric cuboids",
+            ],
         }
 
 
@@ -188,24 +194,34 @@ def make_operator(
     offset = np.pi / np.sqrt(7.0) if heldout else 0.0
     angles = np.arange(count, dtype=np.float64) * (2.0 * np.pi / count) + offset
     center = (np.asarray(grid.lower_m) + np.asarray(grid.upper_m)) / 2
-    sensors = np.column_stack((center[0] + rf.radius_m * np.cos(angles),
-                               center[1] + rf.radius_m * np.sin(angles),
-                               np.full(count, center[2])))
+    sensors = np.column_stack(
+        (
+            center[0] + rf.radius_m * np.cos(angles),
+            center[1] + rf.radius_m * np.sin(angles),
+            np.full(count, center[2]),
+        )
+    )
     if layout == "height_diverse":
         height = grid.upper_m[2] - grid.lower_m[2]
         fractions = np.array([1 / 6, 5 / 6, 1 / 3, 2 / 3], dtype=np.float64)
         sensors[:, 2] = grid.lower_m[2] + height * np.resize(fractions, count)
-    frequencies = np.linspace(rf.carrier_hz - rf.bandwidth_hz / 2,
-                              rf.carrier_hz + rf.bandwidth_hz / 2, rf.n_frequencies)
+    frequencies = np.linspace(
+        rf.carrier_hz - rf.bandwidth_hz / 2, rf.carrier_hz + rf.bandwidth_hz / 2, rf.n_frequencies
+    )
     unambiguous_range = C_M_S / (2 * (frequencies[1] - frequencies[0]))
     max_range = np.linalg.norm(sensors[:, None, :] - grid.coordinates_m[None, :, :], axis=-1).max()
     if max_range >= unambiguous_range:
-        raise ValueError("Scene exceeds stepped-frequency unambiguous range; adjust bandwidth or frequency count")
-    normalization = (grid.voxel_volume_m3 / rf.radius_m**2
-                     * np.sqrt(rf.n_poses * rf.n_frequencies))
-    matrix = point_scattering_matrix(grid.coordinates_m, sensors, frequencies,
-                                     cell_volume_m3=grid.voxel_volume_m3,
-                                     normalization=normalization)
+        raise ValueError(
+            "Scene exceeds stepped-frequency unambiguous range; adjust bandwidth or frequency count"
+        )
+    normalization = grid.voxel_volume_m3 / rf.radius_m**2 * np.sqrt(rf.n_poses * rf.n_frequencies)
+    matrix = point_scattering_matrix(
+        grid.coordinates_m,
+        sensors,
+        frequencies,
+        cell_volume_m3=grid.voxel_volume_m3,
+        normalization=normalization,
+    )
     return RFOperator(matrix, sensors, frequencies, grid, rf, layout, heldout, normalization)
 
 
@@ -235,10 +251,16 @@ class SceneBatch:
         return hashlib.sha256("\n".join(self.scene_hashes).encode()).hexdigest()
 
     def metadata(self) -> dict:
-        return {"data_version": DATA_VERSION, "seed": self.seed, "grid": asdict(self.grid),
-                "scene_count": len(self.occupancy), "dataset_sha256": self.dataset_hash,
-                "scene_hashes": list(self.scene_hashes), "mirror_pair_ids": list(self.pair_ids),
-                "scene_specs_for_supervision_and_audit_only": list(self.specs)}
+        return {
+            "data_version": DATA_VERSION,
+            "seed": self.seed,
+            "grid": asdict(self.grid),
+            "scene_count": len(self.occupancy),
+            "dataset_sha256": self.dataset_hash,
+            "scene_hashes": list(self.scene_hashes),
+            "mirror_pair_ids": list(self.pair_ids),
+            "scene_specs_for_supervision_and_audit_only": list(self.specs),
+        }
 
 
 def generate_scenes(
@@ -270,8 +292,9 @@ def generate_scenes(
         for _ in range(int(rng.integers(1, 4))):
             widths = [int(rng.integers(2, min(size, 5) + 1)) for size in grid.shape[:2]]
             widths.append(int(rng.integers(1, min(grid.shape[2], 4) + 1)))
-            low = [int(rng.integers(0, size - width + 1))
-                   for size, width in zip(grid.shape, widths, strict=True)]
+            low = [
+                int(rng.integers(0, size - width + 1)) for size, width in zip(grid.shape, widths, strict=True)
+            ]
             high = [a + width for a, width in zip(low, widths, strict=True)]
             scene[tuple(slice(a, b) for a, b in zip(low, high, strict=True))] = 1
             boxes.append({"kind": "cuboid", "lower_index": low, "upper_index_exclusive": high})
@@ -282,8 +305,7 @@ def generate_scenes(
             low[axis] = 0 if rng.random() < 0.5 else grid.shape[axis] - 1
             high[axis] = low[axis] + 1
             scene[tuple(slice(a, b) for a, b in zip(low, high, strict=True))] = 1
-            boxes.append({"kind": "finite_wall_panel", "lower_index": low,
-                          "upper_index_exclusive": high})
+            boxes.append({"kind": "finite_wall_panel", "lower_index": low, "upper_index_exclusive": high})
         mirror = scene[:, :, ::-1].copy()
         h1, h2 = scene_hash(scene, grid), scene_hash(mirror, grid)
         if h1 == h2 or h1 in seen or h2 in seen:
@@ -293,8 +315,7 @@ def generate_scenes(
         for box in boxes:
             lo, hi = list(box["lower_index"]), list(box["upper_index_exclusive"])
             lo[2], hi[2] = grid.shape[2] - hi[2], grid.shape[2] - lo[2]
-            mirrored_boxes.append({"kind": box["kind"], "lower_index": lo,
-                                   "upper_index_exclusive": hi})
+            mirrored_boxes.append({"kind": box["kind"], "lower_index": lo, "upper_index_exclusive": hi})
         occupied.extend((scene, mirror))
         hashes.extend((h1, h2))
         pair_ids.extend((family, family))
@@ -316,8 +337,11 @@ class ObservationBatch:
 
     def model_inputs(self) -> dict[str, np.ndarray]:
         """Only calibrated measurements and instrument geometry, never labels."""
-        return {"rf": self.y, "sensors_m": self.operator.sensors_m,
-                "frequencies_hz": self.operator.frequencies_hz}
+        return {
+            "rf": self.y,
+            "sensors_m": self.operator.sensors_m,
+            "frequencies_hz": self.operator.frequencies_hz,
+        }
 
     def metadata(self) -> dict:
         signal_power = np.mean(np.abs(self.clean_y.astype(np.complex128)) ** 2, axis=-1)
@@ -326,12 +350,15 @@ class ObservationBatch:
             snr_summary = {"min": float(snr.min()), "mean": float(snr.mean()), "max": float(snr.max())}
         else:
             snr_summary = None
-        return {"noise_seed": self.noise_seed, "complex_noise_rms": self.noise_std,
-                "noise_distribution": "independent_circular_complex_Gaussian",
-                "normalization_uses_scene_truth": False,
-                "unit_susceptibility": self.unit_susceptibility,
-                "snr_db_for_evaluation_only": snr_summary,
-                "observations_sha256": hashlib.sha256(self.y.tobytes()).hexdigest()}
+        return {
+            "noise_seed": self.noise_seed,
+            "complex_noise_rms": self.noise_std,
+            "noise_distribution": "independent_circular_complex_Gaussian",
+            "normalization_uses_scene_truth": False,
+            "unit_susceptibility": self.unit_susceptibility,
+            "snr_db_for_evaluation_only": snr_summary,
+            "observations_sha256": hashlib.sha256(self.y.tobytes()).hexdigest(),
+        }
 
 
 def observe_scenes(

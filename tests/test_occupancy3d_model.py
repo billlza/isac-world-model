@@ -34,8 +34,7 @@ def test_streaming_matches_batch_and_accepts_late_static_evidence():
     memory = StaticRFMemory(a, coords, shape, 4, batch_size=2)
     memory.update(y[:, 4:8], 1, capture_s=1, available_s=1.1, now_s=2)
     memory.update(y[:, :4], 0, capture_s=0, available_s=2.1, now_s=2.1)
-    np.testing.assert_allclose(memory.features(), prefix_features(y, a, coords, shape, 4, 2),
-                               atol=1e-6)
+    np.testing.assert_allclose(memory.features(), prefix_features(y, a, coords, shape, 4, 2), atol=1e-6)
     with pytest.raises(ValueError, match="Duplicate"):
         memory.update(y[:, :4], 0, capture_s=0, available_s=2.1, now_s=3)
 

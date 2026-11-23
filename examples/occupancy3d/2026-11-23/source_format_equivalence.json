@@ -1,0 +1,129 @@
+{
+  "schema": "isac.occupancy3d.source-format-equivalence.v1",
+  "scope": "Formatting-only staging copy; experiment byte hashes retain the original source identity",
+  "ast_comparison": "ast.dump(ast.parse(source), include_attributes=False)",
+  "all_originals_unchanged": true,
+  "all_ast_identical": true,
+  "files_checked": 13,
+  "files_reformatted": 12,
+  "files": [
+    {
+      "path": "scripts/occupancy3d_audit.py",
+      "original_sha256": "ee2effbaad71fed057c606fb13e4f2f89d00a9be13e363774cb61633245b3d60",
+      "formatted_sha256": "2fe03c57545246b186215162d40e3ec270f5bf39031417f7a96b202a44ea9e1a",
+      "original_unchanged": true,
+      "ast_identical": true,
+      "text_changed": true
+    },
+    {
+      "path": "scripts/occupancy3d_refinement_report.py",
+      "original_sha256": "18437977d043970b263abd9ee3cfdcbd9b477e37e8f6e47be1d87e0f74b63370",
+      "formatted_sha256": "d0a21e63ad2ce7a1a82cd939df9ab17b4d8c39523f2ae4c276ab7fe025254b58",
+      "original_unchanged": true,
+      "ast_identical": true,
+      "text_changed": true
+    },
+    {
+      "path": "scripts/occupancy3d_refinement_study.py",
+      "original_sha256": "f92333fa1b68ed7886d91ceb4fe90ab4a265eed3bc76afed189a54e114b1d54f",
+      "formatted_sha256": "720bdf9d685bce9ad13c1b6a9facb3d1b6335fbc755b850711a83b290d366077",
+      "original_unchanged": true,
+      "ast_identical": true,
+      "text_changed": true
+    },
+    {
+      "path": "scripts/occupancy3d_report.py",
+      "original_sha256": "c331740da1a954a77b89c642659451fc1409d1992310a57c5140c6ea85c689f7",
+      "formatted_sha256": "7bca1ff512bd6e12c562aac48d80695dbf60a4f417bddca5b9a5e1881e757090",
+      "original_unchanged": true,
+      "ast_identical": true,
+      "text_changed": true
+    },
+    {
+      "path": "scripts/occupancy3d_sionna_check.py",
+      "original_sha256": "3385ad0bc8fffa692197a90d2862977be710955df7f5dcc2d682269b7a58e580",
+      "formatted_sha256": "2358b4a3cd60bfa1559c926d3af017d1a5422282d6cc468441cec6692391864c",
+      "original_unchanged": true,
+      "ast_identical": true,
+      "text_changed": true
+    },
+    {
+      "path": "scripts/occupancy3d_study.py",
+      "original_sha256": "e0d5e966fa96af18d4dff29647340fb17effcf8d7d40b0e1cc425e7be6d46439",
+      "formatted_sha256": "5ec80ec4d8f937ee84a1bdfe8a585379d42a300c1302505ec24718695a387d2f",
+      "original_unchanged": true,
+      "ast_identical": true,
+      "text_changed": true
+    },
+    {
+      "path": "src/isac_wm/occupancy3d_data.py",
+      "original_sha256": "c5849ce8ca0c5d3b3d36b514723eaa9aa6deeb8969ff40ecb1e5da8962f57a77",
+      "formatted_sha256": "0a2f08c646d806887c49f4d0f462001cc83804472d1870437e1c7957489b5383",
+      "original_unchanged": true,
+      "ast_identical": true,
+      "text_changed": true
+    },
+    {
+      "path": "src/isac_wm/occupancy3d_evaluation.py",
+      "original_sha256": "551364f1349ed86b6f0a160d93a614ba4e44395a893d0c269ae06c82fa0a0dcc",
+      "formatted_sha256": "3259aec1df525ec60d987fef91c05e1dcbc328d42f2f2d9c2b6a287ef371b128",
+      "original_unchanged": true,
+      "ast_identical": true,
+      "text_changed": true
+    },
+    {
+      "path": "src/isac_wm/occupancy3d_model.py",
+      "original_sha256": "0336ae1dc76bd1bed1021c867dec9f33e4cdc314c549122fb0a6170b2c32e938",
+      "formatted_sha256": "dabf13def206eac2c2393922ba82cf7f1b8bdf666284cd6ad4445ca4fdc65be5",
+      "original_unchanged": true,
+      "ast_identical": true,
+      "text_changed": true
+    },
+    {
+      "path": "tests/test_occupancy3d_data.py",
+      "original_sha256": "38f447f8f52eb29bd6e5b6131143dba17973d6605d45ebd7380ac1b651f5160c",
+      "formatted_sha256": "8292aecfb5d1928265c32b5b03ccb20f78855b2cf93ebc89dd22399aa5184385",
+      "original_unchanged": true,
+      "ast_identical": true,
+      "text_changed": true
+    },
+    {
+      "path": "tests/test_occupancy3d_evaluation.py",
+      "original_sha256": "13630e9e692dd656bc298c8d9ded3ac30c079c2fe332de9c9d4a85a70cfbb9a3",
+      "formatted_sha256": "09346cae6c1fcd56f9fd989aec87a698307d470e184637ebdcfb652c23576343",
+      "original_unchanged": true,
+      "ast_identical": true,
+      "text_changed": true
+    },
+    {
+      "path": "tests/test_occupancy3d_model.py",
+      "original_sha256": "36b654809685e0ba17aa997c6710a781d01699dd33f9bfe659e5965151320955",
+      "formatted_sha256": "0a5b9d710feddd4035ff422bae4523624d6c39436391f3ec7a492e7a049e0eb5",
+      "original_unchanged": true,
+      "ast_identical": true,
+      "text_changed": true
+    },
+    {
+      "path": "tests/test_occupancy3d_refinement.py",
+      "original_sha256": "5ba1a4f39cba77f01df42a72e2723f2503182459372502dd94a83776cf3761e3",
+      "formatted_sha256": "5ba1a4f39cba77f01df42a72e2723f2503182459372502dd94a83776cf3761e3",
+      "original_unchanged": true,
+      "ast_identical": true,
+      "text_changed": false
+    }
+  ],
+  "validation": {
+    "ruff_check": "passed",
+    "ruff_format_check": "passed",
+    "pytest": {
+      "tests": 30,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 30
+    },
+    "pythonpath": "staging/src",
+    "logs_directory": "/workspace/scratch/2a63e545b553/tmp/occupancy3d_format_validation"
+  },
+  "exact_experiment_source_commit": "90e278bffd7af659761404ca5c1c10bb3db4f09d"
+}

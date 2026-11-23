@@ -67,9 +67,7 @@ def run_check(*, threads: int = 2, frequency_hz: float = 60e9) -> dict:
         case_began = time.perf_counter()
         scene = load_scene()
         scene.frequency = frequency_hz
-        scene.tx_array = PlanarArray(
-            num_rows=1, num_cols=1, pattern="iso", polarization="V"
-        )
+        scene.tx_array = PlanarArray(num_rows=1, num_cols=1, pattern="iso", polarization="V")
         scene.rx_array = scene.tx_array
         scene.add(Transmitter("tx", position=sensor_position))
         scene.add(Receiver("rx", position=sensor_position))
@@ -88,7 +86,9 @@ def run_check(*, threads: int = 2, frequency_hz: float = 60e9) -> dict:
         amplitude = np.asarray(amplitude).reshape(-1)
         delay = np.asarray(delay).reshape(-1)
         if amplitude.size != 1 or delay.size != 1:
-            raise RuntimeError(f"{name}: expected one direct sensing path, got {amplitude.shape}/{delay.shape}")
+            raise RuntimeError(
+                f"{name}: expected one direct sensing path, got {amplitude.shape}/{delay.shape}"
+            )
         a = complex(amplitude[0])
         tau_s = float(delay[0])
         if tau_s <= 0 or not np.isfinite(a.real + a.imag + tau_s):

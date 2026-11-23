@@ -121,8 +121,9 @@ def test_mismatch_changes_measurements_without_changing_occupancy_labels(grid, r
     before = scenes.occupancy.copy()
     op = make_operator(grid, rf, "height_diverse")
     nominal = observe_scenes(scenes, op, 12, noise_std=0)
-    mismatch = observe_scenes(scenes, op, 12, noise_std=0,
-                              susceptibility=np.full(grid.shape, 1.2, dtype=np.float32))
+    mismatch = observe_scenes(
+        scenes, op, 12, noise_std=0, susceptibility=np.full(grid.shape, 1.2, dtype=np.float32)
+    )
     np.testing.assert_allclose(mismatch.clean_y, nominal.clean_y * 1.2, atol=5e-6, rtol=1e-6)
     np.testing.assert_array_equal(scenes.occupancy, before)
     assert not mismatch.unit_susceptibility

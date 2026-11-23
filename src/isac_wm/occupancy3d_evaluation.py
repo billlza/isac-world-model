@@ -228,7 +228,12 @@ def occupancy_metrics(
         raise ValueError("target must contain only binary finite labels")
     if spacing.shape != (3,) or not np.all(np.isfinite(spacing)) or np.any(spacing <= 0):
         raise ValueError("spacing_xyz must contain three positive finite values")
-    if not math.isfinite(threshold) or not 0 <= threshold <= 1 or int(calibration_bins) != calibration_bins or calibration_bins < 1:
+    if (
+        not math.isfinite(threshold)
+        or not 0 <= threshold <= 1
+        or int(calibration_bins) != calibration_bins
+        or calibration_bins < 1
+    ):
         raise ValueError("Invalid probability threshold or calibration bin count")
     valid = np.ones(p.shape, dtype=bool) if valid_mask is None else np.asarray(valid_mask, dtype=bool)
     if valid.shape != p.shape or not np.any(valid):
@@ -262,12 +267,16 @@ def occupancy_metrics(
         "brier": float(np.mean((values - labels) ** 2)),
         "binary_nll": float(np.mean(-labels * np.log(safe) - (1 - labels) * np.log1p(-safe))),
         "ece": float(ece),
-        "height_column_rmse_m": float(np.sqrt(np.mean(height_error ** 2))) if len(height_error) else 0.0,
+        "height_column_rmse_m": float(np.sqrt(np.mean(height_error**2))) if len(height_error) else 0.0,
         "height_column_mae_m": float(np.mean(np.abs(height_error))) if len(height_error) else 0.0,
-        "height_true_column_rmse_m": float(np.sqrt(np.mean(true_height_error ** 2))) if len(true_height_error) else None,
+        "height_true_column_rmse_m": float(np.sqrt(np.mean(true_height_error**2)))
+        if len(true_height_error)
+        else None,
         "height_evaluated_columns": int(np.count_nonzero(height_columns)),
         "missed_columns": int(np.count_nonzero((true_height > 0) & (pred_height == 0) & full_columns)),
-        "false_positive_columns": int(np.count_nonzero((true_height == 0) & (pred_height > 0) & full_columns)),
+        "false_positive_columns": int(
+            np.count_nonzero((true_height == 0) & (pred_height > 0) & full_columns)
+        ),
         "valid_voxels": int(np.count_nonzero(valid)),
         "predicted_occupied_voxels": tp + fp,
         "true_occupied_voxels": tp + fn,
@@ -309,7 +318,12 @@ def select_occupancy_threshold(
     if not np.all(np.isfinite(p)) or np.any((p < 0) | (p > 1)) or not np.all((t == 0) | (t == 1)):
         raise ValueError("Invalid validation probabilities or labels")
     thresholds = np.asarray(candidates, dtype=np.float64)
-    if thresholds.ndim != 1 or len(thresholds) == 0 or not np.all(np.isfinite(thresholds)) or np.any((thresholds < 0) | (thresholds > 1)):
+    if (
+        thresholds.ndim != 1
+        or len(thresholds) == 0
+        or not np.all(np.isfinite(thresholds))
+        or np.any((thresholds < 0) | (thresholds > 1))
+    ):
         raise ValueError("Threshold candidates must lie in [0, 1]")
     truth = t.reshape(len(t), -1).astype(bool)
     best: tuple[float, float, float] | None = None
@@ -317,7 +331,9 @@ def select_occupancy_threshold(
         prediction = p.reshape(len(p), -1) >= threshold
         intersection = np.count_nonzero(prediction & truth, axis=1)
         union = np.count_nonzero(prediction | truth, axis=1)
-        score = float(np.mean(np.divide(intersection, union, out=np.ones_like(union, dtype=float), where=union > 0)))
+        score = float(
+            np.mean(np.divide(intersection, union, out=np.ones_like(union, dtype=float), where=union > 0))
+        )
         ranked = (score, -abs(float(threshold) - 0.5), -float(threshold))
         if best is None or ranked > best:
             best = ranked
@@ -365,12 +381,14 @@ def select_fista_configuration(
             estimate = fista_box_inverse(a, y, iterations=int(iterations), ridge=float(ridge))
             selected_threshold = select_occupancy_threshold(estimate, target.reshape(len(y), -1))
             query_prediction = estimate @ query.T
-            rows.append({
-                "iterations": int(iterations),
-                "ridge": float(ridge),
-                **selected_threshold,
-                "validation_query_nmse": float(np.mean(complex_nmse(query_prediction, reference))),
-            })
+            rows.append(
+                {
+                    "iterations": int(iterations),
+                    "ridge": float(ridge),
+                    **selected_threshold,
+                    "validation_query_nmse": float(np.mean(complex_nmse(query_prediction, reference))),
+                }
+            )
     best_iou = max(row["validation_macro_iou_3d"] for row in rows)
     eligible = [row for row in rows if row["validation_macro_iou_3d"] >= best_iou - near_best_iou_tolerance]
     selected = min(eligible, key=lambda row: (row["validation_query_nmse"], row["iterations"], row["ridge"]))
@@ -432,18 +450,21 @@ def select_fixed_height_configuration(
                 ).reshape(len(y), -1)
                 threshold = select_occupancy_threshold(estimate, target.reshape(len(y), -1))
                 query_prediction = estimate @ query.T
-                rows.append({
-                    "profile_name": profile_name,
-                    "iterations": int(iterations),
-                    "ridge": float(ridge),
-                    **threshold,
-                    "validation_query_nmse": float(np.mean(complex_nmse(query_prediction, reference))),
-                })
+                rows.append(
+                    {
+                        "profile_name": profile_name,
+                        "iterations": int(iterations),
+                        "ridge": float(ridge),
+                        **threshold,
+                        "validation_query_nmse": float(np.mean(complex_nmse(query_prediction, reference))),
+                    }
+                )
     best_iou = max(row["validation_macro_iou_3d"] for row in rows)
     eligible = [row for row in rows if row["validation_macro_iou_3d"] >= best_iou - near_best_iou_tolerance]
-    selected = min(eligible, key=lambda row: (
-        row["validation_query_nmse"], row["iterations"], row["ridge"], row["profile_name"]
-    ))
+    selected = min(
+        eligible,
+        key=lambda row: (row["validation_query_nmse"], row["iterations"], row["ridge"], row["profile_name"]),
+    )
     return {
         "selected": dict(selected),
         "candidates": rows,

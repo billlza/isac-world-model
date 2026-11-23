@@ -47,9 +47,7 @@ class Occupancy3DEvaluationTest(unittest.TestCase):
         profile = np.array([1.0, 1.0, 0.0])
         truth = np.array([0.2, 0.7])[:, None, None] * profile
         operator = np.eye(6, dtype=np.complex128)
-        reconstructed = fixed_height_25d(
-            operator, truth.ravel(), shape, profile, ridge=0, iterations=50
-        )
+        reconstructed = fixed_height_25d(operator, truth.ravel(), shape, profile, ridge=0, iterations=50)
         self.assertEqual(reconstructed.shape, shape)
         np.testing.assert_allclose(reconstructed, truth, atol=1e-9)
         np.testing.assert_array_equal(reconstructed[:, :, 2], 0)
@@ -119,8 +117,13 @@ class Occupancy3DEvaluationTest(unittest.TestCase):
         operator = np.eye(2, dtype=np.complex128)
         target = np.array([[0, 1], [1, 0]])
         result = select_fista_configuration(
-            operator, target.astype(complex), target, operator, target.astype(complex),
-            iteration_candidates=(20, 40), ridge_candidates=(0.0, 0.1),
+            operator,
+            target.astype(complex),
+            target,
+            operator,
+            target.astype(complex),
+            iteration_candidates=(20, 40),
+            ridge_candidates=(0.0, 0.1),
         )
         self.assertEqual(len(result["candidates"]), 4)
         self.assertEqual(result["selected"]["ridge"], 0)
@@ -132,9 +135,15 @@ class Occupancy3DEvaluationTest(unittest.TestCase):
         truth = np.array([[1, 0, 0, 0], [0, 0, 1, 0]]).reshape(2, 2, 1, 2)
         measurements = truth.reshape(2, 4).astype(complex)
         result = select_fixed_height_configuration(
-            operator, measurements, truth, operator, measurements, (2, 1, 2),
+            operator,
+            measurements,
+            truth,
+            operator,
+            measurements,
+            (2, 1, 2),
             {"all_heights": np.ones(2), "floor": np.array([1.0, 0.0])},
-            iteration_candidates=(20,), ridge_candidates=(0.0,),
+            iteration_candidates=(20,),
+            ridge_candidates=(0.0,),
         )
         self.assertEqual(result["selected"]["profile_name"], "floor")
         self.assertEqual(result["selected"]["validation_macro_iou_3d"], 1)

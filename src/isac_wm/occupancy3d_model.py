@@ -87,8 +87,14 @@ class StaticRFMemory:
     accepts them once, provided they are available by the current update time.
     """
 
-    def __init__(self, matrix: np.ndarray, coordinates_m: np.ndarray,
-                 shape: tuple[int, int, int], n_frequencies: int, batch_size: int = 1):
+    def __init__(
+        self,
+        matrix: np.ndarray,
+        coordinates_m: np.ndarray,
+        shape: tuple[int, int, int],
+        n_frequencies: int,
+        batch_size: int = 1,
+    ):
         self.matrix = np.asarray(matrix)
         self.coordinates_m = np.asarray(coordinates_m)
         self.shape = tuple(shape)
@@ -107,8 +113,9 @@ class StaticRFMemory:
         self.accepted: set[int] = set()
         self.now_s = -float("inf")
 
-    def update(self, y_pose: np.ndarray, pose_index: int, *, capture_s: float,
-               available_s: float, now_s: float) -> None:
+    def update(
+        self, y_pose: np.ndarray, pose_index: int, *, capture_s: float, available_s: float, now_s: float
+    ) -> None:
         if not np.isfinite([capture_s, available_s, now_s]).all():
             raise ValueError("Timestamps must be finite")
         if not capture_s <= available_s <= now_s or now_s < self.now_s:
@@ -121,7 +128,7 @@ class StaticRFMemory:
         if y_pose.shape != (self.numerator.shape[0], self.n_frequencies) or not np.isfinite(y_pose).all():
             raise ValueError("Invalid measured RF batch")
         start = pose_index * self.n_frequencies
-        block = self.matrix[start:start + self.n_frequencies]
+        block = self.matrix[start : start + self.n_frequencies]
         contribution = y_pose @ block.conj()
         information = np.square(np.abs(block)).sum(axis=0)
         self.numerator += contribution
@@ -130,9 +137,14 @@ class StaticRFMemory:
         self.now_s = now_s
 
     def features(self) -> np.ndarray:
-        return _features(self.numerator, self.energy, self.coordinates_m, self.shape,
-                         self.reference_energy,
-                         len(self.accepted) * self.n_frequencies / self.matrix.shape[0])
+        return _features(
+            self.numerator,
+            self.energy,
+            self.coordinates_m,
+            self.shape,
+            self.reference_energy,
+            len(self.accepted) * self.n_frequencies / self.matrix.shape[0],
+        )
 
 
 class OccupancyReadout(nn.Module):
@@ -144,16 +156,21 @@ class OccupancyReadout(nn.Module):
             raise ValueError("At least four feature channels are required")
         self.channels = channels
         self.local = nn.Sequential(
-            nn.Conv3d(7, channels, 3, padding=1), nn.SiLU(),
-            nn.Conv3d(channels, channels, 3, padding=1), nn.SiLU(),
+            nn.Conv3d(7, channels, 3, padding=1),
+            nn.SiLU(),
+            nn.Conv3d(channels, channels, 3, padding=1),
+            nn.SiLU(),
         )
         self.context = nn.Sequential(
             nn.AvgPool3d(2),
-            nn.Conv3d(channels, 2 * channels, 3, padding=1), nn.SiLU(),
-            nn.Conv3d(2 * channels, 2 * channels, 3, padding=1), nn.SiLU(),
+            nn.Conv3d(channels, 2 * channels, 3, padding=1),
+            nn.SiLU(),
+            nn.Conv3d(2 * channels, 2 * channels, 3, padding=1),
+            nn.SiLU(),
         )
         self.output = nn.Sequential(
-            nn.Conv3d(3 * channels, channels, 3, padding=1), nn.SiLU(),
+            nn.Conv3d(3 * channels, channels, 3, padding=1),
+            nn.SiLU(),
             nn.Conv3d(channels, 1, 1),
         )
         nn.init.constant_(self.output[-1].bias, -2.0)
@@ -162,8 +179,9 @@ class OccupancyReadout(nn.Module):
         if features.ndim != 5 or features.shape[1] != 7:
             raise ValueError("Features must have shape [batch,7,x,y,z]")
         local = self.local(features)
-        context = F.interpolate(self.context(local), size=local.shape[-3:], mode="trilinear",
-                                align_corners=False)
+        context = F.interpolate(
+            self.context(local), size=local.shape[-3:], mode="trilinear", align_corners=False
+        )
         return self.output(torch.cat([local, context], dim=1)).squeeze(1)
 
 
