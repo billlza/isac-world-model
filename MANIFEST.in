@@ -3,6 +3,7 @@ recursive-include crates *.toml *.rs
 recursive-include scripts *.py *.sh
 recursive-include ci *.txt *.json *.lock
 recursive-include tests *.py
+include tests/fixtures/m7_mooring_synthetic_samples.csv
 recursive-include docs *.md
 recursive-include .github *.yml
 prune runs

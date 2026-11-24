@@ -22,8 +22,7 @@ from typing import Any
 SCHEMA_VERSION = "m7-link-telemetry-v1"
 SCHEMA_REFERENCE_COMMIT = "0d6361d3bca8ea76a08cd8ef1cac6606dd730958"
 SCHEMA_REFERENCE_URL = (
-    "https://github.com/billlza/mooring/blob/"
-    f"{SCHEMA_REFERENCE_COMMIT}/crates/daemon-core/src/radio_table.rs"
+    f"https://github.com/billlza/mooring/blob/{SCHEMA_REFERENCE_COMMIT}/crates/daemon-core/src/radio_table.rs"
 )
 SAMPLES_HEADER = (
     "at_unix,at_utc,outcome,failure,uptime_secs,temperature_c,thermal,service,"
@@ -173,9 +172,7 @@ def _quality(records: list[dict[str, Any]]) -> dict[str, Any]:
         "records_with_any_rf_metric": sum(
             any(v is not None for v in row["rf_metrics"].values()) for row in records
         ),
-        "rf_missing_counts": {
-            field: sum(row["rf_missing"][field] for row in records) for field in RF_FIELDS
-        },
+        "rf_missing_counts": {field: sum(row["rf_missing"][field] for row in records) for field in RF_FIELDS},
         "poll_start_intervals_s": {
             "count": len(intervals),
             "minimum": min(intervals) if intervals else None,
