@@ -1,0 +1,16 @@
+{
+  "status": "completed",
+  "training_stages": 12,
+  "learned_test_cells": 8,
+  "evaluation_cells": 84,
+  "elapsed_s": 807.2205870780163,
+  "source_sha256": {
+    "scripts/occupancy3d_h200_study.py": "99ded686b005ea1b9d3b612d344eb476be897c29207dffbbc2b3ce3d1bf6fc7a",
+    "scripts/occupancy3d_study.py": "5ec80ec4d8f937ee84a1bdfe8a585379d42a300c1302505ec24718695a387d2f",
+    "src/isac_wm/occupancy3d_data.py": "0a2f08c646d806887c49f4d0f462001cc83804472d1870437e1c7957489b5383",
+    "src/isac_wm/occupancy3d_evaluation.py": "3259aec1df525ec60d987fef91c05e1dcbc328d42f2f2d9c2b6a287ef371b128",
+    "src/isac_wm/occupancy3d_model.py": "dabf13def206eac2c2393922ba82cf7f1b8bdf666284cd6ad4445ca4fdc65be5"
+  },
+  "source_unchanged_during_run": true,
+  "note": "Batched network timing excludes feature generation; not end-to-end latency"
+}

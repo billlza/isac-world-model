@@ -1,0 +1,45 @@
+{
+  "created_utc": "2026-11-24T00:15:54.097391+00:00",
+  "purpose": "Verify selected H200 checkpoints by CPU inference and evaluate frozen CPU-pilot checkpoints on the exact same new H200 test set.",
+  "data_reconstruction": "Rasterize all explicit provenance cuboid bounds; check every scene and ordered dataset hash. Regenerate nominal RF using declared noise seeds; verify operator and observation SHA256 where recorded.",
+  "checkpoint_policy": "All selected checkpoints are frozen. Safe torch.load(weights_only=True). No training, weight update, test-based selection, or threshold retuning.",
+  "threshold_policy": "Each version retains its own original validation-selected threshold for each model and observation prefix.",
+  "h200_replay_cells": "nominal, both layouts, prefixes 3/6/12, seeds 7/11, geometry and geometry_rf (24 cells)",
+  "old_new_comparison_cells": "nominal, height_diverse, prefixes 3/6/12, seeds 7/11, geometry and geometry_rf (12 paired cells)",
+  "comparison_interpretation": "Paired comparison of frozen training recipes. Data volume, width, update budget and execution platform changed together; not an isolated causal effect of any one factor.",
+  "metrics": [
+    "iou_3d",
+    "brier",
+    "query_rf_nmse_soft",
+    "observed_rf_nmse_soft"
+  ],
+  "replay_aggregate_absolute_tolerance": 0.0002,
+  "replay_soft_metric_per_scene_absolute_tolerance": 0.0001,
+  "hard_metric_policy": "Report every scene-level IoU difference. Near-threshold floating-point decisions may affect hard IoU; no claim of bitwise cross-platform prediction replay.",
+  "bootstrap": {
+    "unit": "vertical-mirror family",
+    "families": 512,
+    "fixed_seeds_averaged": [
+      7,
+      11
+    ],
+    "resamples": 10000,
+    "rng_seed": 20261124,
+    "interval": "95 percent percentile, pointwise, unadjusted",
+    "scope": "Conditional on these fixed trained checkpoints; no estimate of training-seed population uncertainty."
+  },
+  "runtime": {
+    "python": "3.12.14 (main, Aug 25 2026, 14:00:49) [Clang 22.1.3 ]",
+    "numpy": "2.5.4",
+    "torch": "2.14.1+cpu",
+    "platform": "Linux-6.18.57-x86_64-with-glibc2.41",
+    "device": "cpu",
+    "torch_threads": 2
+  },
+  "inputs": {
+    "provenance": "a36b2d744412ca549a601affd63705926efa6b73fb5c3c07da27bb394a415a1f",
+    "h200_thresholds": "f48fcbfeb014b282d860bd78c8456797512767333275606850bea1a18e4d6a07",
+    "old_thresholds": "770f5c44208e22eb2ee1fc3c2ce1e673ad93094161415f069170d90314197834",
+    "script": "7354d4c3db158c2c470560831294f873bfcf492da1afe8d0c2b280afa3e8c54d"
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "observed": [
+    "3.13.9",
+    "2.3.4",
+    "2.9.0+cu128",
+    "12.8"
+  ],
+  "expected": [
+    "3.13.9",
+    "2.3.4",
+    "2.9.0+cu128",
+    "12.8"
+  ],
+  "gpu": "NVIDIA H200 NVL",
+  "gpu_memory_bytes": 150156607488,
+  "cuda_visible_devices": "0",
+  "slurm_job_id": "19558762",
+  "command": [
+    "/apps/developers/compilers/python/3.13.9cuda/1/default/bin/python",
+    "/home/bhmq03/isac-3d-pretrain-3111d2c31d27/scripts/occupancy3d_h200_study.py",
+    "--output",
+    "/home/bhmq03/isac-3d-pretrain-3111d2c31d27/runs/occupancy3d-h200-189048fdc1c2/study",
+    "--device",
+    "cuda",
+    "--determinism",
+    "warn",
+    "--threads",
+    "2",
+    "--train-scenes",
+    "8192",
+    "--val-scenes",
+    "512",
+    "--test-scenes",
+    "1024",
+    "--data-seed",
+    "20261201",
+    "--seeds",
+    "7",
+    "11",
+    "--warmup-epochs",
+    "40",
+    "--finetune-epochs",
+    "40",
+    "--channels",
+    "24",
+    "--batch-size",
+    "64",
+    "--rf-weight",
+    "0.2",
+    "--exclude-scene-hashes",
+    "examples/occupancy3d/2026-11-23/prior_scene_hashes.json"
+  ],
+  "stages": {
+    "A_pretraining": "Random-initialized supervised geometry pretraining: BCE + 0.5 soft Dice",
+    "RL": "not_implemented_not_executed",
+    "RLHF": "not_implemented_not_executed",
+    "A_geometry_continuation": "Supervised geometry continuation from the selected stage A weights",
+    "A_rf_continuation": "Supervised geometry plus 0.2 RF-consistency continuation from the same stage A weights"
+  },
+  "determinism": "warn",
+  "determinism_note": "Fixed seeds and deterministic algorithms where available; CUDA AvgPool3d and trilinear backward can be nondeterministic. Warnings are retained. Bitwise repeatability across GPU runs is not promised.",
+  "CUBLAS_WORKSPACE_CONFIG": ":4096:8"
+}

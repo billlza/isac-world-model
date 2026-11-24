@@ -1,6 +1,6 @@
 {
-  "scope": "3D RF geometry programme after the 2026-11-23 CPU pilot",
-  "updated_utc": "2026-11-23T22:48:45.041481+00:00",
+  "scope": "3D RF geometry programme after completed CPU pilot and Hamilton H200 run 19558762",
+  "updated_utc": "2026-11-24T00:21:26.520099+00:00",
   "cpu_pilot": {
     "status": "completed",
     "device": "cpu",
@@ -16,18 +16,37 @@
     "executed_source_commit": "90e278bffd7af659761404ca5c1c10bb3db4f09d"
   },
   "formal_pretraining": {
-    "status": "prepared_not_gpu_validated_or_submitted",
-    "target": "Durham Hamilton 8 H200",
+    "status": "completed",
+    "target": "Durham Hamilton 8 NVIDIA H200 NVL",
     "configuration": "configs/occupancy3d_h200_pretrain.json",
-    "job_id": null,
-    "gpu_preflight_executed": false,
-    "training_scenes_planned": 8192,
-    "validation_scenes_planned": 512,
-    "test_scenes_planned": 1024,
-    "pretrain_epochs_planned": 40,
-    "supervised_continuation_epochs_per_branch_planned": 40,
+    "job_id": "19558762",
+    "execution_source_commit": "3111d2c31d2770b87f63545095ad7a59bc48b644",
+    "application_completed_utc": "2026-11-23T23:56:10.400874+00:00",
+    "completion_evidence": [
+      "job_status.json",
+      "study/status.json",
+      "slurm-19558762.out"
+    ],
+    "scheduler_terminal_accounting_export_in_bundle": false,
+    "gpu_preflight_executed": true,
+    "gpu_preflight_status": "passed",
+    "model_parameters": 160249,
+    "training_scenes": 8192,
+    "validation_scenes": 512,
+    "test_scenes": 1024,
+    "training_stages": 12,
+    "optimizer_updates": 61440,
+    "evaluation_cells": 84,
+    "per_scene_metric_records": 86016,
+    "pretrain_epochs": 40,
+    "supervised_continuation_epochs_per_branch": 40,
     "prior_scene_hashes_excluded": 1024,
-    "blocking_observation": "SSH stopped locally before connection: Bad owner or permissions on /etc/ssh/ssh_config.d/20-systemd-ssh-proxy.conf"
+    "prior_scene_overlap": 0,
+    "full_study_elapsed_s": 807.2205870780163,
+    "artifact_audit_passed": 393,
+    "artifact_audit_total": 393,
+    "replay": "24 nominal aggregate metrics within fixed 2e-4 bound; stricter per-scene soft bound not met; full differences retained",
+    "report": "docs/RF_3D_H200_RESULTS_2026-11-24.zh-CN.md"
   },
   "reinforcement_learning": {
     "status": "not_implemented_not_executed_for_this_3D_task",
