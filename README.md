@@ -1,5 +1,22 @@
 # ISAC World Model — v0.4.1 release engineering
 
+## M7 Pro real-device telemetry intake
+
+The standard-library importer reads the existing Mooring MR7450 sample CSV into
+an independent cellular link-telemetry dataset with missing-value masks, failure
+states and source provenance. It preserves host poll-start timing; legacy RF
+capture and availability times remain unknown. This input supports offline link
+analysis and does not supply the calibrated complex RF required by occupancy3d.
+
+```bash
+python3 scripts/import_m7_telemetry.py --input /path/to/radio-samples.csv \
+  --output runs/m7-intake --data-origin real_device
+```
+
+See [device capability evidence, local export and input semantics](docs/M7_PRO_REAL_DATA.zh-CN.md).
+Declare synthetic fixtures as `synthetic`; the importer does not verify physical
+data origin or collect new measurements from the device.
+
 ## Complex-scene pretraining from random initialization
 
 The new pretraining study brings maneuvering, occlusion, asynchronous delays,
