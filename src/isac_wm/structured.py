@@ -16,6 +16,7 @@ from .model import EventBeliefModel, ModelConfig, radio_from_state
 from .validation import finite, integer
 
 LATENT_STATE_NORM_EPS = 1e-5
+MAX_FORECAST_STEPS = 256
 
 
 @dataclass(frozen=True)
@@ -32,6 +33,8 @@ class StructuredConfig:
     # Per-axis physical bound; the velocity state is normalized by 2 m/s.
     max_acceleration_mps2: float = 0.5
     acceleration_init_scale: float = 1.0
+    # Zero retains the historical fixed-latent, single-step forecast exactly.
+    forecast_step_s: float = 0.0
 
     def __post_init__(self) -> None:
         ModelConfig(self.feature_dim, self.hidden_dim)
@@ -44,6 +47,7 @@ class StructuredConfig:
         if self.max_acceleration_mps2 > 100:
             raise ValueError("max_acceleration_mps2 must be at most 100 m/s^2")
         finite(self.acceleration_init_scale, "acceleration_init_scale", positive=True)
+        finite(self.forecast_step_s, "forecast_step_s")
         if self.acceleration_init_scale > 1:
             raise ValueError("acceleration_init_scale must be in (0, 1]")
         if self.architecture not in {"structured", "structured-attention"}:
@@ -67,6 +71,7 @@ class StructuredConfig:
             ("visual_depth", 1),
             ("max_acceleration_mps2", 0.5),
             ("acceleration_init_scale", 1.0),
+            ("forecast_step_s", 0.0),
         ):
             if values[name] == default:
                 values.pop(name)
@@ -275,21 +280,55 @@ class StructuredEventModel(EventBeliefModel):
         }
 
     def forecast(self, packed: Tensor, horizon: float | Tensor) -> dict[str, Tensor]:
-        # Forecast only the physical state: h is the already-normalized recurrent
-        # state from step(), with no additional latent transition or normalization.
+        """Predict without evidence, preserving the caller's packed belief.
+
+        With ``forecast_step_s=0``, only the physical state evolves, exactly as
+        in historical checkpoints. A positive step enables bounded internal
+        latent/physical transitions in the same order as an observation-free
+        ``step()``. No cached token is reinterpreted as fresh evidence. Each row
+        stops at its own horizon; zero-time rows are never renormalized.
+
+        Covariance remains the model's process-noise approximation, not a
+        calibrated guarantee or a Jacobian propagation of latent uncertainty.
+        """
         h, mean, covariance = self._unpack(packed)
-        if isinstance(horizon, (int, float)):
-            finite(horizon, "horizon")
-            dt = h.new_full((h.shape[0], 1), horizon)
-        else:
+        if isinstance(horizon, Tensor):
             if (
                 horizon.shape not in {torch.Size([]), torch.Size([h.shape[0], 1])}
+                or horizon.is_complex()
+                or horizon.dtype == torch.bool
                 or not bool(torch.isfinite(horizon).all())
                 or bool((horizon < 0).any())
             ):
                 raise ValueError("horizon must be finite, non-negative and batch-compatible")
             dt = horizon.to(h).expand(h.shape[0], 1)
-        mean, covariance = self._predict(h, mean, covariance, dt)
+        else:
+            value = finite(horizon, "horizon")
+            if value > torch.finfo(h.dtype).max:
+                raise ValueError("horizon is not representable in the model dtype")
+            dt = h.new_full((h.shape[0], 1), value)
+        if not bool(torch.isfinite(dt).all()):
+            raise ValueError("horizon is not representable in the model dtype")
+        if self.config.forecast_step_s == 0:
+            mean, covariance = self._predict(h, mean, covariance, dt)
+            return self.decode_state(self._pack(h, mean, covariance))
+
+        step_s = h.new_tensor(self.config.forecast_step_s)
+        if not bool(torch.isfinite(step_s)) or not bool(step_s > 0):
+            raise ValueError("forecast_step_s is not representable in the model dtype")
+        steps = dt.max() / step_s
+        if not bool(torch.isfinite(steps)) or bool(steps > MAX_FORECAST_STEPS):
+            raise ValueError(f"forecast requires more than {MAX_FORECAST_STEPS} internal steps")
+        for index in range(int(torch.ceil(steps).item())):
+            interval = torch.minimum((dt - index * step_s).clamp_min(0), step_s)
+            active = interval > 0
+            proposed_h = h + interval * self.dynamics(h)
+            if self.latent_state_norm is not None:
+                proposed_h = self.latent_state_norm(proposed_h)
+            h = torch.where(active, proposed_h, h)
+            proposed_mean, proposed_covariance = self._predict(h, mean, covariance, interval)
+            mean = torch.where(active, proposed_mean, mean)
+            covariance = torch.where(active[:, :, None], proposed_covariance, covariance)
         return self.decode_state(self._pack(h, mean, covariance))
 
     def predict_observation(self, packed: Tensor, action: Tensor) -> dict[str, Tensor]:
@@ -394,6 +433,7 @@ def model_config_from_dict(values: dict) -> ModelConfig | StructuredConfig:
             "visual_depth",
             "max_acceleration_mps2",
             "acceleration_init_scale",
+            "forecast_step_s",
         ):
             if field in values:
                 raise ValueError(f"{field} is only configured for structured architectures")
