@@ -1,0 +1,218 @@
+[
+  {
+    "layout": "height_diverse",
+    "prefix_poses": 3,
+    "method": "geometry",
+    "metric": "iou_3d",
+    "old_mean": 0.5566844435748779,
+    "new_mean": 0.8522681371695692,
+    "delta_new_minus_old": 0.2955836935946913,
+    "delta_95ci": [
+      0.2867189240085405,
+      0.30441125845244593
+    ],
+    "family_count": 512,
+    "fixed_training_seeds": [
+      7,
+      11
+    ]
+  },
+  {
+    "layout": "height_diverse",
+    "prefix_poses": 3,
+    "method": "geometry",
+    "metric": "query_rf_nmse_soft",
+    "old_mean": 0.46564576944228975,
+    "new_mean": 0.14112562066944334,
+    "delta_new_minus_old": -0.3245201487728464,
+    "delta_95ci": [
+      -0.3372228254712755,
+      -0.3118139872321997
+    ],
+    "family_count": 512,
+    "fixed_training_seeds": [
+      7,
+      11
+    ]
+  },
+  {
+    "layout": "height_diverse",
+    "prefix_poses": 3,
+    "method": "geometry_rf",
+    "metric": "iou_3d",
+    "old_mean": 0.5518861023143233,
+    "new_mean": 0.8517238133402756,
+    "delta_new_minus_old": 0.29983771102595225,
+    "delta_95ci": [
+      0.2908504513300975,
+      0.3089373851404415
+    ],
+    "family_count": 512,
+    "fixed_training_seeds": [
+      7,
+      11
+    ]
+  },
+  {
+    "layout": "height_diverse",
+    "prefix_poses": 3,
+    "method": "geometry_rf",
+    "metric": "query_rf_nmse_soft",
+    "old_mean": 0.45931569134063466,
+    "new_mean": 0.1407059973263011,
+    "delta_new_minus_old": -0.3186096940143336,
+    "delta_95ci": [
+      -0.33028650799400255,
+      -0.3068559609736029
+    ],
+    "family_count": 512,
+    "fixed_training_seeds": [
+      7,
+      11
+    ]
+  },
+  {
+    "layout": "height_diverse",
+    "prefix_poses": 6,
+    "method": "geometry",
+    "metric": "iou_3d",
+    "old_mean": 0.6653766958201811,
+    "new_mean": 0.9215847487176552,
+    "delta_new_minus_old": 0.25620805289747406,
+    "delta_95ci": [
+      0.2482323549927638,
+      0.26451528862513884
+    ],
+    "family_count": 512,
+    "fixed_training_seeds": [
+      7,
+      11
+    ]
+  },
+  {
+    "layout": "height_diverse",
+    "prefix_poses": 6,
+    "method": "geometry",
+    "metric": "query_rf_nmse_soft",
+    "old_mean": 0.33857225114115863,
+    "new_mean": 0.07412651545498702,
+    "delta_new_minus_old": -0.26444573568617163,
+    "delta_95ci": [
+      -0.27501161551624204,
+      -0.25404705210590733
+    ],
+    "family_count": 512,
+    "fixed_training_seeds": [
+      7,
+      11
+    ]
+  },
+  {
+    "layout": "height_diverse",
+    "prefix_poses": 6,
+    "method": "geometry_rf",
+    "metric": "iou_3d",
+    "old_mean": 0.6613949073724,
+    "new_mean": 0.9209866152275312,
+    "delta_new_minus_old": 0.2595917078551311,
+    "delta_95ci": [
+      0.25168886848706457,
+      0.2677409128429897
+    ],
+    "family_count": 512,
+    "fixed_training_seeds": [
+      7,
+      11
+    ]
+  },
+  {
+    "layout": "height_diverse",
+    "prefix_poses": 6,
+    "method": "geometry_rf",
+    "metric": "query_rf_nmse_soft",
+    "old_mean": 0.3398364626914372,
+    "new_mean": 0.07402396671428849,
+    "delta_new_minus_old": -0.2658124959771487,
+    "delta_95ci": [
+      -0.2759774337453337,
+      -0.25599551312188945
+    ],
+    "family_count": 512,
+    "fixed_training_seeds": [
+      7,
+      11
+    ]
+  },
+  {
+    "layout": "height_diverse",
+    "prefix_poses": 12,
+    "method": "geometry",
+    "metric": "iou_3d",
+    "old_mean": 0.7392517353124668,
+    "new_mean": 0.9591370474083227,
+    "delta_new_minus_old": 0.21988531209585577,
+    "delta_95ci": [
+      0.21289955559568255,
+      0.22720653698030183
+    ],
+    "family_count": 512,
+    "fixed_training_seeds": [
+      7,
+      11
+    ]
+  },
+  {
+    "layout": "height_diverse",
+    "prefix_poses": 12,
+    "method": "geometry",
+    "metric": "query_rf_nmse_soft",
+    "old_mean": 0.24605632295674695,
+    "new_mean": 0.034625307808471825,
+    "delta_new_minus_old": -0.21143101514827514,
+    "delta_95ci": [
+      -0.22043276792511432,
+      -0.20289007484176594
+    ],
+    "family_count": 512,
+    "fixed_training_seeds": [
+      7,
+      11
+    ]
+  },
+  {
+    "layout": "height_diverse",
+    "prefix_poses": 12,
+    "method": "geometry_rf",
+    "metric": "iou_3d",
+    "old_mean": 0.7384575271266127,
+    "new_mean": 0.9600673968209433,
+    "delta_new_minus_old": 0.22160986969433072,
+    "delta_95ci": [
+      0.21472763079467677,
+      0.22875095450080016
+    ],
+    "family_count": 512,
+    "fixed_training_seeds": [
+      7,
+      11
+    ]
+  },
+  {
+    "layout": "height_diverse",
+    "prefix_poses": 12,
+    "method": "geometry_rf",
+    "metric": "query_rf_nmse_soft",
+    "old_mean": 0.24817015105256246,
+    "new_mean": 0.034018238971391064,
+    "delta_new_minus_old": -0.2141519120811714,
+    "delta_95ci": [
+      -0.2229923453595052,
+      -0.20557864133665055
+    ],
+    "family_count": 512,
+    "fixed_training_seeds": [
+      7,
+      11
+    ]
+  }
+]

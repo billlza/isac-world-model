@@ -1,0 +1,64 @@
+{
+  "scene_splits": {
+    "train": {
+      "count": 8192,
+      "all_scene_hashes_match_in_order": true,
+      "dataset_hash_matches": true,
+      "dataset_sha256": "df2ef461be2a26a2b5b33e88bf2a6c8146a1364f0eef5c627fd044836d2be620"
+    },
+    "validation": {
+      "count": 512,
+      "all_scene_hashes_match_in_order": true,
+      "dataset_hash_matches": true,
+      "dataset_sha256": "80cce912ec47b647251d2da82481c066cb8a13ad24069b29c729106d2208ba38"
+    },
+    "test": {
+      "count": 1024,
+      "all_scene_hashes_match_in_order": true,
+      "dataset_hash_matches": true,
+      "dataset_sha256": "39bc4bf978515f94966536af524f89891e3d21cc1ec1ba4ccb95ee3810e4b4f8"
+    }
+  },
+  "operators": {
+    "same_height": {
+      "sha256": "8d5a9d470b82bc73d33e9acaee6f22023766d9e453f21cd9e409cfff34813828",
+      "matches_original": true
+    },
+    "height_diverse": {
+      "sha256": "cdd3ef7e20986b115eb0f00a720e9852301dd67f588ac2391bc6a58058196e75",
+      "matches_original": true
+    },
+    "query": {
+      "sha256": "5eb6cef85caf36304466039316089c3a73bb0bfb9bbf3ba53321663f4fecf035",
+      "matches_original": true
+    }
+  },
+  "observations": {
+    "train/same_height": {
+      "sha256": "ea17553f6f728afeb9a3cd3bf1c2a2796dfa92b0189c045511a11972ffd73165",
+      "matches_original": true
+    },
+    "train/height_diverse": {
+      "sha256": "362315ec378494ab56ebb44d4618e0be4304d49b8e4c9905d4f5d2b72c8da13d",
+      "matches_original": true
+    },
+    "validation/same_height": {
+      "sha256": "5d0c0f733ea7c4d5825f0060f6f9b2b6fe36f3c3be393b87b5f49b35f2f4b75f",
+      "matches_original": true
+    },
+    "validation/height_diverse": {
+      "sha256": "04dcfdad34699fe4799001a1a102f354a95258f0930d9a1012eeff70fa4506b7",
+      "matches_original": true
+    },
+    "test/same_height": {
+      "sha256": "fc554324b2c49c766923e4eb56ac7c1586714c9b690a931670f917b54239c4f7",
+      "matches_original": true
+    },
+    "test/height_diverse": {
+      "sha256": "0be137941ba2bf2540da67f15841b14e0c552d0ebd4017b0462a68d9562ea6d7",
+      "matches_original": true
+    }
+  },
+  "query_observation_hash_note": "Original query observation hash was not recorded; query regenerated from verified occupancy, matching query operator hash and declared seed.",
+  "status": "all_available_scene_operator_observation_hashes_match_exactly"
+}

@@ -1,0 +1,1807 @@
+{
+  "audit_schema": 1,
+  "created_utc": "2026-11-24T00:15:37.006089+00:00",
+  "run_directory": "/workspace/scratch/2a63e545b553/tmp/h200_review_19558762",
+  "source_directory": "/workspace/scratch/2a63e545b553/tmp/hamilton_offline_3111/isac-3d-pretrain-3111d2c31d27",
+  "execution_commit": "3111d2c31d2770b87f63545095ad7a59bc48b644",
+  "archive": {
+    "path": "/workspace/scratch/2a63e545b553/upload/isac3d-review-19558762.tar.gz",
+    "bytes": 26787042,
+    "sha256": "e2f292f2036b5ec7e3183e9f3e6a42ceb81a721034c1db1ba559297142f93018"
+  },
+  "audit_runtime": {
+    "python": "3.12.14",
+    "numpy": "2.5.4",
+    "torch": "2.14.1+cpu"
+  },
+  "status": "passed",
+  "checks_passed": 393,
+  "checks_total": 393,
+  "checks": [
+    {
+      "name": "application_completion",
+      "passed": true
+    },
+    {
+      "name": "job_embedded_status_matches",
+      "passed": true
+    },
+    {
+      "name": "job_id_consistent",
+      "passed": true
+    },
+    {
+      "name": "scheduler_receipt_identity",
+      "passed": true
+    },
+    {
+      "name": "submission_stderr_empty",
+      "passed": true
+    },
+    {
+      "name": "source_was_clean_at_preparation",
+      "passed": true
+    },
+    {
+      "name": "frozen_commit_consistent",
+      "passed": true
+    },
+    {
+      "name": "all_submitted_source_hashes_match",
+      "passed": true,
+      "detail": {
+        "configs/occupancy3d_h200_pretrain.json": true,
+        "scripts/submit_occupancy3d_pretrain.sh": true,
+        "scripts/occupancy3d_h200_study.py": true,
+        "scripts/occupancy3d_study.py": true,
+        "examples/occupancy3d/2026-11-23/prior_scene_hashes.json": true,
+        "src/isac_wm/__init__.py": true,
+        "src/isac_wm/__main__.py": true,
+        "src/isac_wm/active_observation.py": true,
+        "src/isac_wm/artifacts.py": true,
+        "src/isac_wm/baselines.py": true,
+        "src/isac_wm/calibration.py": true,
+        "src/isac_wm/checkpoint_replay.py": true,
+        "src/isac_wm/cli.py": true,
+        "src/isac_wm/evaluation.py": true,
+        "src/isac_wm/events.py": true,
+        "src/isac_wm/evidence_reasoning.py": true,
+        "src/isac_wm/gap_recovery.py": true,
+        "src/isac_wm/imm.py": true,
+        "src/isac_wm/model.py": true,
+        "src/isac_wm/observation_planning.py": true,
+        "src/isac_wm/occupancy3d_data.py": true,
+        "src/isac_wm/occupancy3d_evaluation.py": true,
+        "src/isac_wm/occupancy3d_model.py": true,
+        "src/isac_wm/optimizer_policy.py": true,
+        "src/isac_wm/phy_ofdm.py": true,
+        "src/isac_wm/pretraining.py": true,
+        "src/isac_wm/pretraining_data.py": true,
+        "src/isac_wm/pretraining_objective.py": true,
+        "src/isac_wm/runtime.py": true,
+        "src/isac_wm/safety.py": true,
+        "src/isac_wm/scenarios.py": true,
+        "src/isac_wm/simulator.py": true,
+        "src/isac_wm/streaming.py": true,
+        "src/isac_wm/structured.py": true,
+        "src/isac_wm/toolchain.py": true,
+        "src/isac_wm/training.py": true,
+        "src/isac_wm/validation.py": true,
+        "src/isac_wm/viewer.py": true,
+        "src/isac_wm/visual_training_diagnostics.py": true,
+        "src/isac_wm/voi.py": true
+      }
+    },
+    {
+      "name": "protocol_sources_match_submission",
+      "passed": true
+    },
+    {
+      "name": "completion_source_record_matches",
+      "passed": true
+    },
+    {
+      "name": "submission_identity_recomputed",
+      "passed": true
+    },
+    {
+      "name": "configuration_matches_frozen_file",
+      "passed": true
+    },
+    {
+      "name": "requested_runtime_observed",
+      "passed": true
+    },
+    {
+      "name": "gpu_model_and_capacity",
+      "passed": true
+    },
+    {
+      "name": "actual_cuda_model_rf_backward_preflight",
+      "passed": true
+    },
+    {
+      "name": "determinism_limitation_recorded",
+      "passed": true
+    },
+    {
+      "name": "training_stage_coverage",
+      "passed": true
+    },
+    {
+      "name": "recorded_counts_match_configuration",
+      "passed": true
+    },
+    {
+      "name": "parameter_count_seed7",
+      "passed": true
+    },
+    {
+      "name": "parameter_count_seed11",
+      "passed": true
+    },
+    {
+      "name": "same_height_seed7_warmup: stage_record",
+      "passed": true
+    },
+    {
+      "name": "same_height_seed7_warmup: complete_finite_history",
+      "passed": true
+    },
+    {
+      "name": "same_height_seed7_warmup: validation_argmin",
+      "passed": true
+    },
+    {
+      "name": "same_height_seed7_warmup: batch_schedule_replay",
+      "passed": true
+    },
+    {
+      "name": "same_height_seed7_warmup: checkpoint_hash_and_metadata",
+      "passed": true
+    },
+    {
+      "name": "same_height_seed7_warmup: finite_weights",
+      "passed": true
+    },
+    {
+      "name": "same_height_seed7_warmup: random_initialization_replay",
+      "passed": true
+    },
+    {
+      "name": "same_height_seed7_geometry: stage_record",
+      "passed": true
+    },
+    {
+      "name": "same_height_seed7_geometry: complete_finite_history",
+      "passed": true
+    },
+    {
+      "name": "same_height_seed7_geometry: validation_argmin",
+      "passed": true
+    },
+    {
+      "name": "same_height_seed7_geometry: batch_schedule_replay",
+      "passed": true
+    },
+    {
+      "name": "same_height_seed7_geometry: checkpoint_hash_and_metadata",
+      "passed": true
+    },
+    {
+      "name": "same_height_seed7_geometry: finite_weights",
+      "passed": true
+    },
+    {
+      "name": "same_height_seed7_geometry_rf: stage_record",
+      "passed": true
+    },
+    {
+      "name": "same_height_seed7_geometry_rf: complete_finite_history",
+      "passed": true
+    },
+    {
+      "name": "same_height_seed7_geometry_rf: validation_argmin",
+      "passed": true
+    },
+    {
+      "name": "same_height_seed7_geometry_rf: batch_schedule_replay",
+      "passed": true
+    },
+    {
+      "name": "same_height_seed7_geometry_rf: checkpoint_hash_and_metadata",
+      "passed": true
+    },
+    {
+      "name": "same_height_seed7_geometry_rf: finite_weights",
+      "passed": true
+    },
+    {
+      "name": "same_height_seed11_warmup: stage_record",
+      "passed": true
+    },
+    {
+      "name": "same_height_seed11_warmup: complete_finite_history",
+      "passed": true
+    },
+    {
+      "name": "same_height_seed11_warmup: validation_argmin",
+      "passed": true
+    },
+    {
+      "name": "same_height_seed11_warmup: batch_schedule_replay",
+      "passed": true
+    },
+    {
+      "name": "same_height_seed11_warmup: checkpoint_hash_and_metadata",
+      "passed": true
+    },
+    {
+      "name": "same_height_seed11_warmup: finite_weights",
+      "passed": true
+    },
+    {
+      "name": "same_height_seed11_warmup: random_initialization_replay",
+      "passed": true
+    },
+    {
+      "name": "same_height_seed11_geometry: stage_record",
+      "passed": true
+    },
+    {
+      "name": "same_height_seed11_geometry: complete_finite_history",
+      "passed": true
+    },
+    {
+      "name": "same_height_seed11_geometry: validation_argmin",
+      "passed": true
+    },
+    {
+      "name": "same_height_seed11_geometry: batch_schedule_replay",
+      "passed": true
+    },
+    {
+      "name": "same_height_seed11_geometry: checkpoint_hash_and_metadata",
+      "passed": true
+    },
+    {
+      "name": "same_height_seed11_geometry: finite_weights",
+      "passed": true
+    },
+    {
+      "name": "same_height_seed11_geometry_rf: stage_record",
+      "passed": true
+    },
+    {
+      "name": "same_height_seed11_geometry_rf: complete_finite_history",
+      "passed": true
+    },
+    {
+      "name": "same_height_seed11_geometry_rf: validation_argmin",
+      "passed": true
+    },
+    {
+      "name": "same_height_seed11_geometry_rf: batch_schedule_replay",
+      "passed": true
+    },
+    {
+      "name": "same_height_seed11_geometry_rf: checkpoint_hash_and_metadata",
+      "passed": true
+    },
+    {
+      "name": "same_height_seed11_geometry_rf: finite_weights",
+      "passed": true
+    },
+    {
+      "name": "height_diverse_seed7_warmup: stage_record",
+      "passed": true
+    },
+    {
+      "name": "height_diverse_seed7_warmup: complete_finite_history",
+      "passed": true
+    },
+    {
+      "name": "height_diverse_seed7_warmup: validation_argmin",
+      "passed": true
+    },
+    {
+      "name": "height_diverse_seed7_warmup: batch_schedule_replay",
+      "passed": true
+    },
+    {
+      "name": "height_diverse_seed7_warmup: checkpoint_hash_and_metadata",
+      "passed": true
+    },
+    {
+      "name": "height_diverse_seed7_warmup: finite_weights",
+      "passed": true
+    },
+    {
+      "name": "height_diverse_seed7_warmup: random_initialization_replay",
+      "passed": true
+    },
+    {
+      "name": "height_diverse_seed7_geometry: stage_record",
+      "passed": true
+    },
+    {
+      "name": "height_diverse_seed7_geometry: complete_finite_history",
+      "passed": true
+    },
+    {
+      "name": "height_diverse_seed7_geometry: validation_argmin",
+      "passed": true
+    },
+    {
+      "name": "height_diverse_seed7_geometry: batch_schedule_replay",
+      "passed": true
+    },
+    {
+      "name": "height_diverse_seed7_geometry: checkpoint_hash_and_metadata",
+      "passed": true
+    },
+    {
+      "name": "height_diverse_seed7_geometry: finite_weights",
+      "passed": true
+    },
+    {
+      "name": "height_diverse_seed7_geometry_rf: stage_record",
+      "passed": true
+    },
+    {
+      "name": "height_diverse_seed7_geometry_rf: complete_finite_history",
+      "passed": true
+    },
+    {
+      "name": "height_diverse_seed7_geometry_rf: validation_argmin",
+      "passed": true
+    },
+    {
+      "name": "height_diverse_seed7_geometry_rf: batch_schedule_replay",
+      "passed": true
+    },
+    {
+      "name": "height_diverse_seed7_geometry_rf: checkpoint_hash_and_metadata",
+      "passed": true
+    },
+    {
+      "name": "height_diverse_seed7_geometry_rf: finite_weights",
+      "passed": true
+    },
+    {
+      "name": "height_diverse_seed11_warmup: stage_record",
+      "passed": true
+    },
+    {
+      "name": "height_diverse_seed11_warmup: complete_finite_history",
+      "passed": true
+    },
+    {
+      "name": "height_diverse_seed11_warmup: validation_argmin",
+      "passed": true
+    },
+    {
+      "name": "height_diverse_seed11_warmup: batch_schedule_replay",
+      "passed": true
+    },
+    {
+      "name": "height_diverse_seed11_warmup: checkpoint_hash_and_metadata",
+      "passed": true
+    },
+    {
+      "name": "height_diverse_seed11_warmup: finite_weights",
+      "passed": true
+    },
+    {
+      "name": "height_diverse_seed11_warmup: random_initialization_replay",
+      "passed": true
+    },
+    {
+      "name": "height_diverse_seed11_geometry: stage_record",
+      "passed": true
+    },
+    {
+      "name": "height_diverse_seed11_geometry: complete_finite_history",
+      "passed": true
+    },
+    {
+      "name": "height_diverse_seed11_geometry: validation_argmin",
+      "passed": true
+    },
+    {
+      "name": "height_diverse_seed11_geometry: batch_schedule_replay",
+      "passed": true
+    },
+    {
+      "name": "height_diverse_seed11_geometry: checkpoint_hash_and_metadata",
+      "passed": true
+    },
+    {
+      "name": "height_diverse_seed11_geometry: finite_weights",
+      "passed": true
+    },
+    {
+      "name": "height_diverse_seed11_geometry_rf: stage_record",
+      "passed": true
+    },
+    {
+      "name": "height_diverse_seed11_geometry_rf: complete_finite_history",
+      "passed": true
+    },
+    {
+      "name": "height_diverse_seed11_geometry_rf: validation_argmin",
+      "passed": true
+    },
+    {
+      "name": "height_diverse_seed11_geometry_rf: batch_schedule_replay",
+      "passed": true
+    },
+    {
+      "name": "height_diverse_seed11_geometry_rf: checkpoint_hash_and_metadata",
+      "passed": true
+    },
+    {
+      "name": "height_diverse_seed11_geometry_rf: finite_weights",
+      "passed": true
+    },
+    {
+      "name": "same_height_seed7: paired_continuation",
+      "passed": true
+    },
+    {
+      "name": "same_height_seed11: paired_continuation",
+      "passed": true
+    },
+    {
+      "name": "height_diverse_seed7: paired_continuation",
+      "passed": true
+    },
+    {
+      "name": "height_diverse_seed11: paired_continuation",
+      "passed": true
+    },
+    {
+      "name": "prior_exclusion_file",
+      "passed": true
+    },
+    {
+      "name": "train: identity_count",
+      "passed": true
+    },
+    {
+      "name": "train: dataset_hash",
+      "passed": true
+    },
+    {
+      "name": "train: prior_exclusion",
+      "passed": true
+    },
+    {
+      "name": "train: every_scene_spec_hash",
+      "passed": true
+    },
+    {
+      "name": "train: paired_mirror_families",
+      "passed": true
+    },
+    {
+      "name": "validation: identity_count",
+      "passed": true
+    },
+    {
+      "name": "validation: dataset_hash",
+      "passed": true
+    },
+    {
+      "name": "validation: prior_exclusion",
+      "passed": true
+    },
+    {
+      "name": "validation: every_scene_spec_hash",
+      "passed": true
+    },
+    {
+      "name": "validation: paired_mirror_families",
+      "passed": true
+    },
+    {
+      "name": "test: identity_count",
+      "passed": true
+    },
+    {
+      "name": "test: dataset_hash",
+      "passed": true
+    },
+    {
+      "name": "test: prior_exclusion",
+      "passed": true
+    },
+    {
+      "name": "test: every_scene_spec_hash",
+      "passed": true
+    },
+    {
+      "name": "test: paired_mirror_families",
+      "passed": true
+    },
+    {
+      "name": "all_splits_disjoint",
+      "passed": true
+    },
+    {
+      "name": "all_families_disjoint",
+      "passed": true
+    },
+    {
+      "name": "no_duplicates_or_prior_overlap_recorded",
+      "passed": true
+    },
+    {
+      "name": "query_poses_not_acquisition_inputs",
+      "passed": true
+    },
+    {
+      "name": "same_height_prefix3/inverse3d: validation_selection_replay",
+      "passed": true
+    },
+    {
+      "name": "same_height_prefix3/fixed25d: validation_selection_replay",
+      "passed": true
+    },
+    {
+      "name": "same_height_prefix6/inverse3d: validation_selection_replay",
+      "passed": true
+    },
+    {
+      "name": "same_height_prefix6/fixed25d: validation_selection_replay",
+      "passed": true
+    },
+    {
+      "name": "same_height_prefix12/inverse3d: validation_selection_replay",
+      "passed": true
+    },
+    {
+      "name": "same_height_prefix12/fixed25d: validation_selection_replay",
+      "passed": true
+    },
+    {
+      "name": "height_diverse_prefix3/inverse3d: validation_selection_replay",
+      "passed": true
+    },
+    {
+      "name": "height_diverse_prefix3/fixed25d: validation_selection_replay",
+      "passed": true
+    },
+    {
+      "name": "height_diverse_prefix6/inverse3d: validation_selection_replay",
+      "passed": true
+    },
+    {
+      "name": "height_diverse_prefix6/fixed25d: validation_selection_replay",
+      "passed": true
+    },
+    {
+      "name": "height_diverse_prefix12/inverse3d: validation_selection_replay",
+      "passed": true
+    },
+    {
+      "name": "height_diverse_prefix12/fixed25d: validation_selection_replay",
+      "passed": true
+    },
+    {
+      "name": "evaluation_cell_coverage",
+      "passed": true
+    },
+    {
+      "name": "all_per_scene_rows_finite",
+      "passed": true
+    },
+    {
+      "name": "bounded_metrics_in_range",
+      "passed": true
+    },
+    {
+      "name": "nominal/same_height/3/matched_filter/None: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "nominal/same_height/3/matched_filter/None: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "nominal/same_height/3/matched_filter/None: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "nominal/same_height/3/fixed25d/None: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "nominal/same_height/3/fixed25d/None: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "nominal/same_height/3/fixed25d/None: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "nominal/same_height/3/inverse3d/None: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "nominal/same_height/3/inverse3d/None: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "nominal/same_height/3/inverse3d/None: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "nominal/same_height/3/geometry/7: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "nominal/same_height/3/geometry/7: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "nominal/same_height/3/geometry/7: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "nominal/same_height/3/geometry_rf/7: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "nominal/same_height/3/geometry_rf/7: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "nominal/same_height/3/geometry_rf/7: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "nominal/same_height/3/geometry/11: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "nominal/same_height/3/geometry/11: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "nominal/same_height/3/geometry/11: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "nominal/same_height/3/geometry_rf/11: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "nominal/same_height/3/geometry_rf/11: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "nominal/same_height/3/geometry_rf/11: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "nominal/same_height/6/matched_filter/None: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "nominal/same_height/6/matched_filter/None: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "nominal/same_height/6/matched_filter/None: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "nominal/same_height/6/fixed25d/None: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "nominal/same_height/6/fixed25d/None: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "nominal/same_height/6/fixed25d/None: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "nominal/same_height/6/inverse3d/None: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "nominal/same_height/6/inverse3d/None: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "nominal/same_height/6/inverse3d/None: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "nominal/same_height/6/geometry/7: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "nominal/same_height/6/geometry/7: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "nominal/same_height/6/geometry/7: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "nominal/same_height/6/geometry_rf/7: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "nominal/same_height/6/geometry_rf/7: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "nominal/same_height/6/geometry_rf/7: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "nominal/same_height/6/geometry/11: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "nominal/same_height/6/geometry/11: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "nominal/same_height/6/geometry/11: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "nominal/same_height/6/geometry_rf/11: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "nominal/same_height/6/geometry_rf/11: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "nominal/same_height/6/geometry_rf/11: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "nominal/same_height/12/matched_filter/None: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "nominal/same_height/12/matched_filter/None: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "nominal/same_height/12/matched_filter/None: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "nominal/same_height/12/fixed25d/None: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "nominal/same_height/12/fixed25d/None: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "nominal/same_height/12/fixed25d/None: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "nominal/same_height/12/inverse3d/None: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "nominal/same_height/12/inverse3d/None: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "nominal/same_height/12/inverse3d/None: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "nominal/same_height/12/geometry/7: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "nominal/same_height/12/geometry/7: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "nominal/same_height/12/geometry/7: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "nominal/same_height/12/geometry_rf/7: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "nominal/same_height/12/geometry_rf/7: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "nominal/same_height/12/geometry_rf/7: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "nominal/same_height/12/geometry/11: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "nominal/same_height/12/geometry/11: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "nominal/same_height/12/geometry/11: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "nominal/same_height/12/geometry_rf/11: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "nominal/same_height/12/geometry_rf/11: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "nominal/same_height/12/geometry_rf/11: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "nominal/height_diverse/3/matched_filter/None: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "nominal/height_diverse/3/matched_filter/None: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "nominal/height_diverse/3/matched_filter/None: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "nominal/height_diverse/3/fixed25d/None: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "nominal/height_diverse/3/fixed25d/None: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "nominal/height_diverse/3/fixed25d/None: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "nominal/height_diverse/3/inverse3d/None: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "nominal/height_diverse/3/inverse3d/None: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "nominal/height_diverse/3/inverse3d/None: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "nominal/height_diverse/3/geometry/7: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "nominal/height_diverse/3/geometry/7: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "nominal/height_diverse/3/geometry/7: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "nominal/height_diverse/3/geometry_rf/7: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "nominal/height_diverse/3/geometry_rf/7: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "nominal/height_diverse/3/geometry_rf/7: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "nominal/height_diverse/3/geometry/11: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "nominal/height_diverse/3/geometry/11: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "nominal/height_diverse/3/geometry/11: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "nominal/height_diverse/3/geometry_rf/11: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "nominal/height_diverse/3/geometry_rf/11: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "nominal/height_diverse/3/geometry_rf/11: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "nominal/height_diverse/6/matched_filter/None: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "nominal/height_diverse/6/matched_filter/None: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "nominal/height_diverse/6/matched_filter/None: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "nominal/height_diverse/6/fixed25d/None: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "nominal/height_diverse/6/fixed25d/None: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "nominal/height_diverse/6/fixed25d/None: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "nominal/height_diverse/6/inverse3d/None: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "nominal/height_diverse/6/inverse3d/None: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "nominal/height_diverse/6/inverse3d/None: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "nominal/height_diverse/6/geometry/7: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "nominal/height_diverse/6/geometry/7: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "nominal/height_diverse/6/geometry/7: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "nominal/height_diverse/6/geometry_rf/7: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "nominal/height_diverse/6/geometry_rf/7: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "nominal/height_diverse/6/geometry_rf/7: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "nominal/height_diverse/6/geometry/11: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "nominal/height_diverse/6/geometry/11: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "nominal/height_diverse/6/geometry/11: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "nominal/height_diverse/6/geometry_rf/11: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "nominal/height_diverse/6/geometry_rf/11: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "nominal/height_diverse/6/geometry_rf/11: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "nominal/height_diverse/12/matched_filter/None: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "nominal/height_diverse/12/matched_filter/None: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "nominal/height_diverse/12/matched_filter/None: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "nominal/height_diverse/12/fixed25d/None: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "nominal/height_diverse/12/fixed25d/None: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "nominal/height_diverse/12/fixed25d/None: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "nominal/height_diverse/12/inverse3d/None: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "nominal/height_diverse/12/inverse3d/None: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "nominal/height_diverse/12/inverse3d/None: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "nominal/height_diverse/12/geometry/7: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "nominal/height_diverse/12/geometry/7: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "nominal/height_diverse/12/geometry/7: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "nominal/height_diverse/12/geometry_rf/7: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "nominal/height_diverse/12/geometry_rf/7: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "nominal/height_diverse/12/geometry_rf/7: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "nominal/height_diverse/12/geometry/11: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "nominal/height_diverse/12/geometry/11: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "nominal/height_diverse/12/geometry/11: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "nominal/height_diverse/12/geometry_rf/11: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "nominal/height_diverse/12/geometry_rf/11: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "nominal/height_diverse/12/geometry_rf/11: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/same_height/3/matched_filter/None: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/same_height/3/matched_filter/None: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/same_height/3/matched_filter/None: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/same_height/3/fixed25d/None: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/same_height/3/fixed25d/None: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/same_height/3/fixed25d/None: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/same_height/3/inverse3d/None: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/same_height/3/inverse3d/None: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/same_height/3/inverse3d/None: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/same_height/3/geometry/7: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/same_height/3/geometry/7: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/same_height/3/geometry/7: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/same_height/3/geometry_rf/7: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/same_height/3/geometry_rf/7: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/same_height/3/geometry_rf/7: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/same_height/3/geometry/11: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/same_height/3/geometry/11: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/same_height/3/geometry/11: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/same_height/3/geometry_rf/11: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/same_height/3/geometry_rf/11: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/same_height/3/geometry_rf/11: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/same_height/6/matched_filter/None: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/same_height/6/matched_filter/None: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/same_height/6/matched_filter/None: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/same_height/6/fixed25d/None: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/same_height/6/fixed25d/None: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/same_height/6/fixed25d/None: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/same_height/6/inverse3d/None: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/same_height/6/inverse3d/None: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/same_height/6/inverse3d/None: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/same_height/6/geometry/7: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/same_height/6/geometry/7: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/same_height/6/geometry/7: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/same_height/6/geometry_rf/7: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/same_height/6/geometry_rf/7: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/same_height/6/geometry_rf/7: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/same_height/6/geometry/11: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/same_height/6/geometry/11: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/same_height/6/geometry/11: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/same_height/6/geometry_rf/11: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/same_height/6/geometry_rf/11: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/same_height/6/geometry_rf/11: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/same_height/12/matched_filter/None: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/same_height/12/matched_filter/None: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/same_height/12/matched_filter/None: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/same_height/12/fixed25d/None: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/same_height/12/fixed25d/None: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/same_height/12/fixed25d/None: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/same_height/12/inverse3d/None: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/same_height/12/inverse3d/None: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/same_height/12/inverse3d/None: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/same_height/12/geometry/7: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/same_height/12/geometry/7: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/same_height/12/geometry/7: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/same_height/12/geometry_rf/7: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/same_height/12/geometry_rf/7: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/same_height/12/geometry_rf/7: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/same_height/12/geometry/11: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/same_height/12/geometry/11: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/same_height/12/geometry/11: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/same_height/12/geometry_rf/11: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/same_height/12/geometry_rf/11: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/same_height/12/geometry_rf/11: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/height_diverse/3/matched_filter/None: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/height_diverse/3/matched_filter/None: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/height_diverse/3/matched_filter/None: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/height_diverse/3/fixed25d/None: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/height_diverse/3/fixed25d/None: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/height_diverse/3/fixed25d/None: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/height_diverse/3/inverse3d/None: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/height_diverse/3/inverse3d/None: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/height_diverse/3/inverse3d/None: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/height_diverse/3/geometry/7: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/height_diverse/3/geometry/7: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/height_diverse/3/geometry/7: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/height_diverse/3/geometry_rf/7: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/height_diverse/3/geometry_rf/7: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/height_diverse/3/geometry_rf/7: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/height_diverse/3/geometry/11: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/height_diverse/3/geometry/11: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/height_diverse/3/geometry/11: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/height_diverse/3/geometry_rf/11: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/height_diverse/3/geometry_rf/11: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/height_diverse/3/geometry_rf/11: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/height_diverse/6/matched_filter/None: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/height_diverse/6/matched_filter/None: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/height_diverse/6/matched_filter/None: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/height_diverse/6/fixed25d/None: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/height_diverse/6/fixed25d/None: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/height_diverse/6/fixed25d/None: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/height_diverse/6/inverse3d/None: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/height_diverse/6/inverse3d/None: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/height_diverse/6/inverse3d/None: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/height_diverse/6/geometry/7: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/height_diverse/6/geometry/7: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/height_diverse/6/geometry/7: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/height_diverse/6/geometry_rf/7: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/height_diverse/6/geometry_rf/7: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/height_diverse/6/geometry_rf/7: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/height_diverse/6/geometry/11: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/height_diverse/6/geometry/11: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/height_diverse/6/geometry/11: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/height_diverse/6/geometry_rf/11: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/height_diverse/6/geometry_rf/11: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/height_diverse/6/geometry_rf/11: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/height_diverse/12/matched_filter/None: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/height_diverse/12/matched_filter/None: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/height_diverse/12/matched_filter/None: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/height_diverse/12/fixed25d/None: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/height_diverse/12/fixed25d/None: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/height_diverse/12/fixed25d/None: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/height_diverse/12/inverse3d/None: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/height_diverse/12/inverse3d/None: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/height_diverse/12/inverse3d/None: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/height_diverse/12/geometry/7: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/height_diverse/12/geometry/7: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/height_diverse/12/geometry/7: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/height_diverse/12/geometry_rf/7: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/height_diverse/12/geometry_rf/7: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/height_diverse/12/geometry_rf/7: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/height_diverse/12/geometry/11: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/height_diverse/12/geometry/11: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/height_diverse/12/geometry/11: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/height_diverse/12/geometry_rf/11: scene_identity",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/height_diverse/12/geometry_rf/11: summary_recomputed",
+      "passed": true
+    },
+    {
+      "name": "susceptibility_mismatch/height_diverse/12/geometry_rf/11: frozen_validation_threshold",
+      "passed": true
+    },
+    {
+      "name": "log_test_records_match_all_summaries",
+      "passed": true
+    },
+    {
+      "name": "log_validation_baselines_complete",
+      "passed": true
+    },
+    {
+      "name": "log_epoch_records_match_histories",
+      "passed": true
+    },
+    {
+      "name": "logged_training_and_selection_precede_test",
+      "passed": true
+    },
+    {
+      "name": "log_application_completion",
+      "passed": true
+    },
+    {
+      "name": "no_logged_exception_traceback",
+      "passed": true
+    }
+  ],
+  "checkpoints": [
+    {
+      "stage": "same_height_seed7_warmup",
+      "file": "checkpoints/same_height_seed7_warmup.pt",
+      "file_sha256": "27c496b47bdfc8a5f4b3c7c601b5da25f2c509e4d879ed0ea9e5f01cd3bd23f0",
+      "weight_sha256": "7894e22f5571e088dc7c94550e93a5bb3309e1d4bb1c6194eea577d6d56f333f",
+      "selected_epoch": 35,
+      "selected_validation_loss": 0.24337634444236755,
+      "last_validation_loss": 0.24559676088392735,
+      "optimizer_updates": 5120,
+      "elapsed_s": 50.59810862899758
+    },
+    {
+      "stage": "same_height_seed7_geometry",
+      "file": "checkpoints/same_height_seed7_geometry.pt",
+      "file_sha256": "1ee9cf04daa5677510358bbf37f5f337fe680094d633404e0b57a6ed3d36e9f3",
+      "weight_sha256": "1194a430d6746bc77c95c26a3f2e46ceaf8953ac68597bb8889f45fae13abe28",
+      "selected_epoch": 11,
+      "selected_validation_loss": 0.24247328750789165,
+      "last_validation_loss": 0.2430166732519865,
+      "optimizer_updates": 5120,
+      "elapsed_s": 50.253316062968224
+    },
+    {
+      "stage": "same_height_seed7_geometry_rf",
+      "file": "checkpoints/same_height_seed7_geometry_rf.pt",
+      "file_sha256": "553215aeaf1992e8528fa6af84870605ce55b8f97b40534527b9637a3e14fc31",
+      "weight_sha256": "7894e22f5571e088dc7c94550e93a5bb3309e1d4bb1c6194eea577d6d56f333f",
+      "selected_epoch": 0,
+      "selected_validation_loss": 0.24337634444236755,
+      "last_validation_loss": 0.25686315074563026,
+      "optimizer_updates": 5120,
+      "elapsed_s": 50.08638141909614
+    },
+    {
+      "stage": "same_height_seed11_warmup",
+      "file": "checkpoints/same_height_seed11_warmup.pt",
+      "file_sha256": "b15d1bcb69fda90ea89b827474981dc9370b2a00121dab619d194f51864f1538",
+      "weight_sha256": "301a9704df65a9c6a5e08f2d10581932cc5c85bb65f171dcb04519a113b6df91",
+      "selected_epoch": 35,
+      "selected_validation_loss": 0.2434655800461769,
+      "last_validation_loss": 0.2443696167320013,
+      "optimizer_updates": 5120,
+      "elapsed_s": 49.749814786948264
+    },
+    {
+      "stage": "same_height_seed11_geometry",
+      "file": "checkpoints/same_height_seed11_geometry.pt",
+      "file_sha256": "91b17e390ef05167ba6fb73d89429d550062333b78cb4fcd720dcebe5a262565",
+      "weight_sha256": "3b21f347fa08a9414c08a1d0bde60be3a48c0b7aee2804928e8ddbe028552317",
+      "selected_epoch": 7,
+      "selected_validation_loss": 0.24241141974925995,
+      "last_validation_loss": 0.24354679696261883,
+      "optimizer_updates": 5120,
+      "elapsed_s": 49.76638186816126
+    },
+    {
+      "stage": "same_height_seed11_geometry_rf",
+      "file": "checkpoints/same_height_seed11_geometry_rf.pt",
+      "file_sha256": "e490d416ce705270562cffcf1aeb615e1e8e90f7ff3d5a742b9bae50f0fe8b1a",
+      "weight_sha256": "301a9704df65a9c6a5e08f2d10581932cc5c85bb65f171dcb04519a113b6df91",
+      "selected_epoch": 0,
+      "selected_validation_loss": 0.2434655800461769,
+      "last_validation_loss": 0.25623496249318123,
+      "optimizer_updates": 5120,
+      "elapsed_s": 49.75655580800958
+    },
+    {
+      "stage": "height_diverse_seed7_warmup",
+      "file": "checkpoints/height_diverse_seed7_warmup.pt",
+      "file_sha256": "55f2e5e32274ebb19168e3af98de690179f0fb89d149b9228092f23a4a246207",
+      "weight_sha256": "5e542a5161baab36daec1eb9b6d8d439ec544b352f2ca0b73c4e3911c8e8d3c5",
+      "selected_epoch": 28,
+      "selected_validation_loss": 0.02397123002447188,
+      "last_validation_loss": 0.027955409605056047,
+      "optimizer_updates": 5120,
+      "elapsed_s": 49.78047108789906
+    },
+    {
+      "stage": "height_diverse_seed7_geometry",
+      "file": "checkpoints/height_diverse_seed7_geometry.pt",
+      "file_sha256": "5da51f0128cec03e03c5c55b4474865ae4d1967991896c007765609dfb9964e2",
+      "weight_sha256": "7374a4c432d8f96341c8b5c4eb99a80af7e0ba3554ec2568cc643367b6754809",
+      "selected_epoch": 5,
+      "selected_validation_loss": 0.023059592582285404,
+      "last_validation_loss": 0.02614618861116469,
+      "optimizer_updates": 5120,
+      "elapsed_s": 49.72955920896493
+    },
+    {
+      "stage": "height_diverse_seed7_geometry_rf",
+      "file": "checkpoints/height_diverse_seed7_geometry_rf.pt",
+      "file_sha256": "d8c7acd1a86ef70b47ccd0a3c05986a794038bb26d56354aa9a2296700deeb9e",
+      "weight_sha256": "fdb213594daca31222907dc835780dd95e4d799683243d7b4db34bef87c33136",
+      "selected_epoch": 11,
+      "selected_validation_loss": 0.022854499286040664,
+      "last_validation_loss": 0.025197583832778037,
+      "optimizer_updates": 5120,
+      "elapsed_s": 49.68314734403975
+    },
+    {
+      "stage": "height_diverse_seed11_warmup",
+      "file": "checkpoints/height_diverse_seed11_warmup.pt",
+      "file_sha256": "b62b82da856dae1571515dd459559fb2c0835878702cec7ec0e61b40ec5b1b48",
+      "weight_sha256": "621d7328f93cb98480c18c23b690a0efd66434336a79db4db91fd8c87610f928",
+      "selected_epoch": 36,
+      "selected_validation_loss": 0.023732803761959076,
+      "last_validation_loss": 0.025958875194191933,
+      "optimizer_updates": 5120,
+      "elapsed_s": 49.650093553820625
+    },
+    {
+      "stage": "height_diverse_seed11_geometry",
+      "file": "checkpoints/height_diverse_seed11_geometry.pt",
+      "file_sha256": "4996dc286f554dacab5f4ac8fc76764320b5c8cd24a6a50d4ad8a1e4b8424206",
+      "weight_sha256": "29d1f402dca058059ac7d595d5d973ae245c85358cb79640da214af0f6f13f26",
+      "selected_epoch": 4,
+      "selected_validation_loss": 0.022965270560234785,
+      "last_validation_loss": 0.028339585987851024,
+      "optimizer_updates": 5120,
+      "elapsed_s": 49.732448311988264
+    },
+    {
+      "stage": "height_diverse_seed11_geometry_rf",
+      "file": "checkpoints/height_diverse_seed11_geometry_rf.pt",
+      "file_sha256": "3f51153bb6c4e74e8aaf7eece201d4f8ab22cc525f05337d54d5c30f162dfff7",
+      "weight_sha256": "20a7ac02198eff8941d4790576375f73e0917419dcb4d392ee154f3508f9a28f",
+      "selected_epoch": 4,
+      "selected_validation_loss": 0.022790341870859265,
+      "last_validation_loss": 0.02680109441280365,
+      "optimizer_updates": 5120,
+      "elapsed_s": 49.7356833179947
+    }
+  ],
+  "splits": {
+    "train": {
+      "scenes": 8192,
+      "families": 4096,
+      "dataset_sha256": "df2ef461be2a26a2b5b33e88bf2a6c8146a1364f0eef5c627fd044836d2be620",
+      "all_scene_specs_reconstruct": true
+    },
+    "validation": {
+      "scenes": 512,
+      "families": 256,
+      "dataset_sha256": "80cce912ec47b647251d2da82481c066cb8a13ad24069b29c729106d2208ba38",
+      "all_scene_specs_reconstruct": true
+    },
+    "test": {
+      "scenes": 1024,
+      "families": 512,
+      "dataset_sha256": "39bc4bf978515f94966536af524f89891e3d21cc1ec1ba4ccb95ee3810e4b4f8",
+      "all_scene_specs_reconstruct": true
+    }
+  },
+  "total_optimizer_updates": 61440,
+  "total_training_stage_elapsed_s": 598.5219613988884,
+  "full_study_elapsed_s": 807.2205870780163,
+  "max_summary_recomputation_error": 0.0,
+  "findings": [
+    "The application and study completed; all 84 evaluation cells and 86,016 per-scene rows are retained.",
+    "Both same-height geometry_rf continuations selected epoch 0 (the warmup checkpoint), after all 40 continuation epochs were executed.",
+    "All 9,728 binary scene specifications reconstruct their recorded scene hashes, with 4,864 two-member mirror families and no split or prior-scene overlap.",
+    "Random initial weights and all batch schedules replay exactly in the current CPU audit runtime."
+  ],
+  "evidence_limits": [
+    "The uploaded review package contains no sacct export; scheduler terminal State and ExitCode are not independently observed here.",
+    "Application timestamps, device identity, and runtime versions are retained run records, not a new live HPC query.",
+    "This audit does not replay RF observation arrays or neural inference; those are separate checks. dataset.npz, stress_data.npz and test_predictions.npz were intentionally omitted from the review package.",
+    "CUDA training used explicit warn-only determinism; bitwise GPU training replay is not claimed.",
+    "Preparation manifests intentionally retain their historical prepared/not-submitted fields; the later receipt and completion records determine observed run status."
+  ]
+}
