@@ -1,0 +1,105 @@
+{
+  "schema_version": 1,
+  "verification_date": "2026-11-24",
+  "base_commit": "0126ed06aef10c60ebe34be8968f4619837055f7",
+  "schema_reference_commit": "0d6361d3bca8ea76a08cd8ef1cac6606dd730958",
+  "runtime": {
+    "python": "3.12.14",
+    "platform": "Linux-6.18.57-x86_64-with-glibc2.41"
+  },
+  "tests": {
+    "command": "PYTHONPATH=src python3 -B -m unittest discover -s tests -p test_m7_telemetry.py -v",
+    "run": 20,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": true,
+    "seconds": 0.17997690199990757
+  },
+  "repository_contracts": {
+    "command": "python3 scripts/check_contracts.py",
+    "exit_code": 0,
+    "output": "Repository contract check: PASS",
+    "stderr": ""
+  },
+  "cli_without_site_packages": {
+    "command": "python3 -S scripts/import_m7_telemetry.py --input tests/fixtures/m7_mooring_synthetic_samples.csv --output <new temporary directory> --data-origin synthetic",
+    "exit_code": 0,
+    "summary": {
+      "status": "imported_offline_telemetry",
+      "records": 9,
+      "records_with_any_rf_metric": 7,
+      "source_sha256": "d6de8beb99feb653b4ac4587466fbefbdc619f1509fba0d262b457eb94b7eafe",
+      "online_causal_replay": false,
+      "calibrated_3d_rf_input": false
+    },
+    "quality": {
+      "records": 9,
+      "poll_outcomes": {
+        "read": 8,
+        "failed": 1
+      },
+      "poll_failure_reasons": {
+        "unreachable": 1
+      },
+      "read_without_service": 1,
+      "attached_reads": 7,
+      "records_with_any_rf_metric": 7,
+      "rf_missing_counts": {
+        "lte_rsrp_dbm": 2,
+        "lte_rsrq_db": 2,
+        "lte_sinr_db": 2,
+        "lte_rssi_dbm": 2,
+        "nr_rsrp_dbm": 8,
+        "nr_rsrq_db": 8,
+        "nr_sinr_db": 8
+      },
+      "poll_start_intervals_s": {
+        "count": 8,
+        "minimum": 60,
+        "median": 60.0,
+        "maximum": 60
+      },
+      "gaps_over_2x_nominal": [],
+      "gap_interpretation": "observed poll-start spacing; not a packet-loss estimate",
+      "rows_reordered_or_dropped": 0
+    },
+    "capabilities": {
+      "scope": "verified CSV export interface, not a hardware impossibility claim",
+      "offline_scalar_link_telemetry": true,
+      "online_causal_replay": false,
+      "calibrated_3d_rf_input": false,
+      "complex_csi": false,
+      "raw_iq": false
+    }
+  },
+  "source_sha256": {
+    "src/isac_wm/m7_telemetry.py": "4b352fefe12a4c65d644d72fce906ef20b58edb3819dd6d84629319caa5f5f1f",
+    "scripts/import_m7_telemetry.py": "5ac5a4d5e322fb7f9afeeaa69b44a020257848ee73093cdc8625d81c35200f8b",
+    "tests/test_m7_telemetry.py": "ff2feb7120a1605eac00e03f21247059e5237a538216711b2d138655e592b438",
+    "tests/fixtures/m7_mooring_synthetic_samples.csv": "d6de8beb99feb653b4ac4587466fbefbdc619f1509fba0d262b457eb94b7eafe",
+    "docs/M7_PRO_REAL_DATA.zh-CN.md": "8c5407db66a0e112ca14734715d0fa69723f25abb9391441e604fd17aa529e26",
+    "README.md": "81cb9be6178e8d7205dfcef51f99e7cfc392908d1de211187d8c57c06d27e4e8"
+  },
+  "data_origin": "synthetic_contract_fixture",
+  "new_real_device_measurements": 0,
+  "training_updates": 0,
+  "not_executed": [
+    "live_M7_collection",
+    "real_history_compatibility",
+    "3D_reconstruction_from_M7",
+    "RL",
+    "RLHF",
+    "full_Torch_test_suite",
+    "Ruff lint and formatting"
+  ],
+  "tooling_note": "Ruff 0.17.2 and pytest are not installed; offline Ruff resolution found no cached package. Focused tests use standard-library unittest. No dependency pins were changed.",
+  "independent_review": {
+    "scope": "Pinned source bounds and counterexamples; timing, missingness, provenance and claims",
+    "checks": 49,
+    "passed": 49,
+    "remaining_blocking_findings": 0,
+    "fixed_issue": "Enforce field-specific Mooring typed bounds rather than only signed 16-bit storage range",
+    "clock_rollback_policy": "Stricter importer admission, explicitly documented; no silent sort or repair"
+  }
+}
