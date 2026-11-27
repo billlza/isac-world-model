@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "name": "synthetic-cpu-extended-supervised-continuation",
+  "model": {
+    "height": 16,
+    "width": 16,
+    "frames": 4,
+    "patch_size": 2,
+    "hidden": 64,
+    "depth": 2,
+    "heads": 4,
+    "text_layers": 1,
+    "max_text_bytes": 128,
+    "dropout": 0.0
+  },
+  "training": {
+    "steps": 4800,
+    "batch_size": 8,
+    "learning_rate": 0.0003,
+    "weight_decay": 0.01,
+    "gradient_accumulation": 1,
+    "clip_grad_norm": 1.0,
+    "seed": 13,
+    "validate_every": 400,
+    "checkpoint_every": 400,
+    "cfg_dropout": 0.15,
+    "temporal_weight": 0.1,
+    "precision": "float32",
+    "ema_decay": 0.99,
+    "threads": 2
+  },
+  "sampling": {
+    "steps": 40,
+    "guidance_scale": 2.0,
+    "fps": 8
+  }
+}

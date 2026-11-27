@@ -1,0 +1,7 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.9.0+cpu
+numpy==2.3.5
+Pillow==13.0.0
+imageio==2.37.0
+imageio-ffmpeg==0.6.0
+pytest==8.4.2
