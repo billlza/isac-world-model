@@ -117,6 +117,7 @@ CPU pilot 为 16×16、4 帧、8 fps，即 0.5 秒。GIF 和 contact sheet 为�
 | --- | --- | --- | ---: |
 | `cpu_pilot.json` | 16×16，4 帧 | hidden 64，2 层，1 文字层 | 800 |
 | `cpu_sft.json` | 同上 | 同上，从自身 checkpoint 监督续训 | 800 |
+| `cpu_extended.json` | 同上 | 同上，继续自身监督权重；独立新 run | 4,800 |
 | `h200_smoke.json` | 64×64，8 帧 | hidden 256，8 层，2 文字层 | 100 |
 | `h200_development.json` | 同上 | 同上 | 20,000 |
 | `h200_sft.json` | 同上 | 同上，从自身 checkpoint 继续 | 5,000 |
