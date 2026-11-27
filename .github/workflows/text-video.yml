@@ -1,0 +1,57 @@
+name: Text video CPU
+
+on:
+  push:
+    paths:
+      - 'projects/text-video/**'
+      - '.github/workflows/text-video.yml'
+  pull_request:
+    paths:
+      - 'projects/text-video/**'
+      - '.github/workflows/text-video.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: text-video-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  cpu:
+    name: Independent text-video tests / CPU
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: projects/text-video
+    env:
+      PYTHONPATH: ${{ github.workspace }}/projects/text-video/src
+      PYTHONNOUSERSITE: '1'
+      PYTHONDONTWRITEBYTECODE: '1'
+      CUDA_VISIBLE_DEVICES: ''
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: {persist-credentials: false}
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12.14'
+          cache: pip
+          cache-dependency-path: projects/text-video/requirements-cpu.txt
+      - name: Install pinned CPU dependencies
+        run: python -m pip install -r requirements-cpu.txt
+      - name: Verify CPU runtime
+        run: |
+          python - <<'PY'
+          import sys
+          import torch
+          assert sys.version_info[:3] == (3, 12, 14)
+          assert torch.__version__ == '2.9.0+cpu'
+          assert torch.version.cuda is None and not torch.cuda.is_available()
+          print('CPU tests only; Hamilton CUDA execution is not validated here.')
+          PY
+      - name: Run independent project tests
+        run: python -m pytest -c pyproject.toml tests -q
+      - name: Check Hamilton launcher syntax
+        run: bash -n scripts/submit_hamilton.sh scripts/hamilton_train.sh

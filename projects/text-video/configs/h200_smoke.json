@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "name": "h200-first-100-updates",
+  "model": {"height": 64, "width": 64, "frames": 8, "patch_size": 4, "hidden": 256, "depth": 8, "heads": 8, "text_layers": 2, "max_text_bytes": 256, "dropout": 0.0},
+  "training": {"steps": 100, "batch_size": 8, "learning_rate": 0.0002, "weight_decay": 0.01, "gradient_accumulation": 2, "clip_grad_norm": 1.0, "seed": 7, "validate_every": 50, "checkpoint_every": 50, "cfg_dropout": 0.15, "temporal_weight": 0.1, "precision": "bfloat16", "ema_decay": 0.99, "threads": 2},
+  "sampling": {"steps": 30, "guidance_scale": 2.0, "fps": 8}
+}

@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "name": "h200-supervised-continuation",
+  "model": {"height": 64, "width": 64, "frames": 8, "patch_size": 4, "hidden": 256, "depth": 8, "heads": 8, "text_layers": 2, "max_text_bytes": 256, "dropout": 0.0},
+  "training": {"steps": 5000, "batch_size": 8, "learning_rate": 0.00005, "weight_decay": 0.01, "gradient_accumulation": 2, "clip_grad_norm": 1.0, "seed": 11, "validate_every": 250, "checkpoint_every": 250, "cfg_dropout": 0.15, "temporal_weight": 0.1, "precision": "bfloat16", "ema_decay": 0.995, "threads": 2},
+  "sampling": {"steps": 50, "guidance_scale": 3.0, "fps": 8}
+}
