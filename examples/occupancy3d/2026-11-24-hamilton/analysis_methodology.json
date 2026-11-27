@@ -1,0 +1,34 @@
+{
+  "source_commit": "3111d2c31d2770b87f63545095ad7a59bc48b644",
+  "inputs_sha256": {
+    "summary.json": "24c7108f27a39f670a9282c59fe7b3bb0f887ff50f8be33e7cc80a21ec32411b",
+    "per_scene_metrics.json": "56937d449a7a00defdf9f9a26aa7b29ebaa063194d66eae065b5af2a5d2f2415",
+    "training_manifest.json": "bc5246ac91a19a6434c1af16b4080f8735cd83957420a959e66505df2d06a66c",
+    "protocol.json": "b24c912bf97e7702807982a49526f0007f908ae9357d8308d80d73832bc8c035"
+  },
+  "summary_recomputation": {
+    "cells": 84,
+    "per_scene_rows": 86016,
+    "max_absolute_error": 0.0
+  },
+  "bootstrap": {
+    "seed": 20261124,
+    "replicates": 20000,
+    "method": "paired percentile nonparametric cluster bootstrap",
+    "independent_resampling_unit": "vertical-mirror family",
+    "families": 512,
+    "scenes_per_family": 2,
+    "learned_estimator": "average seeds 7 and 11 per scene before family averaging",
+    "intervals": "95% pointwise, unadjusted for multiple comparisons, conditional on the two trained seeds; do not quantify training-run variability"
+  },
+  "stress_interpretation": "Susceptibility perturbation plus new independent noise draws. Within-condition method comparisons are paired. Across-condition effects are combined stress, not isolated material mismatch effects.",
+  "timing_interpretation": "Stored batch-forward timing excludes feature generation for networks and is not end-to-end latency. No acceleration claim is made here.",
+  "scope": "Static discrete weak point-scatterer support reconstruction, as registered.",
+  "training_stages": 12,
+  "optimizer_updates": 61440,
+  "training_stage_elapsed_sum_s": 598.5219613988884,
+  "selected_epoch_zero_stages": [
+    "same_height_seed7_geometry_rf",
+    "same_height_seed11_geometry_rf"
+  ]
+}

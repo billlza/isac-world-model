@@ -1,0 +1,91 @@
+{
+  "status": "registered_before_fresh_test_evaluation",
+  "hypothesis": "Bounded RF correction of a learned initial map retains useful sparse-view priors while enforcing observed RF",
+  "development_evidence": "The original registered run motivated this new refinement hypothesis; fresh test families are used here",
+  "reference_run": "/workspace/scratch/2a63e545b553/isac-world-model/research_outputs/occupancy3d/2026-11-23_registered",
+  "reference_protocol_sha256": "b156b7fe074316856ab44479563041a868ec75a6a3b4b8fc9c22f03b4f47f298",
+  "source_sha256": {
+    "scripts/occupancy3d_study.py": "e0d5e966fa96af18d4dff29647340fb17effcf8d7d40b0e1cc425e7be6d46439",
+    "src/isac_wm/occupancy3d_data.py": "c5849ce8ca0c5d3b3d36b514723eaa9aa6deeb8969ff40ecb1e5da8962f57a77",
+    "src/isac_wm/occupancy3d_evaluation.py": "551364f1349ed86b6f0a160d93a614ba4e44395a893d0c269ae06c82fa0a0dcc",
+    "src/isac_wm/occupancy3d_model.py": "0336ae1dc76bd1bed1021c867dec9f33e4cdc314c549122fb0a6170b2c32e938",
+    "scripts/occupancy3d_refinement_study.py": "f92333fa1b68ed7886d91ceb4fe90ab4a265eed3bc76afed189a54e114b1d54f"
+  },
+  "frozen_checkpoints": {
+    "7": {
+      "path": "research_outputs/occupancy3d/2026-11-23_registered/checkpoints/height_diverse_seed7_geometry_rf.pt",
+      "sha256": "d86970f7e0fefc3e29f3f2b9efea674d0d3a0b40c03186a0ea8c0062e0582b5e",
+      "selected_weight_sha256": "2e27858c7dfe3237cae3cf44706e107eae0c7532a57a4311a59c1ab7ca38ae31",
+      "selected_epoch": 11
+    },
+    "11": {
+      "path": "research_outputs/occupancy3d/2026-11-23_registered/checkpoints/height_diverse_seed11_geometry_rf.pt",
+      "sha256": "a4e3f3f2bfe7bd67eccf62d79d345029f08c930bc6e659d350f141a6958a33f7",
+      "selected_weight_sha256": "d6ddfd934a0ffcc1e92f8a1b6b79703f2fe49b3127dec0ef62f7770b2ef3fbbe",
+      "selected_epoch": 12
+    }
+  },
+  "model_updates": "No retraining; checkpoint weights remain frozen",
+  "grid": {
+    "shape": [
+      12,
+      12,
+      8
+    ],
+    "lower_m": [
+      -3.0,
+      -3.0,
+      0.0
+    ],
+    "upper_m": [
+      3.0,
+      3.0,
+      3.0
+    ]
+  },
+  "rf": {
+    "n_poses": 12,
+    "n_frequencies": 32,
+    "carrier_hz": 24000000000.0,
+    "bandwidth_hz": 500000000.0,
+    "radius_m": 5.0,
+    "noise_std": 0.02,
+    "heldout_n_poses": 8
+  },
+  "layout": "height_diverse",
+  "prefixes": [
+    3,
+    6,
+    12
+  ],
+  "fresh_test_seed": 20261129,
+  "fresh_test_scenes": 192,
+  "exclude": "Every scene hash in original train, validation, and test; vertical mirror families stay together",
+  "validation": "Original validation scenes and observations only",
+  "step_candidates": [
+    8,
+    24,
+    60
+  ],
+  "ridge": "Original validation-selected converged FISTA ridge at each prefix",
+  "selection": "Within .005 of best candidate validation macro 3D IoU, then lowest common-query soft RF NMSE",
+  "matched_step_control": "Zero initialization; identical steps and ridge to each refined model; own validation threshold",
+  "converged_reference": "Original validation-selected FISTA configuration and threshold, unchanged",
+  "susceptibility_stress": {
+    "log_std": 0.2,
+    "mean": 1.0,
+    "seed": 20262029
+  },
+  "noise_pairing": "Identical acquisition AWGN RNG draws across nominal and stress; identical query AWGN draws across them, before complex64 rounding",
+  "acquisition_noise_seed": 20262129,
+  "query_noise_seed": 20263129,
+  "timing": "Standalone batch pipeline components include RF feature generation, frozen CNN inference, and inverse updates where applicable",
+  "runtime": {
+    "python": "3.12.14 (main, Aug 25 2026, 14:00:49) [Clang 22.1.3 ]",
+    "numpy": "2.5.4",
+    "torch": "2.14.1+cpu",
+    "device": "cpu",
+    "threads": 4,
+    "batch_size": 32
+  }
+}

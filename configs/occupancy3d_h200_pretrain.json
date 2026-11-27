@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "study": "occupancy3d_h200_random_initialization_pretraining",
+  "submit_default": false,
+  "readiness": "prepared_only_not_gpu_validated_or_submitted",
+  "stages": {
+    "A_pretraining": "Random-initialized supervised geometry pretraining: BCE + 0.5 soft Dice",
+    "RL": "not_implemented_not_executed",
+    "RLHF": "not_implemented_not_executed",
+    "A_geometry_continuation": "Supervised geometry continuation from the selected stage A weights",
+    "A_rf_continuation": "Supervised geometry plus 0.2 RF-consistency continuation from the same stage A weights"
+  },
+  "scope": "Static discrete weak point-scatterer support; same scientific task as the CPU pilot, expanded data and training budget. This is not a dynamic world model or real-room reconstruction claim.",
+  "cpu_reference": "research_outputs/occupancy3d/2026-11-23_registered",
+  "runner": "scripts/occupancy3d_h200_study.py",
+  "scientific_reference_runner": "scripts/occupancy3d_study.py",
+  "slurm": {
+    "partition": "cuda",
+    "gres": "gpu:h200_nvl:1",
+    "time": "04:00:00",
+    "job_name": "isac-3d-pretrain",
+    "account": null,
+    "allocation_note": "Hamilton derives CPU, host RAM and temporary disk from the GPU request; request none of these separately. No accounting project has been invented."
+  },
+  "runtime": {
+    "module": "python/3.13.9cuda",
+    "python": "/apps/developers/compilers/python/3.13.9cuda/1/default/bin/python",
+    "expected_python": "3.13.9",
+    "expected_numpy": "2.3.4",
+    "expected_torch": "2.9.0+cu128",
+    "expected_cuda": "12.8",
+    "determinism": "warn",
+    "determinism_note": "Fixed seeds and deterministic algorithms where available; CUDA AvgPool3d and trilinear backward can be nondeterministic. Warnings are retained. Bitwise repeatability across GPU runs is not promised.",
+    "CUBLAS_WORKSPACE_CONFIG": ":4096:8",
+    "threads": 2
+  },
+  "training": {
+    "train_scenes": 8192,
+    "val_scenes": 512,
+    "test_scenes": 1024,
+    "data_seed": 20261201,
+    "seeds": [
+      7,
+      11
+    ],
+    "warmup_epochs": 40,
+    "finetune_epochs": 40,
+    "channels": 24,
+    "batch_size": 64,
+    "rf_weight": 0.2,
+    "exclude_scene_hashes": "examples/occupancy3d/2026-11-23/prior_scene_hashes.json"
+  },
+  "selection": "Validation only, with all baseline and threshold candidates retained. Test is evaluated after every learned checkpoint and baseline is frozen. Mirrors remain in the same split. Prior pilot results are development evidence, not fresh validation of this expanded study. All 1,024 prior scene hashes are excluded from every new split, not just the new test split.",
+  "resource_evidence": {
+    "repository": "billlza/isac-world-model",
+    "commit": "bc695c10603b2fec61c9c8fd92a8be4186f40ab1",
+    "allocation": "scripts/hamilton_complex_pretraining.sh",
+    "runtime": "scripts/submit_complex_pretraining_from_mac.sh",
+    "allocation_documentation": "docs/HAMILTON_SINGLE_H200.md"
+  },
+  "phase_status": {
+    "A_representation_pretraining": "registered_for_H200_not_submitted",
+    "B_true_reinforcement_learning": "not_implemented_not_started",
+    "C_human_feedback_posttraining": "not_implemented_not_started"
+  }
+}

@@ -1,0 +1,86 @@
+{
+  "status": "aggregate_bound_passed_strict_per_scene_soft_bound_not_met",
+  "checkpoint_count": 8,
+  "nominal_cell_count": 24,
+  "scene_cell_count": 24576,
+  "preregistered_aggregate_absolute_bound": 0.0002,
+  "preregistered_soft_per_scene_absolute_bound": 0.0001,
+  "all_aggregate_metrics_pass": true,
+  "all_soft_per_scene_metrics_pass": false,
+  "metrics": {
+    "iou_3d": {
+      "max_abs_aggregate_difference": 5.792247021152441e-05,
+      "max_abs_per_scene_difference": 0.04678362573099415,
+      "mean_abs_per_scene_difference": 3.378785386497885e-05,
+      "nonzero_scene_count": 113,
+      "per_scene_over_soft_bound_count": null
+    },
+    "brier": {
+      "max_abs_aggregate_difference": 3.3128158513293093e-07,
+      "max_abs_per_scene_difference": 2.1062233379897516e-05,
+      "mean_abs_per_scene_difference": 1.3870090812175113e-06,
+      "nonzero_scene_count": 24576,
+      "per_scene_over_soft_bound_count": 0
+    },
+    "query_rf_nmse_soft": {
+      "max_abs_aggregate_difference": 8.816416084300727e-06,
+      "max_abs_per_scene_difference": 0.001561671495437622,
+      "mean_abs_per_scene_difference": 3.58234055142406e-05,
+      "nonzero_scene_count": 24568,
+      "per_scene_over_soft_bound_count": 2035
+    },
+    "observed_rf_nmse_soft": {
+      "max_abs_aggregate_difference": 1.7554037185618654e-05,
+      "max_abs_per_scene_difference": 0.001298457384109497,
+      "mean_abs_per_scene_difference": 2.925676152010226e-05,
+      "nonzero_scene_count": 24402,
+      "per_scene_over_soft_bound_count": 1407
+    }
+  },
+  "largest_difference_cases": {
+    "iou_3d": {
+      "layout": "height_diverse",
+      "prefix_poses": 6,
+      "method": "geometry",
+      "seed": 7,
+      "scene_hash": "d2f5f264103d43da29db573d73365cb2948ce3f72c1208cbf3b55af7e36955e0",
+      "original_gpu_metric": 0.8888888888888888,
+      "replayed_cpu_metric": 0.8421052631578947,
+      "absolute_difference": 0.04678362573099415
+    },
+    "brier": {
+      "layout": "height_diverse",
+      "prefix_poses": 6,
+      "method": "geometry",
+      "seed": 11,
+      "scene_hash": "343ec3d164af4a08731058f922f99a0788480c2863fb3e1a79b2c75f5f97e5c7",
+      "original_gpu_metric": 0.022052765401513828,
+      "replayed_cpu_metric": 0.022073827634893725,
+      "absolute_difference": 2.1062233379897516e-05
+    },
+    "query_rf_nmse_soft": {
+      "layout": "height_diverse",
+      "prefix_poses": 3,
+      "method": "geometry",
+      "seed": 11,
+      "scene_hash": "28c3794d1e018ac21b2c3e7662cb97ef6db02d15d1e66dd1ae53bfb2a6223108",
+      "original_gpu_metric": 0.3981253206729889,
+      "replayed_cpu_metric": 0.39656364917755127,
+      "absolute_difference": 0.001561671495437622
+    },
+    "observed_rf_nmse_soft": {
+      "layout": "height_diverse",
+      "prefix_poses": 3,
+      "method": "geometry_rf",
+      "seed": 11,
+      "scene_hash": "671da1f9dd34dbbe9cb5c95cc3987b018cfc19b90658a2c5e1c1ca7f41ec6bc7",
+      "original_gpu_metric": 0.21949738264083862,
+      "replayed_cpu_metric": 0.22079584002494812,
+      "absolute_difference": 0.001298457384109497
+    }
+  },
+  "interpretation": "Exact inputs and checkpoint fingerprints are recovered. Aggregate metrics reproduce within the fixed bound. The stricter per-scene soft bound is not met, and some thresholded IoUs differ, so neither exact prediction replay nor universal per-scene tolerance is claimed. Old/new comparisons are performed jointly on one CPU runtime to remove this execution-platform discrepancy from that comparison.",
+  "original_prediction_arrays_available": false,
+  "limitation": "The upload deliberately omitted original probability arrays; direct probability-level error and threshold-crossing attribution cannot be measured from this package.",
+  "script_sha256": "0f7f7602051da3f42f0b500186a3450730a170dce10f9f3097d2abc3e7b8c085"
+}

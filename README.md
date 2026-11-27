@@ -1,5 +1,50 @@
 # ISAC World Model — v0.4.1 release engineering
 
+## M7 Pro real-device telemetry intake
+
+The standard-library importer reads the existing Mooring MR7450 sample CSV into
+an independent cellular link-telemetry dataset with missing-value masks, failure
+states and source provenance. It preserves host poll-start timing; legacy RF
+capture and availability times remain unknown. This input supports offline link
+analysis and does not supply the calibrated complex RF required by occupancy3d.
+
+```bash
+python3 scripts/import_m7_telemetry.py --input /path/to/radio-samples.csv \
+  --output runs/m7-intake --data-origin real_device
+```
+
+See [device capability evidence, local export and input semantics](docs/M7_PRO_REAL_DATA.zh-CN.md).
+Declare synthetic fixtures as `synthetic`; the importer does not verify physical
+data origin or collect new measurements from the device.
+
+## Complex-scene pretraining from random initialization
+
+The new pretraining study brings maneuvering, occlusion, asynchronous delays,
+radio outliers/bias, sparse camera sampling and their combinations into training.
+It compares a nominal-data control, a mixed-data control, and a mixed-data model
+with a larger visual encoder, a wider acceleration range and a differentiable
+displacement objective. All three use the same held-out evaluation episodes.
+
+```bash
+bash scripts/env.sh python scripts/complex_scene_pretraining.py \
+  --out runs/complex-development --profile development --device cpu --threads 2
+```
+
+Selected, final and continuation weights are saved with checksums. The new
+Hamilton launcher pins the exact source revision and archives the weights too.
+See [the training protocol, recovery guide and scope](docs/COMPLEX_PRETRAINING.zh-CN.md).
+This stage trains the existing synthetic RGB/radio state model for complex-scene
+state estimation and multi-step physical prediction.
+
+The completed two-initialization development study measured a 12.10% reduction
+in two-second forecast macro RMSE for mixed-data training, with a 1.07% increase
+in current-position macro RMSE. Radio-outlier and combined-condition tracking
+improved by 21.34% and 16.79%. The combined enhanced configuration did not beat the
+mixed-data control under this budget. Full results and scope are in the protocol;
+the first formal H200 submission was rejected by the partition resource policy.
+The corrected launcher leaves CPU and memory allocation to the GPU partition;
+formal execution still requires a new scheduler receipt.
+
 ## Large-model optimization and trajectory error replay
 
 Phase C completed six Hamilton cells (job 19404810). At equal data and update

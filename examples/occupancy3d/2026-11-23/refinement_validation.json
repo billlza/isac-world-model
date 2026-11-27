@@ -1,0 +1,278 @@
+{
+  "prefix3_seed7": {
+    "seed": 7,
+    "prefix_poses": 3,
+    "selected": {
+      "iterations": 60,
+      "ridge": 0.01,
+      "threshold": 0.30000000000000004,
+      "validation_macro_iou_3d": 0.6120621122792929,
+      "validation_query_nmse": 0.4115334153175354
+    },
+    "candidates": [
+      {
+        "iterations": 8,
+        "ridge": 0.01,
+        "threshold": 0.30000000000000004,
+        "validation_macro_iou_3d": 0.5486263287485118,
+        "validation_query_nmse": 0.4529217779636383
+      },
+      {
+        "iterations": 24,
+        "ridge": 0.01,
+        "threshold": 0.30000000000000004,
+        "validation_macro_iou_3d": 0.5870236433183793,
+        "validation_query_nmse": 0.4258352518081665
+      },
+      {
+        "iterations": 60,
+        "ridge": 0.01,
+        "threshold": 0.30000000000000004,
+        "validation_macro_iou_3d": 0.6120621122792929,
+        "validation_query_nmse": 0.4115334153175354
+      }
+    ],
+    "frozen_model_threshold": 0.30000000000000004,
+    "matched_step_threshold": {
+      "threshold": 0.2,
+      "validation_macro_iou_3d": 0.31650714249228085
+    },
+    "converged_reference": {
+      "iterations": 400,
+      "ridge": 0.01,
+      "threshold": 0.25,
+      "validation_macro_iou_3d": 0.33024983672211294,
+      "validation_query_nmse": 0.7618409395217896
+    }
+  },
+  "prefix3_seed11": {
+    "seed": 11,
+    "prefix_poses": 3,
+    "selected": {
+      "iterations": 60,
+      "ridge": 0.01,
+      "threshold": 0.30000000000000004,
+      "validation_macro_iou_3d": 0.616043120682652,
+      "validation_query_nmse": 0.40104973316192627
+    },
+    "candidates": [
+      {
+        "iterations": 8,
+        "ridge": 0.01,
+        "threshold": 0.25,
+        "validation_macro_iou_3d": 0.5515270691516172,
+        "validation_query_nmse": 0.4455166757106781
+      },
+      {
+        "iterations": 24,
+        "ridge": 0.01,
+        "threshold": 0.30000000000000004,
+        "validation_macro_iou_3d": 0.5928884993950346,
+        "validation_query_nmse": 0.4157355725765228
+      },
+      {
+        "iterations": 60,
+        "ridge": 0.01,
+        "threshold": 0.30000000000000004,
+        "validation_macro_iou_3d": 0.616043120682652,
+        "validation_query_nmse": 0.40104973316192627
+      }
+    ],
+    "frozen_model_threshold": 0.4,
+    "matched_step_threshold": {
+      "threshold": 0.2,
+      "validation_macro_iou_3d": 0.31650714249228085
+    },
+    "converged_reference": {
+      "iterations": 400,
+      "ridge": 0.01,
+      "threshold": 0.25,
+      "validation_macro_iou_3d": 0.33024983672211294,
+      "validation_query_nmse": 0.7618409395217896
+    }
+  },
+  "prefix6_seed7": {
+    "seed": 7,
+    "prefix_poses": 6,
+    "selected": {
+      "iterations": 60,
+      "ridge": 0.01,
+      "threshold": 0.4,
+      "validation_macro_iou_3d": 0.8583053019914813,
+      "validation_query_nmse": 0.21225053071975708
+    },
+    "candidates": [
+      {
+        "iterations": 8,
+        "ridge": 0.01,
+        "threshold": 0.4,
+        "validation_macro_iou_3d": 0.6964958135283843,
+        "validation_query_nmse": 0.28427577018737793
+      },
+      {
+        "iterations": 24,
+        "ridge": 0.01,
+        "threshold": 0.35,
+        "validation_macro_iou_3d": 0.7761288105840456,
+        "validation_query_nmse": 0.23864056169986725
+      },
+      {
+        "iterations": 60,
+        "ridge": 0.01,
+        "threshold": 0.4,
+        "validation_macro_iou_3d": 0.8583053019914813,
+        "validation_query_nmse": 0.21225053071975708
+      }
+    ],
+    "frozen_model_threshold": 0.4,
+    "matched_step_threshold": {
+      "threshold": 0.35,
+      "validation_macro_iou_3d": 0.6279885449191175
+    },
+    "converged_reference": {
+      "iterations": 400,
+      "ridge": 0.01,
+      "threshold": 0.35,
+      "validation_macro_iou_3d": 0.6843575849073495,
+      "validation_query_nmse": 0.5063570737838745
+    }
+  },
+  "prefix6_seed11": {
+    "seed": 11,
+    "prefix_poses": 6,
+    "selected": {
+      "iterations": 60,
+      "ridge": 0.01,
+      "threshold": 0.4,
+      "validation_macro_iou_3d": 0.8691072232582718,
+      "validation_query_nmse": 0.21119385957717896
+    },
+    "candidates": [
+      {
+        "iterations": 8,
+        "ridge": 0.01,
+        "threshold": 0.30000000000000004,
+        "validation_macro_iou_3d": 0.7061011105957777,
+        "validation_query_nmse": 0.28366076946258545
+      },
+      {
+        "iterations": 24,
+        "ridge": 0.01,
+        "threshold": 0.35,
+        "validation_macro_iou_3d": 0.7791119299744956,
+        "validation_query_nmse": 0.23728978633880615
+      },
+      {
+        "iterations": 60,
+        "ridge": 0.01,
+        "threshold": 0.4,
+        "validation_macro_iou_3d": 0.8691072232582718,
+        "validation_query_nmse": 0.21119385957717896
+      }
+    ],
+    "frozen_model_threshold": 0.4,
+    "matched_step_threshold": {
+      "threshold": 0.35,
+      "validation_macro_iou_3d": 0.6279885449191175
+    },
+    "converged_reference": {
+      "iterations": 400,
+      "ridge": 0.01,
+      "threshold": 0.35,
+      "validation_macro_iou_3d": 0.6843575849073495,
+      "validation_query_nmse": 0.5063570737838745
+    }
+  },
+  "prefix12_seed7": {
+    "seed": 7,
+    "prefix_poses": 12,
+    "selected": {
+      "iterations": 60,
+      "ridge": 0.0,
+      "threshold": 0.45000000000000007,
+      "validation_macro_iou_3d": 0.9986421565669213,
+      "validation_query_nmse": 0.046985477209091187
+    },
+    "candidates": [
+      {
+        "iterations": 8,
+        "ridge": 0.0,
+        "threshold": 0.30000000000000004,
+        "validation_macro_iou_3d": 0.808135572567764,
+        "validation_query_nmse": 0.15677224099636078
+      },
+      {
+        "iterations": 24,
+        "ridge": 0.0,
+        "threshold": 0.45000000000000007,
+        "validation_macro_iou_3d": 0.9657127064344576,
+        "validation_query_nmse": 0.09211292862892151
+      },
+      {
+        "iterations": 60,
+        "ridge": 0.0,
+        "threshold": 0.45000000000000007,
+        "validation_macro_iou_3d": 0.9986421565669213,
+        "validation_query_nmse": 0.046985477209091187
+      }
+    ],
+    "frozen_model_threshold": 0.35,
+    "matched_step_threshold": {
+      "threshold": 0.45000000000000007,
+      "validation_macro_iou_3d": 0.9655604856446224
+    },
+    "converged_reference": {
+      "iterations": 400,
+      "ridge": 0.0,
+      "threshold": 0.5,
+      "validation_macro_iou_3d": 1.0,
+      "validation_query_nmse": 0.016583118587732315
+    }
+  },
+  "prefix12_seed11": {
+    "seed": 11,
+    "prefix_poses": 12,
+    "selected": {
+      "iterations": 60,
+      "ridge": 0.0,
+      "threshold": 0.45000000000000007,
+      "validation_macro_iou_3d": 0.9988727708773371,
+      "validation_query_nmse": 0.045515820384025574
+    },
+    "candidates": [
+      {
+        "iterations": 8,
+        "ridge": 0.0,
+        "threshold": 0.30000000000000004,
+        "validation_macro_iou_3d": 0.8201965525990975,
+        "validation_query_nmse": 0.14867889881134033
+      },
+      {
+        "iterations": 24,
+        "ridge": 0.0,
+        "threshold": 0.45000000000000007,
+        "validation_macro_iou_3d": 0.9672318121669614,
+        "validation_query_nmse": 0.08834372460842133
+      },
+      {
+        "iterations": 60,
+        "ridge": 0.0,
+        "threshold": 0.45000000000000007,
+        "validation_macro_iou_3d": 0.9988727708773371,
+        "validation_query_nmse": 0.045515820384025574
+      }
+    ],
+    "frozen_model_threshold": 0.35,
+    "matched_step_threshold": {
+      "threshold": 0.45000000000000007,
+      "validation_macro_iou_3d": 0.9655604856446224
+    },
+    "converged_reference": {
+      "iterations": 400,
+      "ridge": 0.0,
+      "threshold": 0.5,
+      "validation_macro_iou_3d": 1.0,
+      "validation_query_nmse": 0.016583118587732315
+    }
+  }
+}

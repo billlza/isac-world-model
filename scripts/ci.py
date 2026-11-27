@@ -114,9 +114,9 @@ def main(argv=None):
                     f"--cov-report=xml:{out / 'coverage.xml'}",
                     f"--junitxml={out / 'pytest.xml'}",
                 ],
-                # Real checkpoint/replay tests extend the coverage-enabled suite.
-                # Python 3.12 reached 96% before the former 180 s deadline on CI.
-                360,
+                # Added lifecycle tests extend the coverage-enabled suite.
+                # Python 3.12 reached 97% before the former 360 s deadline on CI.
+                600,
             ),
             ("integration", [python, "scripts/ci_smoke.py", "--out", str(out / "smoke")], 300),
             ("distribution", [python, "scripts/build_dist.py", "--out", str(out / "dist")], 90),

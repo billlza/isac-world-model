@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "verification_date": "2026-11-24",
+  "parent_commit": "9cec75d48ac114e8cb17750e7692c6d626584d1b",
+  "supersedes": {
+    "path": "validation/m7_telemetry_2026-11-24.json",
+    "scope": [
+      "current importer source hash",
+      "Ruff availability and results",
+      "source distribution fixture coverage"
+    ]
+  },
+  "runtime": {
+    "python": "3.12.14",
+    "setuptools": "84.2.1",
+    "ruff": "0.17.2",
+    "platform": "Linux-6.18.57-x86_64-with-glibc2.41"
+  },
+  "changes": [
+    "Explicitly include the synthetic M7 CSV fixture in the source distribution",
+    "Apply pinned Ruff formatting to two expressions in m7_telemetry.py"
+  ],
+  "source_sha256": {
+    "MANIFEST.in": "a96f174d98f38c1d3cbf9b470ea775205d25b55453ac5c2cb404529185cb1ad0",
+    "src/isac_wm/m7_telemetry.py": "465525999b6cd0df3238798db4326959dbf85899de39810f8610088e4ce8bf8e",
+    "scripts/import_m7_telemetry.py": "5ac5a4d5e322fb7f9afeeaa69b44a020257848ee73093cdc8625d81c35200f8b",
+    "tests/test_m7_telemetry.py": "ff2feb7120a1605eac00e03f21247059e5237a538216711b2d138655e592b438",
+    "tests/fixtures/m7_mooring_synthetic_samples.csv": "d6de8beb99feb653b4ac4587466fbefbdc619f1509fba0d262b457eb94b7eafe"
+  },
+  "source_distribution": {
+    "build_exit_code": 0,
+    "backend": "setuptools.build_meta.build_sdist",
+    "archive_sha256": "22471829738f0367d464076abd64b98eeb9d607c43f26fbf74736f81fdc81a1a",
+    "fixture_present": true,
+    "reviewed_input_bytes_match": true,
+    "tests_command": "PYTHONPATH=src python3 -B -m unittest discover -s tests -p test_m7_telemetry.py -v",
+    "tests_executed_from": "freshly extracted source distribution",
+    "tests": 20,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "exit_code": 0
+  },
+  "repository_contracts": {
+    "command": "python3 scripts/check_contracts.py",
+    "exit_code": 0,
+    "output": "Repository contract check: PASS"
+  },
+  "quality": {
+    "executor": "independent local review agent, same final source bytes",
+    "tool_provisioning": "isolated uv tool environment; repository dependency pins unchanged",
+    "checks": [
+      {
+        "command": "uv tool run --offline --from ruff==0.17.2 ruff check src tests scripts",
+        "exit_code": 0,
+        "output": "All checks passed!"
+      },
+      {
+        "command": "uv tool run --offline --from ruff==0.17.2 ruff format --check src tests scripts",
+        "exit_code": 0,
+        "output": "166 files already formatted"
+      }
+    ]
+  },
+  "remote_ci_at_parent": {
+    "pr_run": 45419787949,
+    "push_run": 45419677871,
+    "test_steps_executed": 0,
+    "diagnosis": "GitHub Actions account quota exhausted and additional usage blocked",
+    "evidence": "Authenticated workflow annotations and account Actions usage/budget pages; no billing settings changed"
+  },
+  "not_executed": [
+    "full Torch test suite in this follow-up",
+    "remote CI test steps",
+    "new real-device capture or training"
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "status": "completed",
+  "training_stages": 12,
+  "learned_test_cells": 8,
+  "evaluation_cells": 84,
+  "elapsed_s": 335.8840512759998,
+  "source_sha256": {
+    "scripts/occupancy3d_study.py": "e0d5e966fa96af18d4dff29647340fb17effcf8d7d40b0e1cc425e7be6d46439",
+    "src/isac_wm/occupancy3d_data.py": "c5849ce8ca0c5d3b3d36b514723eaa9aa6deeb8969ff40ecb1e5da8962f57a77",
+    "src/isac_wm/occupancy3d_evaluation.py": "551364f1349ed86b6f0a160d93a614ba4e44395a893d0c269ae06c82fa0a0dcc",
+    "src/isac_wm/occupancy3d_model.py": "0336ae1dc76bd1bed1021c867dec9f33e4cdc314c549122fb0a6170b2c32e938"
+  },
+  "source_unchanged_during_run": true,
+  "note": "Batched network timing excludes feature generation; not end-to-end latency"
+}

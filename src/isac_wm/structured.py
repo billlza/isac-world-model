@@ -16,6 +16,7 @@ from .model import EventBeliefModel, ModelConfig, radio_from_state
 from .validation import finite, integer
 
 LATENT_STATE_NORM_EPS = 1e-5
+MAX_FORECAST_STEPS = 256
 
 
 @dataclass(frozen=True)
@@ -27,12 +28,28 @@ class StructuredConfig:
     heads: int = 4
     room_m: float = 10.0
     latent_state_norm: str = "none"
+    visual_channels: int = 16
+    visual_depth: int = 1
+    # Per-axis physical bound; the velocity state is normalized by 2 m/s.
+    max_acceleration_mps2: float = 0.5
+    acceleration_init_scale: float = 1.0
+    # Zero retains the historical fixed-latent, single-step forecast exactly.
+    forecast_step_s: float = 0.0
 
     def __post_init__(self) -> None:
         ModelConfig(self.feature_dim, self.hidden_dim)
         integer(self.memory_size, "memory_size", 1, 256)
         integer(self.heads, "heads", 1, 16)
         finite(self.room_m, "room_m", positive=True)
+        integer(self.visual_channels, "visual_channels", 1, 256)
+        integer(self.visual_depth, "visual_depth", 1, 8)
+        finite(self.max_acceleration_mps2, "max_acceleration_mps2", positive=True)
+        if self.max_acceleration_mps2 > 100:
+            raise ValueError("max_acceleration_mps2 must be at most 100 m/s^2")
+        finite(self.acceleration_init_scale, "acceleration_init_scale", positive=True)
+        finite(self.forecast_step_s, "forecast_step_s")
+        if self.acceleration_init_scale > 1:
+            raise ValueError("acceleration_init_scale must be in (0, 1]")
         if self.architecture not in {"structured", "structured-attention"}:
             raise ValueError("Unknown structured architecture")
         if self.hidden_dim % self.heads:
@@ -45,20 +62,38 @@ class StructuredConfig:
     def to_dict(self) -> dict:
         values = asdict(self)
         # Preserve the historical checkpoint/config representation of the control.
-        # Missing fields in older checkpoints therefore continue to mean "none".
+        # Missing fields in older checkpoints retain their original architecture
+        # and physical acceleration bound, without changing config fingerprints.
         if self.latent_state_norm == "none":
             values.pop("latent_state_norm")
+        for name, default in (
+            ("visual_channels", 16),
+            ("visual_depth", 1),
+            ("max_acceleration_mps2", 0.5),
+            ("acceleration_init_scale", 1.0),
+            ("forecast_step_s", 0.0),
+        ):
+            if values[name] == default:
+                values.pop(name)
         return values
 
 
 class SpatialEncoder(nn.Module):
     """Learn a spatial likelihood map without a pretrained detector or colour rule."""
 
-    def __init__(self, features: int):
+    def __init__(self, features: int, channels: int = 16, depth: int = 1):
         super().__init__()
-        self.trunk = nn.Sequential(nn.Conv2d(3, 16, 3, padding=1), nn.SiLU())
-        self.heat = nn.Conv2d(16, 1, 1)
-        self.context = nn.Linear(16, features - 3)
+        integer(channels, "visual_channels", 1, 256)
+        integer(depth, "visual_depth", 1, 8)
+        # Defaults preserve module names, construction order and RNG consumption.
+        # Spatial resolution stays fixed; no batch statistics mix future events
+        # into earlier encodings when training encodes a whole sequence at once.
+        layers = [nn.Conv2d(3, channels, 3, padding=1), nn.SiLU()]
+        for _ in range(depth - 1):
+            layers.extend([nn.Conv2d(channels, channels, 3, padding=1), nn.SiLU()])
+        self.trunk = nn.Sequential(*layers)
+        self.heat = nn.Conv2d(channels, 1, 1)
+        self.context = nn.Linear(channels, features - 3)
 
     def forward(self, image: Tensor) -> Tensor:
         feature = self.trunk(image)
@@ -92,7 +127,7 @@ class StructuredEventModel(EventBeliefModel):
         nn.Module.__init__(self)
         self.config = config
         f, h = config.feature_dim, config.hidden_dim
-        self.visual = SpatialEncoder(f)
+        self.visual = SpatialEncoder(f, config.visual_channels, config.visual_depth)
         self.radio_encoder = nn.Sequential(nn.Linear(4, f), nn.SiLU(), nn.Linear(f, f))
         self.fusion = nn.GRUCell(2 * f + 7, h)
         self.dynamics = nn.Sequential(nn.Linear(h, h), nn.Tanh(), nn.Linear(h, h), nn.Tanh())
@@ -118,6 +153,13 @@ class StructuredEventModel(EventBeliefModel):
             if config.latent_state_norm == "layernorm"
             else None
         )
+        # Apply only to random initialization, after every module is constructed.
+        # This consumes no RNG and changes neither other weights nor the learned
+        # acceleration range. Loading a checkpoint replaces these initial values.
+        if config.acceleration_init_scale != 1.0:
+            with torch.no_grad():
+                self.acceleration.weight.mul_(config.acceleration_init_scale)
+                self.acceleration.bias.mul_(config.acceleration_init_scale)
 
     def initial(self, batch_size: int, device: torch.device | str) -> tuple[Tensor, ...]:
         integer(batch_size, "batch_size", 1)
@@ -147,7 +189,9 @@ class StructuredEventModel(EventBeliefModel):
     def _predict(self, h: Tensor, mean: Tensor, covariance: Tensor, dt: Tensor, *, diagnostics=None):
         ratio = 2 / self.config.room_m
         acceleration_logits = self.acceleration(h)
-        acc = 0.25 * acceleration_logits.tanh()
+        # Velocity is normalized by 2 m/s; per-axis acceleration uses that scale.
+        # The historical 0.5 m/s^2 bound therefore retains exactly 0.25 here.
+        acc = (self.config.max_acceleration_mps2 / 2) * acceleration_logits.tanh()
         position = mean[:, :2] + ratio * (dt * mean[:, 2:] + 0.5 * dt.square() * acc)
         velocity = mean[:, 2:] + dt * acc
         predicted = torch.cat([position, velocity], -1)
@@ -236,21 +280,55 @@ class StructuredEventModel(EventBeliefModel):
         }
 
     def forecast(self, packed: Tensor, horizon: float | Tensor) -> dict[str, Tensor]:
-        # Forecast only the physical state: h is the already-normalized recurrent
-        # state from step(), with no additional latent transition or normalization.
+        """Predict without evidence, preserving the caller's packed belief.
+
+        With ``forecast_step_s=0``, only the physical state evolves, exactly as
+        in historical checkpoints. A positive step enables bounded internal
+        latent/physical transitions in the same order as an observation-free
+        ``step()``. No cached token is reinterpreted as fresh evidence. Each row
+        stops at its own horizon; zero-time rows are never renormalized.
+
+        Covariance remains the model's process-noise approximation, not a
+        calibrated guarantee or a Jacobian propagation of latent uncertainty.
+        """
         h, mean, covariance = self._unpack(packed)
-        if isinstance(horizon, (int, float)):
-            finite(horizon, "horizon")
-            dt = h.new_full((h.shape[0], 1), horizon)
-        else:
+        if isinstance(horizon, Tensor):
             if (
                 horizon.shape not in {torch.Size([]), torch.Size([h.shape[0], 1])}
+                or horizon.is_complex()
+                or horizon.dtype == torch.bool
                 or not bool(torch.isfinite(horizon).all())
                 or bool((horizon < 0).any())
             ):
                 raise ValueError("horizon must be finite, non-negative and batch-compatible")
             dt = horizon.to(h).expand(h.shape[0], 1)
-        mean, covariance = self._predict(h, mean, covariance, dt)
+        else:
+            value = finite(horizon, "horizon")
+            if value > torch.finfo(h.dtype).max:
+                raise ValueError("horizon is not representable in the model dtype")
+            dt = h.new_full((h.shape[0], 1), value)
+        if not bool(torch.isfinite(dt).all()):
+            raise ValueError("horizon is not representable in the model dtype")
+        if self.config.forecast_step_s == 0:
+            mean, covariance = self._predict(h, mean, covariance, dt)
+            return self.decode_state(self._pack(h, mean, covariance))
+
+        step_s = h.new_tensor(self.config.forecast_step_s)
+        if not bool(torch.isfinite(step_s)) or not bool(step_s > 0):
+            raise ValueError("forecast_step_s is not representable in the model dtype")
+        steps = dt.max() / step_s
+        if not bool(torch.isfinite(steps)) or bool(steps > MAX_FORECAST_STEPS):
+            raise ValueError(f"forecast requires more than {MAX_FORECAST_STEPS} internal steps")
+        for index in range(int(torch.ceil(steps).item())):
+            interval = torch.minimum((dt - index * step_s).clamp_min(0), step_s)
+            active = interval > 0
+            proposed_h = h + interval * self.dynamics(h)
+            if self.latent_state_norm is not None:
+                proposed_h = self.latent_state_norm(proposed_h)
+            h = torch.where(active, proposed_h, h)
+            proposed_mean, proposed_covariance = self._predict(h, mean, covariance, interval)
+            mean = torch.where(active, proposed_mean, mean)
+            covariance = torch.where(active[:, :, None], proposed_covariance, covariance)
         return self.decode_state(self._pack(h, mean, covariance))
 
     def predict_observation(self, packed: Tensor, action: Tensor) -> dict[str, Tensor]:
@@ -348,8 +426,17 @@ class StructuredEventModel(EventBeliefModel):
 
 
 def model_config_from_dict(values: dict) -> ModelConfig | StructuredConfig:
-    if "latent_state_norm" in values and "architecture" not in values:
-        raise ValueError("latent_state_norm is only configured for structured architectures")
+    if "architecture" not in values:
+        for field in (
+            "latent_state_norm",
+            "visual_channels",
+            "visual_depth",
+            "max_acceleration_mps2",
+            "acceleration_init_scale",
+            "forecast_step_s",
+        ):
+            if field in values:
+                raise ValueError(f"{field} is only configured for structured architectures")
     return StructuredConfig(**values) if "architecture" in values else ModelConfig(**values)
 
 
